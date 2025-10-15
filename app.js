@@ -17,16 +17,15 @@ import {
 
 const viewer = new Viewer({
     canvasId: "meuCanvas",
-    // 🛑 ATUALIZAÇÃO AQUI: Remove 'transparent: true' e define a cor de fundo.
-    transparent: false, // Não precisa ser transparente se você definir uma cor sólida
+    transparent: false, 
     saoEnabled: true,
     edgesEnabled: true,
     
-    // 🛑 NOVA CONFIGURAÇÃO DE COR DE FUNDO (Cinza Claro)
+    // Fundo Cinza Claro, conforme solicitado
     backgroundColor: [0.8, 0.8, 0.8] 
 });
 
-// GARANTE QUE O VIEWER SE AJUSTE ÀS DIMENSÕES DA JANELA (Correção da tela minúscula)
+// GARANTE QUE O VIEWER SE AJUSTE ÀS DIMENSÕES DA JANELA
 function onWindowResize() {
     const canvas = viewer.scene.canvas;
     canvas.width = window.innerWidth;
@@ -37,56 +36,30 @@ window.addEventListener('resize', onWindowResize);
 onWindowResize(); // Chama na inicialização
 
 // -----------------------------------------------------------------------------
-// 2. Carregamento dos Modelos e Ajuste da Câmera (💥 FOCO AQUI 💥)
+// 2. Carregamento do Projeto via MANIFESTO (💥 FOCO AQUI 💥)
 // -----------------------------------------------------------------------------
 
 const xktLoader = new XKTLoaderPlugin(viewer);
 
-let modelsLoadedCount = 0;
-const totalModels = 2; // Número de modelos que esperamos carregar
+// O plugin carrega o manifesto, que por sua vez carrega todos os modelos internos.
+const projectModel = xktLoader.load({
+    id: "meuProjetoCompleto",
+    // Carrega o arquivo JSON do manifesto
+    src: "assets/meu_projeto.json" 
+});
 
-// Função para ajustar a câmera após o carregamento
-function adjustCameraOnLoad() {
-    modelsLoadedCount++;
+projectModel.on("loaded", () => {
+    // Ajusta a câmera para enquadrar TODO o projeto (todos os modelos)
+    viewer.cameraFlight.jumpTo(viewer.scene); 
+    console.log("Projeto carregado via Manifesto JSON e câmera ajustada.");
     
-    // Quando o ÚLTIMO modelo terminar de carregar, ajustamos a câmera para a cena inteira.
-    if (modelsLoadedCount === totalModels) {
-        viewer.cameraFlight.jumpTo(viewer.scene); // Enquadra TUDO na cena
-        console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
-        
-        // Ativa o modo de medição de ângulo por padrão
-        setMeasurementMode('angle', document.getElementById('btnAngle')); 
-    }
-}
-
-
-// 💥 CARREGAMENTO DO MODELO 1: meu_modelo.xkt
-const model1 = xktLoader.load({
-    id: "meuModeloBIM",
-    src: "assets/meu_modelo.xkt", 
-    edges: true
+    // Ativa o modo de medição de ângulo por padrão
+    setMeasurementMode('angle', document.getElementById('btnAngle')); 
 });
 
-model1.on("loaded", adjustCameraOnLoad);
-model1.on("error", (err) => {
-    console.error("Erro ao carregar meu_modelo.xkt:", err);
-    adjustCameraOnLoad(); // Ainda conta como carregado/tentado
+projectModel.on("error", (err) => {
+    console.error("Erro ao carregar o Manifesto ou modelos do projeto:", err);
 });
-
-
-// 💥 CARREGAMENTO DO MODELO 2: modelo-02.xkt
-const model2 = xktLoader.load({
-    id: "meuModeloBIM_02", // ID ÚNICO é crucial
-    src: "assets/modelo-02.xkt", 
-    edges: true
-});
-
-model2.on("loaded", adjustCameraOnLoad);
-model2.on("error", (err) => {
-    console.error("Erro ao carregar modelo-02.xkt:", err);
-    adjustCameraOnLoad(); // Ainda conta como carregado/tentado
-});
-
 
 // -----------------------------------------------------------------------------
 // 3. Plugins de Medição e Função de Troca
@@ -123,21 +96,18 @@ function setMeasurementMode(mode, clickedButton) {
     if (clickedButton) {
          clickedButton.classList.add('active');
     } else if (mode === 'angle') {
-        // Inicialização: Ativa o botão Ângulo
         const btn = document.getElementById('btnAngle');
         if (btn) btn.classList.add('active');
     }
 
-    // Reseta medições incompletas ao trocar de modo
     angleMeasurementsMouseControl.reset(); 
     distanceMeasurementsMouseControl.reset(); 
 }
 
-// 🛑 EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.setMeasurementMode = setMeasurementMode;
 
 // -----------------------------------------------------------------------------
-// 4. Menu de Contexto (Deletar Medição) - Mantido para funcionalidade completa
+// 4. Menu de Contexto (Deletar Medição)
 // -----------------------------------------------------------------------------
 
 const contextMenu = new ContextMenu({
@@ -175,4 +145,3 @@ function setupMeasurementEvents(plugin) {
 
 setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
-
