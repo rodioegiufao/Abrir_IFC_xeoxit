@@ -1,3 +1,5 @@
+// app.js
+
 // Verifica se o xeokit foi carregado antes de usar
 if (typeof xeokit === 'undefined') {
     console.error('xeokit SDK não foi carregado! Verifique a conexão ou o CDN.');
@@ -9,7 +11,7 @@ if (typeof xeokit === 'undefined') {
     const viewer = new Viewer({
         canvasId: "meuCanvas",
         transparent: true,     // Torna o fundo transparente
-        saoEnabled: true,      // Efeito de Ambient Occlusion
+        saoEnabled: true,      // Efeito de Ambient Occlusion (deixa 3D mais bonito)
         edgesEnabled: true     // Exibe as bordas dos objetos
     });
 
@@ -21,10 +23,10 @@ if (typeof xeokit === 'undefined') {
     // 2. Cria o plugin para carregar modelos XKT
     const xktLoader = new XKTLoaderPlugin(viewer);
 
-    // 3. Carrega o modelo
+    // 3. Carrega o modelo XKT da pasta assets/
     const model = xktLoader.load({
         id: "meuModeloBIM",
-        src: "assets/meu_modelo.xkt"
+        src: "assets/meu_modelo.xkt" 
     });
 
     // Opcional: Centraliza a câmera no modelo após o carregamento
@@ -36,15 +38,30 @@ if (typeof xeokit === 'undefined') {
     model.on("error", (err) => {
         console.error("Erro ao carregar modelo:", err);
     });
+    
+    // Se o seu modelo for muito grande, você pode usar um carregador com worker:
+    /*
+    const xktLoader = new XKTLoaderPlugin(viewer, {
+        workerPool: new xeokit.WorkerPool() // Habilita processamento multi-thread
+    });
+    */
 
     // Exemplo de como reagir a um clique (seleção)
-    viewer.scene.on("pick", (e) => {
-        if (e.entity) {
-            console.log("Objeto clicado:", e.entity.id);
-            // Remove highlight de objetos anteriores
-            viewer.scene.setObjectsHighlighted(viewer.scene.highlightedObjectIds, false);
-            // Destaca o novo objeto
-            e.entity.highlighted = true;
+    viewer.on("mouseClicked", (e) => {
+        const hit = viewer.scene.pick({
+            canvasPos: e.canvasPos
+        });
+
+        if (hit && hit.entity) {
+            console.log("Objeto clicado:", hit.entity.id);
+            // Seleciona o objeto e volta o resto
+            viewer.scene.setObjectsXRayed(viewer.scene.getObjectIds(), true);
+            hit.entity.xrayed = false;
+            hit.entity.selected = true;
+        } else {
+            // Limpa a seleção se clicar no vazio
+            viewer.scene.setObjectsXRayed(viewer.scene.getObjectIds(), false);
+            viewer.scene.setObjectsSelected(viewer.scene.getObjectIds(), false);
         }
     });
 }
