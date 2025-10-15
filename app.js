@@ -1,11 +1,12 @@
 // app.js
 
-// O import agora funciona porque o index.html está carregando o SDK como módulo.
 import {
     Viewer, 
     XKTLoaderPlugin, 
     AngleMeasurementsPlugin, 
     AngleMeasurementsMouseControl, 
+    DistanceMeasurementsPlugin,      // 🛑 Novo: Plugin de Distância
+    DistanceMeasurementsMouseControl, // 🛑 Novo: Controle de Distância
     ContextMenu, 
     PointerLens 
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
@@ -21,103 +22,127 @@ const viewer = new Viewer({
     edgesEnabled: true
 });
 
-// Posição de câmera (copiada do seu exemplo para uma boa visualização inicial)
 viewer.camera.eye = [-3.93, 2.85, 27.01]; 
 viewer.camera.look = [4.40, 3.72, 8.89];
 viewer.camera.up = [-0.01, 0.99, 0.039];
-
-// -----------------------------------------------------------------------------
-// 2. Carregamento do Modelo XKT
-// -----------------------------------------------------------------------------
 
 const xktLoader = new XKTLoaderPlugin(viewer);
 
 const sceneModel = xktLoader.load({
     id: "meuModeloBIM",
-    // Usando o caminho do seu arquivo XKT original
     src: "assets/meu_modelo.xkt", 
     edges: true
 });
 
 sceneModel.on("loaded", () => {
     viewer.cameraFlight.jumpTo(sceneModel);
-    console.log("Modelo carregado e pronto para medição de ângulo.");
-});
-
-sceneModel.on("error", (err) => {
-    console.error("Erro ao carregar modelo:", err);
 });
 
 // -----------------------------------------------------------------------------
-// 3. Medição de Ângulo (Plugins)
+// 2. Plugins de Medição
 // -----------------------------------------------------------------------------
 
-// 3.1. Plugin principal para gerenciar as medições
-const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, {
-    zIndex: 100000 // Garante que as medições fiquem acima do modelo
-});
-
-// 3.2. Controle de mouse para criar medições
+// Plugin de Ângulo (Existente)
+const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, { zIndex: 100000 });
 const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMeasurementsPlugin, {
-    pointerLens: new PointerLens(viewer), // Adiciona um zoom visual no ponteiro
-    snapping: true // Permite que o clique se ajuste aos vértices/arestas
+    pointerLens: new PointerLens(viewer), 
+    snapping: true 
 });
 
-// Ativa a medição: clique no modelo para selecionar os três pontos do ângulo.
-angleMeasurementsMouseControl.activate();
+// 🛑 Novo: Plugin de Distância
+const distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer, { zIndex: 100000 });
+const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(distanceMeasurementsPlugin, {
+    pointerLens: new PointerLens(viewer), 
+    snapping: true 
+});
+
+// Desativa o controle de distância inicialmente
+distanceMeasurementsMouseControl.deactivate(); 
 
 // -----------------------------------------------------------------------------
-// 4. Menu de Contexto (Clique Direito)
+// 3. Função de Troca de Modo (O essencial para o seu pedido)
 // -----------------------------------------------------------------------------
 
-let endMeasurementEdit = null;
+/**
+ * Ativa o controle de medição especificado e desativa os outros.
+ * @param {('angle'|'distance'|'none')} mode - O modo de medição a ser ativado.
+ * @param {HTMLElement} clickedButton - O botão HTML que foi clicado.
+ */
+function setMeasurementMode(mode, clickedButton) {
+    // 1. Desativa e reseta todos os controles
+    angleMeasurementsMouseControl.deactivate();
+    distanceMeasurementsMouseControl.deactivate();
+    angleMeasurementsMouseControl.reset(); 
+    distanceMeasurementsMouseControl.reset(); 
 
-const angleMeasurementsContextMenu = new ContextMenu({
+    // 2. Remove o estado 'active' de todos os botões (para não ter dois ativos)
+    document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active'));
+
+    // 3. Ativa o controle desejado e define o botão como ativo
+    if (mode === 'angle') {
+        angleMeasurementsMouseControl.activate();
+        clickedButton.classList.add('active');
+        console.log("Modo de medição: Ângulo ativado.");
+    } else if (mode === 'distance') {
+        distanceMeasurementsMouseControl.activate();
+        clickedButton.classList.add('active');
+        console.log("Modo de medição: Distância ativado.");
+    } else if (mode === 'none') {
+        console.log("Modo de medição desativado.");
+        // O botão 'Desativar' pode ser mantido ativo para indicar que nenhuma ferramenta está em uso.
+        // clickedButton.classList.add('active'); 
+    }
+}
+
+// 🛑 Expor a função ao escopo global (window) para que o HTML possa chamá-la.
+window.setMeasurementMode = setMeasurementMode;
+
+// -----------------------------------------------------------------------------
+// 4. Menu de Contexto (Simplificado para Ângulo/Distância)
+// -----------------------------------------------------------------------------
+
+// Este Menu de Contexto só será necessário se você quiser deletar a medição com 
+// o botão direito. Vou simplificar para aplicar a ambos os plugins.
+
+const contextMenu = new ContextMenu({
     items: [
         [
             {
                 title: "Deletar Medição",
                 doAction: function (context) {
-                    context.angleMeasurement.destroy();
-                }
-            }
-        ],
-        [
-            {
-                title: "Cancelar Medição Atual",
-                doAction: function () {
-                    angleMeasurementsMouseControl.reset();
-                }
-            },
-            {
-                getTitle: () => "Encerrar Edição",
-                getEnabled: () => !!endMeasurementEdit,
-                doAction: () => {
-                    if (endMeasurementEdit) endMeasurementEdit(); 
+                    context.measurement.destroy();
                 }
             }
         ]
-    ],
-    enabled: true 
+    ]
 });
 
-// Evento para mostrar o menu de contexto (clique direito) na medição
-angleMeasurementsPlugin.on("contextMenu", (e) => {
-    angleMeasurementsContextMenu.context = { 
-        angleMeasurement: e.angleMeasurement
-    };
-    angleMeasurementsContextMenu.show(e.event.clientX, e.event.clientY);
-    e.event.preventDefault();
-});
+// Função para manipular os eventos de mouse dos plugins de medição
+function setupMeasurementEvents(plugin) {
+    plugin.on("contextMenu", (e) => {
+        contextMenu.context = { 
+            measurement: e.angleMeasurement || e.distanceMeasurement // O objeto de medição vem diferente
+        };
+        contextMenu.show(e.event.clientX, e.event.clientY);
+        e.event.preventDefault();
+    });
 
-// Listener para realçar a medição ao passar o mouse (igual ao seu exemplo)
-angleMeasurementsPlugin.on("mouseOver", (e) => {
-    e.angleMeasurement.setHighlighted(true);
-});
+    plugin.on("mouseOver", (e) => {
+        const measurement = e.angleMeasurement || e.distanceMeasurement;
+        measurement.setHighlighted(true);
+    });
 
-angleMeasurementsPlugin.on("mouseLeave", (e) => {
-    if (angleMeasurementsContextMenu.shown && angleMeasurementsContextMenu.context.angleMeasurement.id === e.angleMeasurement.id) {
-        return;
-    }
-    e.angleMeasurement.setHighlighted(false);
-});
+    plugin.on("mouseLeave", (e) => {
+        const measurement = e.angleMeasurement || e.distanceMeasurement;
+        if (!contextMenu.shown || contextMenu.context.measurement.id !== measurement.id) {
+            measurement.setHighlighted(false);
+        }
+    });
+}
+
+// Configura os eventos para ambos os plugins
+setupMeasurementEvents(angleMeasurementsPlugin);
+setupMeasurementEvents(distanceMeasurementsPlugin);
+
+// Inicializa o modo padrão (Medir Ângulo) e simula o clique no botão
+setMeasurementMode('angle', document.getElementById('btnAngle'));
