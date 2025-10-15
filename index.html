@@ -3,13 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador BIM - xeokit</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Visualizador BIM com Medição de Ângulo</title>
+    
+    <link rel="stylesheet" href="style.css"> 
+    
+    <style>
+        .xeokit-context-menu {
+            font-family: sans-serif;
+            font-size: 15px;
+            display: none;
+            z-index: 300000;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid black;
+            border-radius: 6px;
+            padding: 0;
+            width: 200px;
+        }
+        .xeokit-context-menu-item {
+            list-style-type: none;
+            padding: 4px 20px 4px 10px;
+            color: black;
+            cursor: pointer;
+            width: calc(100% - 30px);
+        }
+        .xeokit-context-menu-item:hover {
+            background: black;
+            color: white;
+        }
+        /* Estilos de realce para a medição (como no seu exemplo) */
+        .viewer-ruler-wire-highlighted,
+        .viewer-ruler-label-highlighted,
+        .viewer-ruler-dot-highlighted {
+            border: 2px solid white !important;
+        }
+    </style>
 </head>
 <body>
     <canvas id="meuCanvas"></canvas>
 
-    <!-- Script principal como módulo -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"></script>
+
     <script type="module" src="app.js"></script>
 </body>
 </html>
