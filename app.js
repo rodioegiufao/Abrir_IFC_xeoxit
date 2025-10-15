@@ -1,67 +1,71 @@
 // app.js
+window.addEventListener("DOMContentLoaded", () => {
+    console.log("🚀 Iniciando visualizador xeokit...");
 
-// Verifica se o xeokit foi carregado antes de usar
-if (typeof xeokit === 'undefined') {
-    console.error('xeokit SDK não foi carregado! Verifique a conexão ou o CDN.');
-} else {
-    // Desestruturação para pegar as classes necessárias do SDK
-    const { Viewer, XKTLoaderPlugin } = xeokit.sdk;
+    // 1️⃣ Verificação do SDK
+    if (typeof window.xeokit === "undefined") {
+        console.error("❌ xeokit SDK não foi carregado! Verifique o link UMD no HTML.");
+        return;
+    }
 
-    // 1. Cria a instância principal do Viewer
-    const viewer = new Viewer({
-        canvasId: "meuCanvas",
-        transparent: true,     // Torna o fundo transparente
-        saoEnabled: true,      // Efeito de Ambient Occlusion (deixa 3D mais bonito)
-        edgesEnabled: true     // Exibe as bordas dos objetos
-    });
+    // 2️⃣ Desestruturação do SDK
+    const { Viewer, XKTLoaderPlugin } = window.xeokit;
 
-    // Configuração inicial da câmera
-    viewer.camera.eye = [10, 10, 10];
-    viewer.camera.look = [0, 0, 0];
-    viewer.camera.up = [0, 1, 0];
-
-    // 2. Cria o plugin para carregar modelos XKT
-    const xktLoader = new XKTLoaderPlugin(viewer);
-
-    // 3. Carrega o modelo XKT da pasta assets/
-    const model = xktLoader.load({
-        id: "meuModeloBIM",
-        src: "assets/meu_modelo.xkt" 
-    });
-
-    // Opcional: Centraliza a câmera no modelo após o carregamento
-    model.on("loaded", () => {
-        viewer.cameraFlight.flyTo(model.scene);
-        console.log("Modelo carregado com sucesso!");
-    });
-
-    model.on("error", (err) => {
-        console.error("Erro ao carregar modelo:", err);
-    });
-    
-    // Se o seu modelo for muito grande, você pode usar um carregador com worker:
-    /*
-    const xktLoader = new XKTLoaderPlugin(viewer, {
-        workerPool: new xeokit.WorkerPool() // Habilita processamento multi-thread
-    });
-    */
-
-    // Exemplo de como reagir a um clique (seleção)
-    viewer.on("mouseClicked", (e) => {
-        const hit = viewer.scene.pick({
-            canvasPos: e.canvasPos
+    try {
+        // 3️⃣ Cria o viewer principal
+        const viewer = new Viewer({
+            canvasId: "meuCanvas",
+            transparent: true,
+            saoEnabled: true,
+            edgesEnabled: true,
         });
 
-        if (hit && hit.entity) {
-            console.log("Objeto clicado:", hit.entity.id);
-            // Seleciona o objeto e volta o resto
-            viewer.scene.setObjectsXRayed(viewer.scene.getObjectIds(), true);
-            hit.entity.xrayed = false;
-            hit.entity.selected = true;
-        } else {
-            // Limpa a seleção se clicar no vazio
-            viewer.scene.setObjectsXRayed(viewer.scene.getObjectIds(), false);
-            viewer.scene.setObjectsSelected(viewer.scene.getObjectIds(), false);
-        }
-    });
-}
+        // 4️⃣ Configuração inicial da câmera
+        viewer.camera.eye = [15, 15, 15];
+        viewer.camera.look = [0, 0, 0];
+        viewer.camera.up = [0, 1, 0];
+
+        console.log("🧠 Viewer criado com sucesso.");
+
+        // 5️⃣ Cria plugin de carregamento
+        const xktLoader = new XKTLoaderPlugin(viewer);
+
+        // 6️⃣ Carrega modelo
+        const model = xktLoader.load({
+            id: "modeloBIM",
+            src: "assets/meu_modelo.xkt",
+            edges: true
+        });
+
+        model.on("loaded", () => {
+            console.log("✅ Modelo carregado com sucesso!");
+            viewer.cameraFlight.flyTo(model);
+        });
+
+        model.on("error", (err) => {
+            console.error("❌ Erro ao carregar modelo XKT:", err);
+        });
+
+        // 7️⃣ Interação de clique
+        viewer.scene.input.on("mouseclicked", (coords) => {
+            const hit = viewer.scene.pick({ canvasPos: coords });
+            if (hit && hit.entity) {
+                console.log("🟩 Objeto clicado:", hit.entity.id);
+
+                viewer.scene.setObjectsXRayed(viewer.scene.getObjectIds(), true);
+                viewer.scene.setObjectsSelected(viewer.scene.getObjectIds(), false);
+
+                hit.entity.xrayed = false;
+                hit.entity.selected = true;
+            } else {
+                viewer.scene.setObjectsXRayed(viewer.scene.getObjectIds(), false);
+                viewer.scene.setObjectsSelected(viewer.scene.getObjectIds(), false);
+            }
+        });
+
+        // 8️⃣ Resize dinâmico
+        window.addEventListener("resize", () => viewer.resize());
+    } catch (e) {
+        console.error("🚨 Erro inesperado na inicialização do viewer:", e);
+    }
+});
