@@ -1,12 +1,11 @@
 body {
     margin: 0;
     overflow: hidden;
-    background-color: #111;
+    background-color: #f0f0f0;
 }
 
 #meuCanvas {
     width: 100vw;
     height: 100vh;
     display: block;
-    background-color: #1a1a1a;
 }
