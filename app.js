@@ -17,9 +17,13 @@ import {
 
 const viewer = new Viewer({
     canvasId: "meuCanvas",
-    transparent: true,
+    // 🛑 ATUALIZAÇÃO AQUI: Remove 'transparent: true' e define a cor de fundo.
+    transparent: false, // Não precisa ser transparente se você definir uma cor sólida
     saoEnabled: true,
-    edgesEnabled: true
+    edgesEnabled: true,
+    
+    // 🛑 NOVA CONFIGURAÇÃO DE COR DE FUNDO (Cinza Claro)
+    backgroundColor: [0.8, 0.8, 0.8] 
 });
 
 // GARANTE QUE O VIEWER SE AJUSTE ÀS DIMENSÕES DA JANELA (Correção da tela minúscula)
@@ -171,3 +175,4 @@ function setupMeasurementEvents(plugin) {
 
 setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
+
