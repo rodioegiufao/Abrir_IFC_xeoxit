@@ -22,37 +22,70 @@ const viewer = new Viewer({
     edgesEnabled: true
 });
 
-// 🛑 GARANTE QUE O VIEWER SE AJUSTE ÀS DIMENSÕES DA JANELA
+// GARANTE QUE O VIEWER SE AJUSTE ÀS DIMENSÕES DA JANELA (Correção da tela minúscula)
 function onWindowResize() {
     const canvas = viewer.scene.canvas;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    // Não precisa chamar flyTo aqui, pois o xeokit ajusta a projeção automaticamente.
 }
 
 window.addEventListener('resize', onWindowResize);
 onWindowResize(); // Chama na inicialização
 
 // -----------------------------------------------------------------------------
-// 2. Carregamento do Modelo e Ajuste da Câmera
+// 2. Carregamento dos Modelos e Ajuste da Câmera (💥 FOCO AQUI 💥)
 // -----------------------------------------------------------------------------
 
 const xktLoader = new XKTLoaderPlugin(viewer);
 
-const sceneModel = xktLoader.load({
+let modelsLoadedCount = 0;
+const totalModels = 2; // Número de modelos que esperamos carregar
+
+// Função para ajustar a câmera após o carregamento
+function adjustCameraOnLoad() {
+    modelsLoadedCount++;
+    
+    // Quando o ÚLTIMO modelo terminar de carregar, ajustamos a câmera para a cena inteira.
+    if (modelsLoadedCount === totalModels) {
+        viewer.cameraFlight.jumpTo(viewer.scene); // Enquadra TUDO na cena
+        console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
+        
+        // Ativa o modo de medição de ângulo por padrão
+        setMeasurementMode('angle', document.getElementById('btnAngle')); 
+    }
+}
+
+
+// 💥 CARREGAMENTO DO MODELO 1: meu_modelo.xkt
+const model1 = xktLoader.load({
     id: "meuModeloBIM",
-    src: "assets/meu_modelo.xkt", // Verifique se o caminho está correto
+    src: "assets/meu_modelo.xkt", 
     edges: true
 });
 
-sceneModel.on("loaded", () => {
-    // 🛑 AQUI ESTÁ A SOLUÇÃO: Pula a câmera para encaixar o modelo na visualização.
-    viewer.cameraFlight.jumpTo(sceneModel); 
-    console.log("Modelo 3D carregado e câmera ajustada para o zoom correto.");
+model1.on("loaded", adjustCameraOnLoad);
+model1.on("error", (err) => {
+    console.error("Erro ao carregar meu_modelo.xkt:", err);
+    adjustCameraOnLoad(); // Ainda conta como carregado/tentado
 });
 
+
+// 💥 CARREGAMENTO DO MODELO 2: modelo-02.xkt
+const model2 = xktLoader.load({
+    id: "meuModeloBIM_02", // ID ÚNICO é crucial
+    src: "assets/modelo-02.xkt", 
+    edges: true
+});
+
+model2.on("loaded", adjustCameraOnLoad);
+model2.on("error", (err) => {
+    console.error("Erro ao carregar modelo-02.xkt:", err);
+    adjustCameraOnLoad(); // Ainda conta como carregado/tentado
+});
+
+
 // -----------------------------------------------------------------------------
-// 3. Plugins de Medição e Função de Troca (Mantido do código anterior)
+// 3. Plugins de Medição e Função de Troca
 // -----------------------------------------------------------------------------
 
 const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, { zIndex: 100000 });
@@ -68,8 +101,10 @@ const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(di
 });
 distanceMeasurementsMouseControl.deactivate(); 
 
+/**
+ * Ativa o controle de medição especificado e desativa os outros.
+ */
 function setMeasurementMode(mode, clickedButton) {
-    // ... (Lógica de ativação/desativação de modos e botões)
     angleMeasurementsMouseControl.deactivate();
     distanceMeasurementsMouseControl.deactivate();
     document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active'));
@@ -80,10 +115,13 @@ function setMeasurementMode(mode, clickedButton) {
         distanceMeasurementsMouseControl.activate();
     }
     
+    // Define o estado ativo do botão
     if (clickedButton) {
          clickedButton.classList.add('active');
     } else if (mode === 'angle') {
-        document.getElementById('btnAngle').classList.add('active'); // Garante que o estado inicial reflita o modo
+        // Inicialização: Ativa o botão Ângulo
+        const btn = document.getElementById('btnAngle');
+        if (btn) btn.classList.add('active');
     }
 
     // Reseta medições incompletas ao trocar de modo
@@ -91,10 +129,25 @@ function setMeasurementMode(mode, clickedButton) {
     distanceMeasurementsMouseControl.reset(); 
 }
 
+// 🛑 EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.setMeasurementMode = setMeasurementMode;
 
-// Menu de Contexto (Simplificado para o exemplo)
-const contextMenu = new ContextMenu({ /* ... */ });
+// -----------------------------------------------------------------------------
+// 4. Menu de Contexto (Deletar Medição) - Mantido para funcionalidade completa
+// -----------------------------------------------------------------------------
+
+const contextMenu = new ContextMenu({
+    items: [
+        [
+            {
+                title: "Deletar Medição",
+                doAction: function (context) {
+                    context.measurement.destroy();
+                }
+            }
+        ]
+    ]
+});
 
 function setupMeasurementEvents(plugin) {
     plugin.on("contextMenu", (e) => {
@@ -103,11 +156,18 @@ function setupMeasurementEvents(plugin) {
         contextMenu.show(e.event.clientX, e.event.clientY);
         e.event.preventDefault();
     });
-    // ... (mouseOver/mouseLeave events)
+
+    plugin.on("mouseOver", (e) => {
+        (e.angleMeasurement || e.distanceMeasurement).setHighlighted(true);
+    });
+
+    plugin.on("mouseLeave", (e) => {
+        const measurement = e.angleMeasurement || e.distanceMeasurement;
+        if (!contextMenu.shown || contextMenu.context.measurement.id !== measurement.id) {
+            measurement.setHighlighted(false);
+        }
+    });
 }
 
 setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
-
-// Inicializa o modo padrão
-setMeasurementMode('angle', document.getElementById('btnAngle'));
