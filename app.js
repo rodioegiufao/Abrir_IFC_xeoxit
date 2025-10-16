@@ -178,3 +178,18 @@ function setupMeasurementEvents(plugin) {
 
 setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
+
+// -----------------------------------------------------------------------------
+// 5. Cubo de Navegação (NavCube) - Implementação Adicionada
+// -----------------------------------------------------------------------------
+
+// NOVO: Instancia o NavCubePlugin
+// Configurado para usar o canvas 'myNavCubeCanvas' (adicionado no index.html)
+new NavCubePlugin(viewer, {
+    canvasId: "myNavCubeCanvas", // ID do canvas dedicado
+    visible: true,
+    size: 150, 
+    alignment: "bottomRight", 
+    bottomMargin: 20, 
+    rightMargin: 20 
+});
