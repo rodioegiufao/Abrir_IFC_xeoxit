@@ -290,28 +290,40 @@ window.resetModelVisibility = resetModelVisibility;
 
 
 // -----------------------------------------------------------------------------
-// 7. Plano de Corte (Section Plane) - VERSÃO AJUSTADA
+// 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL
 // -----------------------------------------------------------------------------
 
 function setupSectionPlane() {
     sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
 
-    // Desativa totalmente o recurso global de planos
+    // 🔹 Desliga completamente o sistema de planos na inicialização
     viewer.scene.sectionPlanes.active = false;
 
-    // Cria o plano horizontal, mas começa desativado e invisível
+    // Cria o plano horizontal (ainda inativo)
     horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
         id: "horizontalPlane",
-        pos: [0, 0, 0], // será reposicionado depois que o modelo carregar
+        pos: [0, 0, 0],
         dir: [0, -1, 0],
         active: false
     });
 
+    // 🔹 Não mostra controle ainda
     if (horizontalSectionPlane.control) {
         horizontalSectionPlane.control.visible = false;
     }
 
     console.log("Plano de corte inicializado (inativo)");
+
+    // 🔹 Força uma atualização visual completa após o carregamento
+    viewer.scene.on("tick", () => {
+        // Assim que houver algo na cena, centraliza a câmera
+        if (viewer.scene.numEntities > 0 && !setupSectionPlane._initialized) {
+            setupSectionPlane._initialized = true;
+            const aabb = viewer.scene.getAABB();
+            viewer.cameraFlight.jumpTo({ aabb, duration: 0 });
+            console.log("Câmera centralizada automaticamente após carregamento inicial.");
+        }
+    });
 }
 
 function toggleSectionPlane(button) {
@@ -324,7 +336,6 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = false;
         scene.sectionPlanes.active = false;
 
-        // Esconde o controle se existir
         if (horizontalSectionPlane.control) {
             horizontalSectionPlane.control.visible = false;
         }
@@ -342,11 +353,9 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = true;
         scene.sectionPlanes.active = true;
 
-        // 🔹 Aqui está o ponto crucial
         if (horizontalSectionPlane.control) {
             horizontalSectionPlane.control.visible = true;
         } else {
-            // Se o controle ainda não existe, pede explicitamente ao plugin para criar e exibir
             sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
         }
 
