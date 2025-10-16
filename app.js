@@ -332,10 +332,6 @@ function toggleSectionPlane(button) {
             active: false
         });
 
-        if (horizontalSectionPlane.control) {
-            horizontalSectionPlane.control.visible = false;
-        }
-
         console.log("Plano de corte criado sob demanda.");
     }
 
@@ -345,17 +341,21 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = false;
         scene.sectionPlanes.active = false;
 
-        // Esconde o widget de controle
+        // 🔸 Remove completamente o controle da cena
         if (horizontalSectionPlane.control) {
-            horizontalSectionPlane.control.visible = false;
+            horizontalSectionPlane.control.destroy();
+            horizontalSectionPlane.control = null;
         }
 
-        // Também esconde qualquer controle visível criado pelo plugin
+        // 🔸 Remove possíveis controles residuais do plugin
         if (sectionPlanesPlugin._sectionPlaneControl) {
-            sectionPlanesPlugin._sectionPlaneControl.visible = false;
+            sectionPlanesPlugin._sectionPlaneControl.destroy();
+            sectionPlanesPlugin._sectionPlaneControl = null;
         }
 
         button.classList.remove('active');
+
+        // Reenquadra o modelo
         viewer.cameraFlight.flyTo(scene);
 
     } else {
@@ -368,12 +368,8 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = true;
         scene.sectionPlanes.active = true;
 
-        // Mostra o controle (arcos e setas)
-        if (horizontalSectionPlane.control) {
-            horizontalSectionPlane.control.visible = true;
-        } else {
-            sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
-        }
+        // 🔸 Cria novamente o controle visível
+        sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
 
         button.classList.add('active');
 
@@ -384,7 +380,9 @@ function toggleSectionPlane(button) {
     }
 }
 
+
 window.toggleSectionPlane = toggleSectionPlane;
+
 
 
 
