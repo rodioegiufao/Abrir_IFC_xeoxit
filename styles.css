@@ -96,18 +96,20 @@ html, body {
     display: inline-block;
     width: 15px; /* Largura para o ícone */
     text-align: center;
-    font-size: 12px;
+    font-size: 0 !important; /* <--- NOVO: Reduz o tamanho da fonte do caractere original (+/-) */
+    line-height: 1 !important; /* <--- NOVO: Corrige o alinhamento de altura */
     margin-right: 5px;
-    color: #4CAF50; /* Cor verde para os toggles */
-    /* 🛑 FORÇA A INVISIBILIDADE DO CARACTERE ORIGINAL (+/-) */
-    visibility: hidden !important; 
+    color: #4CAF50; 
+    /* Remove 'visibility: hidden', pois 'font-size: 0' faz o trabalho */
     position: relative;
+    overflow: hidden; /* Garante que nada transborde */
 }
 
 /* Substitui o conteúdo visível por setas Unicode */
 #treeViewContainer .xeokit-tree-view-item-toggle::before {
     content: '▶'; /* Seta para a direita (colapsado) */
-    /* 🛑 FORÇA A VISIBILIDADE DA SETA */
+    font-size: 14px !important; /* <--- NOVO: Define um tamanho de fonte visível para a seta */
+    
     visibility: visible !important; 
     position: absolute;
     left: 0;
@@ -178,6 +180,7 @@ html, body {
     background-color: #007bff; /* Azul para o ativo */
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
+
 
 
 
