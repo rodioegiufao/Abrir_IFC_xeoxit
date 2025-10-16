@@ -341,21 +341,19 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = false;
         scene.sectionPlanes.active = false;
 
-        // 🔸 Remove completamente o controle da cena
+        // 🔸 Remove helpers e controles residuais da cena
         if (horizontalSectionPlane.control) {
             horizontalSectionPlane.control.destroy();
             horizontalSectionPlane.control = null;
         }
 
-        // 🔸 Remove possíveis controles residuais do plugin
-        if (sectionPlanesPlugin._sectionPlaneControl) {
-            sectionPlanesPlugin._sectionPlaneControl.destroy();
-            sectionPlanesPlugin._sectionPlaneControl = null;
-        }
+        // Remove quaisquer entidades auxiliares que o plugin tenha criado
+        const helpers = Object.values(scene.objects).filter(o =>
+            o.id && o.id.toLowerCase().includes("sectionplane")
+        );
+        helpers.forEach(helper => helper.destroy());
 
         button.classList.remove('active');
-
-        // Reenquadra o modelo
         viewer.cameraFlight.flyTo(scene);
 
     } else {
@@ -368,7 +366,7 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = true;
         scene.sectionPlanes.active = true;
 
-        // 🔸 Cria novamente o controle visível
+        // Cria novamente o controle visível (setas/arcos)
         sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
 
         button.classList.add('active');
@@ -380,8 +378,8 @@ function toggleSectionPlane(button) {
     }
 }
 
-
 window.toggleSectionPlane = toggleSectionPlane;
+
 
 
 
