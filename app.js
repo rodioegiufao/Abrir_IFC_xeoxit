@@ -58,7 +58,6 @@ const angleControl = new AngleMeasurementsMouseControl(angleMeasurement);
 const distanceControl = new DistanceMeasurementsMouseControl(distanceMeasurement);
 
 // Estado inicial: Apenas o controle de ângulo ativo
-// 🛑 CORREÇÃO DE ERRO: Usando .enabled = true/false
 angleControl.enabled = true;
 distanceControl.enabled = false;
 
@@ -69,15 +68,15 @@ distanceControl.enabled = false;
 
 function setMeasurementMode(mode, button) {
     // 1. Desativa todos os controles
-    angleControl.enabled = false; // Corrigido
-    distanceControl.enabled = false; // Corrigido
+    angleControl.enabled = false; 
+    distanceControl.enabled = false; 
     
     // 2. Ativa o controle selecionado
     if (mode === 'angle') {
-        angleControl.enabled = true; // Corrigido
+        angleControl.enabled = true; 
         distanceControl.reset(); 
     } else if (mode === 'distance') {
-        distanceControl.enabled = true; // Corrigido
+        distanceControl.enabled = true; 
         angleControl.reset(); 
     } else {
         // Modo 'none' (Desativar)
@@ -93,7 +92,7 @@ function setMeasurementMode(mode, button) {
     }
 }
 
-// 🛑 EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
+// EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.setMeasurementMode = setMeasurementMode;
 
 // -----------------------------------------------------------------------------
@@ -144,5 +143,6 @@ const xktLoader = new XKTLoaderPlugin(viewer);
 
 xktLoader.load({
     id: "myModel",
-    src: "https://xeokit.github.io/xeokit-sdk/assets/models/xkt/Slab.xkt", // Exemplo padrão
+    // 🛑 CORREÇÃO: Usando um modelo de exemplo conhecido (Duplex.xkt)
+    src: "https://xeokit.github.io/xeokit-sdk/assets/models/xkt/Duplex.xkt", 
 });
