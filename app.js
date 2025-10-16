@@ -8,7 +8,7 @@ import {
     DistanceMeasurementsPlugin,
     DistanceMeasurementsMouseControl,
     ContextMenu, 
-    NavCubePlugin 
+    PointerLens // O PointerLens não é estritamente necessário, mas mantido
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 // -----------------------------------------------------------------------------
@@ -33,22 +33,8 @@ function onWindowResize() {
 window.addEventListener('resize', onWindowResize);
 onWindowResize(); 
 
-
 // -----------------------------------------------------------------------------
-// 2. Cubo de Navegação (NavCubePlugin) - Mantido, pois não causa erro.
-// -----------------------------------------------------------------------------
-
-// Usando as configurações do último teste bem-sucedido.
-const navCube = new NavCubePlugin(viewer, {
-    canvasId: "navCubeCanvas",
-    visible: true,
-    size: 200, 
-    alignment: "bottomRight", 
-});
-
-
-// -----------------------------------------------------------------------------
-// 3. Plugins de Medição e Configuração de Controle
+// 2. Plugins de Medição e Configuração de Controle
 // -----------------------------------------------------------------------------
 
 const angleMeasurement = new AngleMeasurementsPlugin(viewer);
@@ -57,13 +43,13 @@ const distanceMeasurement = new DistanceMeasurementsPlugin(viewer);
 const angleControl = new AngleMeasurementsMouseControl(angleMeasurement);
 const distanceControl = new DistanceMeasurementsMouseControl(distanceMeasurement);
 
-// 🛑 CORREÇÃO AQUI: Nenhum controle de medição deve estar ativo por padrão.
+// 🛑 CORREÇÃO: Ambos desativados por padrão
 angleControl.enabled = false;
 distanceControl.enabled = false;
 
 
 // -----------------------------------------------------------------------------
-// 4. Função Global para Mudar o Modo de Medição (Chamada pelo HTML)
+// 3. Função Global para Mudar o Modo de Medição (Chamada pelo HTML)
 // -----------------------------------------------------------------------------
 
 function setMeasurementMode(mode, button) {
@@ -71,29 +57,23 @@ function setMeasurementMode(mode, button) {
     angleControl.enabled = false; 
     distanceControl.enabled = false; 
     
-    // 2. Reseta as medições antigas se estiver ativando um novo modo
+    // 2. Reseta as medições antigas
+    angleControl.reset(); 
+    distanceControl.reset(); 
+    
+    // 3. Ativa o controle selecionado
     if (mode === 'angle') {
         angleControl.enabled = true; 
-        distanceControl.reset(); 
     } else if (mode === 'distance') {
         distanceControl.enabled = true; 
-        angleControl.reset(); 
-    } else {
-        // Modo 'none' (Desativar)
-        angleControl.reset(); 
-        distanceControl.reset(); 
     }
     
-    // 3. Atualiza o estilo dos botões (feedback visual)
+    // 4. Atualiza o estilo dos botões (feedback visual)
     const buttons = document.querySelectorAll('.tool-button');
     buttons.forEach(btn => btn.classList.remove('active'));
     
-    // Adiciona 'active' apenas se não for o modo 'none'
-    if (mode !== 'none' && button) {
+    if (button) {
         button.classList.add('active');
-    } else if (mode === 'none' && button) {
-        // Se for o botão de desativar, ele fica ativo (opcional, mas claro)
-        button.classList.add('active'); 
     }
 }
 
@@ -101,7 +81,7 @@ function setMeasurementMode(mode, button) {
 window.setMeasurementMode = setMeasurementMode;
 
 // -----------------------------------------------------------------------------
-// 5. Menu de Contexto (Deletar Medição) 
+// 4. Menu de Contexto (Deletar Medição) 
 // -----------------------------------------------------------------------------
 
 const contextMenu = new ContextMenu({
@@ -141,12 +121,13 @@ setupMeasurementEvents(angleMeasurement);
 setupMeasurementEvents(distanceMeasurement);
 
 // -----------------------------------------------------------------------------
-// 6. Carregamento do Modelo XKT (Exemplo) - Mantido o link que corrigiu o 404
+// 5. Carregamento do Modelo XKT (Exemplo) - Usando o link mais estável
 // -----------------------------------------------------------------------------
 
 const xktLoader = new XKTLoaderPlugin(viewer);
 
 xktLoader.load({
     id: "myModel",
-    src: "https://dl.dropboxusercontent.com/s/s7k99320e8y051s/Duplex.xkt", 
+    // 🛑 CORREÇÃO FINAL: Usando o link mais estável para o modelo Duplex do próprio xeokit
+    src: "https://xkt.xeokit.io/v2/Duplex.xkt", 
 });
