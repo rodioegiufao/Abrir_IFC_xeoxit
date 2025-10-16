@@ -87,26 +87,15 @@ function adjustCameraOnLoad() {
     modelsLoadedCount++;
     
     if (modelsLoadedCount === totalModels) {
-        // 🔹 Garante que todos os objetos foram carregados
         setTimeout(() => {
-            const scene = viewer.scene;
-            const aabb = scene.getAABB();
-
-            viewer.cameraFlight.jumpTo({
-                aabb,
-                duration: 0
-            });
-
+            viewer.cameraFlight.jumpTo(viewer.scene);
             console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
-
             setMeasurementMode('none', document.getElementById('btnDeactivate')); 
             setupModelIsolateController();
-            //setupSectionPlane(); // Inicializa o plano de corte
-        }, 500); // pequeno delay para garantir renderização completa
+            // ❌ NÃO chamamos setupSectionPlane aqui
+        }, 300);
     }
 }
-
-
 
 // CARREGAMENTO DOS MODELOS (MANTIDO)
 const model1 = xktLoader.load({
@@ -385,6 +374,7 @@ function toggleSectionPlane(button) {
 
 
 window.toggleSectionPlane = toggleSectionPlane;
+
 
 
 
