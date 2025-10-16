@@ -45,25 +45,26 @@ onWindowResize(); // Chama na inicialização
 const xktLoader = new XKTLoaderPlugin(viewer);
 
 let modelsLoadedCount = 0;
-const totalModels = 2; // Número de modelos que esperamos carregar
+const totalModels = 2; 
 
 // Função para ajustar a câmera após o carregamento
 function adjustCameraOnLoad() {
     modelsLoadedCount++;
     
-    // Quando o ÚLTIMO modelo terminar de carregar, ajustamos a câmera para a cena inteira.
     if (modelsLoadedCount === totalModels) {
-        viewer.cameraFlight.jumpTo(viewer.scene); // Enquadra TUDO na cena
+        viewer.cameraFlight.jumpTo(viewer.scene); 
         console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
         
-        // 🛑 MUDANÇA AQUI: Ativa o modo 'none' (Desativar) por padrão, conforme solicitado.
-        // O botão "Desativar" (btnDeactivate) ficará com a classe 'active'.
+        // Ativa o modo 'none' (Desativar) por padrão
         setMeasurementMode('none', document.getElementById('btnDeactivate')); 
+        
+        // Inicializa o controle de isolamento após o carregamento de todos os modelos
+        setupModelIsolateController();
     }
 }
 
 
-// 💥 CARREGAMENTO DO MODELO 1: meu_modelo.xkt
+// CARREGAMENTO DO MODELO 1: meu_modelo.xkt
 const model1 = xktLoader.load({
     id: "meuModeloBIM",
     src: "assets/meu_modelo.xkt", 
@@ -73,13 +74,13 @@ const model1 = xktLoader.load({
 model1.on("loaded", adjustCameraOnLoad);
 model1.on("error", (err) => {
     console.error("Erro ao carregar meu_modelo.xkt:", err);
-    adjustCameraOnLoad(); // Ainda conta como carregado/tentado
+    adjustCameraOnLoad(); 
 });
 
 
-// 💥 CARREGAMENTO DO MODELO 2: modelo-02.xkt
+// CARREGAMENTO DO MODELO 2: modelo-02.xkt
 const model2 = xktLoader.load({
-    id: "meuModeloBIM_02", // ID ÚNICO é crucial
+    id: "meuModeloBIM_02", 
     src: "assets/modelo-02.xkt", 
     edges: true
 });
@@ -87,7 +88,7 @@ const model2 = xktLoader.load({
 model2.on("loaded", adjustCameraOnLoad);
 model2.on("error", (err) => {
     console.error("Erro ao carregar modelo-02.xkt:", err);
-    adjustCameraOnLoad(); // Ainda conta como carregado/tentado
+    adjustCameraOnLoad(); 
 });
 
 
@@ -270,3 +271,4 @@ function showAll() {
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.toggleTreeView = toggleTreeView;
 window.showAll = showAll;
+
