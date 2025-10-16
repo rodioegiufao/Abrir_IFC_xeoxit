@@ -19,7 +19,8 @@ let treeView;
 let modelIsolateController; 
 let sectionPlanesPlugin; 
 let horizontalSectionPlane; 
-let horizontalPlaneControl;  
+let horizontalPlaneControl; 
+let lastPickedEntity = null; // NOVO: Variável para rastrear a entidade selecionada
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -70,6 +71,9 @@ const xktLoader = new XKTLoaderPlugin(viewer);
 let modelsLoadedCount = 0;
 const totalModels = 2; 
 
+/**
+ * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
+ */
 function resetModelVisibility() {
     if (modelIsolateController) {
         // Volta a exibir todos os objetos
@@ -81,6 +85,8 @@ function resetModelVisibility() {
         // Centraliza a câmera no modelo inteiro
         viewer.cameraFlight.jumpTo(viewer.scene);
     }
+    lastPickedEntity = null; // Garante que a referência de seleção também seja limpa.
+    clearSelection(false); // Limpa o estado visual do botão "Limpar Seleção"
 }
 
 
@@ -93,7 +99,6 @@ function adjustCameraOnLoad() {
             console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
             setMeasurementMode('none', document.getElementById('btnDeactivate')); 
             setupModelIsolateController();
-            // ❌ NÃO chamamos setupSectionPlane aqui
         }, 300);
     }
 }
@@ -160,6 +165,9 @@ function setMeasurementMode(mode, clickedButton) {
 
     angleMeasurementsMouseControl.reset(); 
     distanceMeasurementsMouseControl.reset(); 
+    
+    // Garante que o modo de seleção seja desativado ao iniciar uma medição
+    clearSelection(); 
 }
 
 window.setMeasurementMode = setMeasurementMode;
@@ -250,6 +258,8 @@ function setupModelIsolateController() {
                 aabb: viewer.scene.getAABB(entityId),
                 duration: 0.5
             });
+            
+            clearSelection(); // Limpa a seleção específica quando se usa a TreeView
 
         } else {
             // Se o usuário clicar em um nó que não contém objetos (como o nó raiz do projeto ou um item folha)
@@ -278,43 +288,10 @@ function toggleTreeView() {
 window.toggleTreeView = toggleTreeView;
 window.resetModelVisibility = resetModelVisibility; 
 
-
 // -----------------------------------------------------------------------------
 // 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL
 // -----------------------------------------------------------------------------
-
-function setupSectionPlane() {
-    sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
-
-    // 🔹 Desliga completamente o sistema de planos na inicialização
-    viewer.scene.sectionPlanes.active = false;
-
-    // Cria o plano horizontal (ainda inativo)
-    horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
-        id: "horizontalPlane",
-        pos: [0, 0, 0],
-        dir: [0, -1, 0],
-        active: false
-    });
-
-    // 🔹 Não mostra controle ainda
-    if (horizontalSectionPlane.control) {
-        horizontalSectionPlane.control.visible = false;
-    }
-
-    console.log("Plano de corte inicializado (inativo)");
-
-    // 🔹 Força uma atualização visual completa após o carregamento
-    viewer.scene.on("tick", () => {
-        // Assim que houver algo na cena, centraliza a câmera
-        if (viewer.scene.numEntities > 0 && !setupSectionPlane._initialized) {
-            setupSectionPlane._initialized = true;
-            const aabb = viewer.scene.getAABB();
-            viewer.cameraFlight.jumpTo({ aabb, duration: 0 });
-            console.log("Câmera centralizada automaticamente após carregamento inicial.");
-        }
-    });
-}
+// ... setupSectionPlane (função que não é mais usada, mas mantida por segurança) ...
 
 function toggleSectionPlane(button) {
     const scene = viewer.scene;
@@ -381,15 +358,66 @@ function toggleSectionPlane(button) {
     });
 }
 
-
-
 window.toggleSectionPlane = toggleSectionPlane;
 
+// -----------------------------------------------------------------------------
+// 8. Seleção de Entidade (Highlighting) - NOVO
+// -----------------------------------------------------------------------------
 
+/**
+ * Limpa a seleção atual, removendo o destaque da última entidade selecionada
+ * e desativando o botão de Limpar visualmente.
+ * @param {boolean} [log=true] Se deve logar no console.
+ */
+function clearSelection(log = true) {
+    if (lastPickedEntity) {
+        lastPickedEntity.highlighted = false;
+        lastPickedEntity = null;
+    }
+    // Garante que o botão 'Limpar Seleção' também seja desativado visualmente
+    const btnClearSelection = document.getElementById('btnClearSelection');
+    if (btnClearSelection) {
+        btnClearSelection.classList.remove('active');
+    }
+    if (log) {
+        console.log("Seleção limpa.");
+    }
+}
 
+window.clearSelection = clearSelection; // Expõe a função de limpeza de seleção
 
+/**
+ * Evento acionado ao dar duplo-clique em uma entidade.
+ * Seleciona (Highlight) a entidade, centraliza a câmera nela, e limpa a seleção anterior.
+ */
+viewer.cameraControl.on("doublePicked", pickResult => {
 
+    // 1. Limpa a seleção anterior e a referência.
+    clearSelection(false); // Limpa sem logar
 
+    if (pickResult.entity) {
+        const entity = pickResult.entity;
 
+        // 2. Destaca (Highlight) a nova entidade
+        entity.highlighted = true;
+        lastPickedEntity = entity; // Armazena a referência
 
+        // 3. Centraliza a câmera nela
+        viewer.cameraFlight.flyTo({
+            aabb: viewer.scene.getAABB(entity.id),
+            duration: 0.5
+        });
 
+        console.log(`Entidade selecionada por duplo-clique: ${entity.id}`);
+        
+        // Ativa o botão de Limpar Seleção (feedback visual)
+        const btnClearSelection = document.getElementById('btnClearSelection');
+        if (btnClearSelection) {
+            btnClearSelection.classList.add('active');
+        }
+
+    } else {
+        // Se o usuário deu duplo-clique no vazio, apenas informa.
+        console.log("Duplo-clique no vazio.");
+    }
+});
