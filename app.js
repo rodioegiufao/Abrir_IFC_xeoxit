@@ -342,4 +342,3 @@ function toggleSectionPlane(button) {
 }
 
 window.toggleSectionPlane = toggleSectionPlane; // Expõe a função para o HTML
-
