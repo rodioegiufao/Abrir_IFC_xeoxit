@@ -8,7 +8,7 @@ import {
     DistanceMeasurementsPlugin,
     DistanceMeasurementsMouseControl,
     ContextMenu, 
-    PointerLens 
+    NavCubePlugin 
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 // -----------------------------------------------------------------------------
@@ -17,17 +17,13 @@ import {
 
 const viewer = new Viewer({
     canvasId: "meuCanvas",
-    // 🛑 ATUALIZAÇÃO AQUI: Remove 'transparent: true' e define a cor de fundo.
-    transparent: false, // Não precisa ser transparente se você definir uma cor sólida
+    transparent: false, 
     saoEnabled: true,
     edgesEnabled: true,
-    
-    // 🛑 NOVA CONFIGURAÇÃO DE COR DE FUNDO (Cinza Claro)
     backgroundColor: [0.8, 0.8, 0.8] 
 });
 
 
-// GARANTE QUE O VIEWER SE AJUSTE ÀS DIMENSÕES DA JANELA (Correção da tela minúscula)
 function onWindowResize() {
     const canvas = viewer.scene.canvas;
     canvas.width = window.innerWidth;
@@ -35,110 +31,77 @@ function onWindowResize() {
 }
 
 window.addEventListener('resize', onWindowResize);
-onWindowResize(); // Chama na inicialização
+onWindowResize(); 
+
 
 // -----------------------------------------------------------------------------
-// 2. Carregamento dos Modelos e Ajuste da Câmera (💥 FOCO AQUI 💥)
+// 2. Cubo de Navegação (NavCubePlugin) - Mantido, pois não causa erro.
 // -----------------------------------------------------------------------------
 
-const xktLoader = new XKTLoaderPlugin(viewer);
+// Usando as configurações do último teste bem-sucedido.
+const navCube = new NavCubePlugin(viewer, {
+    canvasId: "navCubeCanvas",
+    visible: true,
+    size: 200, 
+    alignment: "bottomRight", 
+});
 
-let modelsLoadedCount = 0;
-const totalModels = 2; // Número de modelos que esperamos carregar
 
-// Função para ajustar a câmera após o carregamento
-function adjustCameraOnLoad() {
-    modelsLoadedCount++;
+// -----------------------------------------------------------------------------
+// 3. Plugins de Medição e Configuração de Controle
+// -----------------------------------------------------------------------------
+
+const angleMeasurement = new AngleMeasurementsPlugin(viewer);
+const distanceMeasurement = new DistanceMeasurementsPlugin(viewer);
+
+const angleControl = new AngleMeasurementsMouseControl(angleMeasurement);
+const distanceControl = new DistanceMeasurementsMouseControl(distanceMeasurement);
+
+// 🛑 CORREÇÃO AQUI: Nenhum controle de medição deve estar ativo por padrão.
+angleControl.enabled = false;
+distanceControl.enabled = false;
+
+
+// -----------------------------------------------------------------------------
+// 4. Função Global para Mudar o Modo de Medição (Chamada pelo HTML)
+// -----------------------------------------------------------------------------
+
+function setMeasurementMode(mode, button) {
+    // 1. Desativa todos os controles
+    angleControl.enabled = false; 
+    distanceControl.enabled = false; 
     
-    // Quando o ÚLTIMO modelo terminar de carregar, ajustamos a câmera para a cena inteira.
-    if (modelsLoadedCount === totalModels) {
-        viewer.cameraFlight.jumpTo(viewer.scene); // Enquadra TUDO na cena
-        console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
-        
-        // Ativa o modo de medição de ângulo por padrão
-        setMeasurementMode('angle', document.getElementById('btnAngle')); 
-    }
-}
-
-
-// 💥 CARREGAMENTO DO MODELO 1: meu_modelo.xkt
-const model1 = xktLoader.load({
-    id: "meuModeloBIM",
-    src: "assets/meu_modelo.xkt", 
-    edges: true
-});
-
-model1.on("loaded", adjustCameraOnLoad);
-model1.on("error", (err) => {
-    console.error("Erro ao carregar meu_modelo.xkt:", err);
-    adjustCameraOnLoad(); // Ainda conta como carregado/tentado
-});
-
-
-// 💥 CARREGAMENTO DO MODELO 2: modelo-02.xkt
-const model2 = xktLoader.load({
-    id: "meuModeloBIM_02", // ID ÚNICO é crucial
-    src: "assets/modelo-02.xkt", 
-    edges: true
-});
-
-model2.on("loaded", adjustCameraOnLoad);
-model2.on("error", (err) => {
-    console.error("Erro ao carregar modelo-02.xkt:", err);
-    adjustCameraOnLoad(); // Ainda conta como carregado/tentado
-});
-
-
-// -----------------------------------------------------------------------------
-// 3. Plugins de Medição e Função de Troca
-// -----------------------------------------------------------------------------
-
-const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, { zIndex: 100000 });
-const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMeasurementsPlugin, {
-    pointerLens: new PointerLens(viewer), 
-    snapping: true 
-});
-
-const distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer, { zIndex: 100000 });
-const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(distanceMeasurementsPlugin, {
-    pointerLens: new PointerLens(viewer), 
-    snapping: true 
-});
-distanceMeasurementsMouseControl.deactivate(); 
-
-/**
- * Ativa o controle de medição especificado e desativa os outros.
- */
-function setMeasurementMode(mode, clickedButton) {
-    angleMeasurementsMouseControl.deactivate();
-    distanceMeasurementsMouseControl.deactivate();
-    document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active'));
-
+    // 2. Reseta as medições antigas se estiver ativando um novo modo
     if (mode === 'angle') {
-        angleMeasurementsMouseControl.activate();
+        angleControl.enabled = true; 
+        distanceControl.reset(); 
     } else if (mode === 'distance') {
-        distanceMeasurementsMouseControl.activate();
+        distanceControl.enabled = true; 
+        angleControl.reset(); 
+    } else {
+        // Modo 'none' (Desativar)
+        angleControl.reset(); 
+        distanceControl.reset(); 
     }
     
-    // Define o estado ativo do botão
-    if (clickedButton) {
-         clickedButton.classList.add('active');
-    } else if (mode === 'angle') {
-        // Inicialização: Ativa o botão Ângulo
-        const btn = document.getElementById('btnAngle');
-        if (btn) btn.classList.add('active');
+    // 3. Atualiza o estilo dos botões (feedback visual)
+    const buttons = document.querySelectorAll('.tool-button');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    // Adiciona 'active' apenas se não for o modo 'none'
+    if (mode !== 'none' && button) {
+        button.classList.add('active');
+    } else if (mode === 'none' && button) {
+        // Se for o botão de desativar, ele fica ativo (opcional, mas claro)
+        button.classList.add('active'); 
     }
-
-    // Reseta medições incompletas ao trocar de modo
-    angleMeasurementsMouseControl.reset(); 
-    distanceMeasurementsMouseControl.reset(); 
 }
 
-// 🛑 EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
+// EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.setMeasurementMode = setMeasurementMode;
 
 // -----------------------------------------------------------------------------
-// 4. Menu de Contexto (Deletar Medição) - Mantido para funcionalidade completa
+// 5. Menu de Contexto (Deletar Medição) 
 // -----------------------------------------------------------------------------
 
 const contextMenu = new ContextMenu({
@@ -174,6 +137,16 @@ function setupMeasurementEvents(plugin) {
     });
 }
 
-setupMeasurementEvents(angleMeasurementsPlugin);
-setupMeasurementEvents(distanceMeasurementsPlugin);
+setupMeasurementEvents(angleMeasurement);
+setupMeasurementEvents(distanceMeasurement);
 
+// -----------------------------------------------------------------------------
+// 6. Carregamento do Modelo XKT (Exemplo) - Mantido o link que corrigiu o 404
+// -----------------------------------------------------------------------------
+
+const xktLoader = new XKTLoaderPlugin(viewer);
+
+xktLoader.load({
+    id: "myModel",
+    src: "https://dl.dropboxusercontent.com/s/s7k99320e8y051s/Duplex.xkt", 
+});
