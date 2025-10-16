@@ -19,7 +19,8 @@ let treeView;
 let modelIsolateController; 
 let sectionPlanesPlugin; 
 let horizontalSectionPlane; 
-//let horizontalPlaneControl;  
+// let horizontalPlaneControl; // Removida, usaremos horizontalSectionPlane.control
+
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -88,15 +89,16 @@ function adjustCameraOnLoad() {
     modelsLoadedCount++;
     
     if (modelsLoadedCount === totalModels) {
-        setTimeout(() => {
-            viewer.cameraFlight.jumpTo(viewer.scene);
-            console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
-            setMeasurementMode('none', document.getElementById('btnDeactivate')); 
-            setupModelIsolateController();
-            // ❌ NÃO chamamos setupSectionPlane aqui
-        }, 300);
+        viewer.cameraFlight.jumpTo(viewer.scene); 
+        console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
+        
+        setMeasurementMode('none', document.getElementById('btnDeactivate')); 
+        
+        setupModelIsolateController();
+        setupSectionPlane(); // Inicializa o plano de corte
     }
 }
+
 
 // CARREGAMENTO DOS MODELOS (MANTIDO)
 const model1 = xktLoader.load({
@@ -358,15 +360,4 @@ function toggleSectionPlane(button) {
     });
 }
 
-
-window.toggleSectionPlane = toggleSectionPlane;
-
-
-
-
-
-
-
-
-
-
+window.toggleSectionPlane = toggleSectionPlane; // Expõe a função para o HTML
