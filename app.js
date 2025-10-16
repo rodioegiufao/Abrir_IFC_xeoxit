@@ -9,7 +9,7 @@ import {
     DistanceMeasurementsMouseControl,
     ContextMenu, 
     PointerLens,
-    NavCubePlugin // Importado para o Cubo de Navegação
+    NavCubePlugin 
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 // -----------------------------------------------------------------------------
@@ -58,9 +58,9 @@ const angleControl = new AngleMeasurementsMouseControl(angleMeasurement);
 const distanceControl = new DistanceMeasurementsMouseControl(distanceMeasurement);
 
 // Estado inicial: Apenas o controle de ângulo ativo
-// 🛑 CORREÇÃO DE ERRO: Usando setActive() em vez de .active = 
-angleControl.setActive(true);
-distanceControl.setActive(false);
+// 🛑 CORREÇÃO DE ERRO: Usando .enabled = true/false
+angleControl.enabled = true;
+distanceControl.enabled = false;
 
 
 // -----------------------------------------------------------------------------
@@ -68,16 +68,16 @@ distanceControl.setActive(false);
 // -----------------------------------------------------------------------------
 
 function setMeasurementMode(mode, button) {
-    // 1. Desativa todos os controles usando o método .setActive(false)
-    angleControl.setActive(false);
-    distanceControl.setActive(false);
+    // 1. Desativa todos os controles
+    angleControl.enabled = false; // Corrigido
+    distanceControl.enabled = false; // Corrigido
     
-    // 2. Ativa o controle selecionado usando o método .setActive(true)
+    // 2. Ativa o controle selecionado
     if (mode === 'angle') {
-        angleControl.setActive(true);
+        angleControl.enabled = true; // Corrigido
         distanceControl.reset(); 
     } else if (mode === 'distance') {
-        distanceControl.setActive(true);
+        distanceControl.enabled = true; // Corrigido
         angleControl.reset(); 
     } else {
         // Modo 'none' (Desativar)
