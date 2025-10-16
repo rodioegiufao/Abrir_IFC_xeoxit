@@ -1,7 +1,8 @@
 // app.js
 
 import {
-    Viewer, 
+    Viewer,
+    LocaleService,
     XKTLoaderPlugin, 
     AngleMeasurementsPlugin, 
     AngleMeasurementsMouseControl, 
@@ -30,6 +31,22 @@ const viewer = new Viewer({
     
     // 🛑 NOVA CONFIGURAÇÃO DE COR DE FUNDO (Cinza Claro)
     backgroundColor: [0.8, 0.8, 0.8] 
+    // CONFIGURAÇÃO DE LOCALIZAÇÃO ADICIONADA:
+    localeService: new LocaleService({
+        messages: {
+            "pt": { // Português
+                "NavCube": {
+                    "front": "Frente",
+                    "back": "Trás",
+                    "top": "Topo",
+                    "bottom": "Baixo",
+                    "left": "Esquerda",
+                    "right": "Direita"
+                }
+            }
+        },
+        locale: "pt" // Define o idioma padrão como Português
+    })
 });
 
 
@@ -277,6 +294,7 @@ function toggleTreeView() {
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.toggleTreeView = toggleTreeView;
 window.resetModelVisibility = resetModelVisibility;
+
 
 
 
