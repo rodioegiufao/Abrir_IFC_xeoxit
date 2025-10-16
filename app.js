@@ -268,7 +268,7 @@ function toggleTreeView() {
     if (container.style.display === 'block') {
         container.style.display = 'none';
         // Ação de "Mostrar Tudo" ao fechar o painel
-        resetModelVisibility();
+        resetModelVisibility(); 
     } else {
         container.style.display = 'block';
     }
@@ -290,7 +290,7 @@ function setupSectionPlane() {
     const aabb = viewer.scene.getAABB(); 
     const modelCenterY = (aabb[1] + aabb[4]) / 2; 
 
-    // Cria o plano de corte principal. O widget de controle será gerenciado separadamente.
+    // Cria o plano de corte principal. 
     horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
         id: "horizontalPlane",
         pos: [0, modelCenterY, 0], // Posição no centro Y do modelo
@@ -298,9 +298,14 @@ function setupSectionPlane() {
         active: false            // Inicia INATIVO
     });
     
-    // 🛑 NOVO: Garante que o controle do widget COMECE ESCONDIDO
-    // O controle só deve ser visível quando o botão "Corte" for clicado.
-    sectionPlanesPlugin.setControlVisible("horizontalPlane", false); 
+    // 🛑 CORREÇÃO: Usamos .control.visible para o widget. Ele é criado junto com o plano.
+    // Garante que o widget de controle COMECE ESCONDIDO.
+    if (horizontalSectionPlane.control) {
+        horizontalSectionPlane.control.visible = false;
+    }
+    
+    // 🛑 NOVO: Garante que o plugin principal esteja inativo no início
+    viewer.scene.sectionPlanes.active = false; 
     
     console.log(`Plano de corte inicializado na altura Y: ${modelCenterY}`);
 }
@@ -317,18 +322,26 @@ function toggleSectionPlane(button) {
     if (horizontalSectionPlane.active) {
         // Desativa
         horizontalSectionPlane.active = false;
-        sectionPlanesPlugin.setControlVisible(horizontalSectionPlane.id, false); // Esconde o controle
+        viewer.scene.sectionPlanes.active = false; // Desativa a renderização do corte
+        
+        // 🛑 CORREÇÃO: Esconde o controle
+        if (horizontalSectionPlane.control) {
+             horizontalSectionPlane.control.visible = false;
+        }
+
         button.classList.remove('active');
-        viewer.scene.sectionPlanes.active = false; // Garante que todos os planos estejam desativados
         viewer.cameraFlight.jumpTo(viewer.scene); // Volta para a vista completa
     } else {
         // Ativa
         horizontalSectionPlane.active = true;
-        sectionPlanesPlugin.setControlVisible(horizontalSectionPlane.id, true); // Mostra o controle
-        button.classList.add('active');
+        viewer.scene.sectionPlanes.active = true; // Ativa a renderização do corte
         
-        // Garante que o plugin esteja ativo
-        viewer.scene.sectionPlanes.active = true;
+        // 🛑 CORREÇÃO: Mostra o controle
+        if (horizontalSectionPlane.control) {
+             horizontalSectionPlane.control.visible = true;
+        }
+
+        button.classList.add('active');
         
         // Faz um pequeno voo de câmera para centralizar a vista no plano de corte
         const aabb = viewer.scene.getAABB(); 
