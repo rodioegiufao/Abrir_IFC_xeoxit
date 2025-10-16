@@ -49,7 +49,7 @@ const angleControl = new AngleMeasurementsMouseControl(angleMeasurement);
 const distanceControl = new DistanceMeasurementsMouseControl(distanceMeasurement);
 
 // Estado inicial: Apenas o controle de ângulo ativo
-angleControl.active = true;
+angleControl.active = false;
 distanceControl.active = false;
 
 
@@ -139,3 +139,4 @@ xktLoader.load({
     
     // Se precisar de conversão de IFC para XKT, é um passo separado.
 });
+
