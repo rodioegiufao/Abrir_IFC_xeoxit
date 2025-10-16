@@ -280,78 +280,67 @@ window.resetModelVisibility = resetModelVisibility;
 
 
 // -----------------------------------------------------------------------------
-// 7. Plano de Corte (Section Plane) - CORRIGIDO
+// 7. Plano de Corte (Section Plane) - VERSÃO AJUSTADA
 // -----------------------------------------------------------------------------
 
 function setupSectionPlane() {
     sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
-    
-    // Calcula o centro Y da AABB para posicionar o plano no meio do modelo
-    const aabb = viewer.scene.getAABB(); 
-    const modelCenterY = (aabb[1] + aabb[4]) / 2; 
 
-    // Cria o plano de corte principal. 
+    // Desativa totalmente o recurso global de planos
+    viewer.scene.sectionPlanes.active = false;
+
+    // Cria o plano horizontal, mas começa desativado e invisível
     horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
         id: "horizontalPlane",
-        pos: [0, modelCenterY, 0], // Posição no centro Y do modelo
-        dir: [0, -1, 0],         // Corte horizontal (vetor normal apontando para baixo)
-        active: false            // Inicia INATIVO
+        pos: [0, 0, 0], // será reposicionado depois que o modelo carregar
+        dir: [0, -1, 0],
+        active: false
     });
-    
-    // 🛑 CORREÇÃO: Usamos .control.visible para o widget. Ele é criado junto com o plano.
-    // Garante que o widget de controle COMECE ESCONDIDO.
+
     if (horizontalSectionPlane.control) {
         horizontalSectionPlane.control.visible = false;
     }
-    
-    // 🛑 NOVO: Garante que o plugin principal esteja inativo no início
-    viewer.scene.sectionPlanes.active = false; 
-    
-    console.log(`Plano de corte inicializado na altura Y: ${modelCenterY}`);
+
+    console.log("Plano de corte inicializado (inativo)");
 }
 
-/**
- * Alterna o estado ativo do plano de corte e AJUSTA a visualização do widget de controle.
- */
 function toggleSectionPlane(button) {
-    if (!horizontalSectionPlane) {
-        console.error("Plano de corte não está inicializado.");
-        return;
-    }
-    
+    if (!horizontalSectionPlane) return;
+
+    const scene = viewer.scene;
+
     if (horizontalSectionPlane.active) {
-        // Desativa
+        // 🔹 DESATIVAR
         horizontalSectionPlane.active = false;
-        viewer.scene.sectionPlanes.active = false; // Desativa a renderização do corte
-        
-        // 🛑 CORREÇÃO: Esconde o controle
+        scene.sectionPlanes.active = false;
+
         if (horizontalSectionPlane.control) {
-             horizontalSectionPlane.control.visible = false;
+            horizontalSectionPlane.control.visible = false;
         }
 
         button.classList.remove('active');
-        viewer.cameraFlight.jumpTo(viewer.scene); // Volta para a vista completa
+        viewer.cameraFlight.flyTo(scene); // mostra tudo novamente
     } else {
-        // Ativa
+        // 🔹 ATIVAR
+        const aabb = scene.getAABB();
+        const modelCenterY = (aabb[1] + aabb[4]) / 2;
+
+        horizontalSectionPlane.pos = [0, modelCenterY, 0];
+        horizontalSectionPlane.dir = [0, -1, 0];
         horizontalSectionPlane.active = true;
-        viewer.scene.sectionPlanes.active = true; // Ativa a renderização do corte
-        
-        // 🛑 CORREÇÃO: Mostra o controle
+        scene.sectionPlanes.active = true;
+
         if (horizontalSectionPlane.control) {
-             horizontalSectionPlane.control.visible = true;
+            horizontalSectionPlane.control.visible = true;
         }
 
         button.classList.add('active');
-        
-        // Faz um pequeno voo de câmera para centralizar a vista no plano de corte
-        const aabb = viewer.scene.getAABB(); 
-        const modelCenterY = (aabb[1] + aabb[4]) / 2; 
 
         viewer.cameraFlight.flyTo({
-            look: [aabb[0] + (aabb[3] - aabb[0]) / 2, modelCenterY, aabb[2] + (aabb[5] - aabb[2]) / 2],
+            aabb: scene.aabb,
             duration: 0.5
         });
     }
 }
 
-window.toggleSectionPlane = toggleSectionPlane; // Expõe a função para o HTML
+window.toggleSectionPlane = toggleSectionPlane;
