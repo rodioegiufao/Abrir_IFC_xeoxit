@@ -51,9 +51,14 @@ html, body {
     font-size: 14px;
 }
 
+/* 🛑 FORÇA A REMOÇÃO DE TODOS OS MARCADORES DE LISTA (PONTOS) */
+#treeViewContainer ul,
+#treeViewContainer li {
+    list-style: none !important; 
+}
+
 /* Estilo da Lista Principal (xeokit-tree-view) */
 #treeViewContainer .xeokit-tree-view {
-    list-style: none; /* Remove pontos da lista principal */
     padding: 0;
     margin: 0;
 }
@@ -94,15 +99,16 @@ html, body {
     font-size: 12px;
     margin-right: 5px;
     color: #4CAF50; /* Cor verde para os toggles */
-    /* Esconde o conteúdo original (+ ou -) */
-    visibility: hidden; 
+    /* 🛑 FORÇA A INVISIBILIDADE DO CARACTERE ORIGINAL (+/-) */
+    visibility: hidden !important; 
     position: relative;
 }
 
 /* Substitui o conteúdo visível por setas Unicode */
 #treeViewContainer .xeokit-tree-view-item-toggle::before {
     content: '▶'; /* Seta para a direita (colapsado) */
-    visibility: visible; /* Torna a seta visível */
+    /* 🛑 FORÇA A VISIBILIDADE DA SETA */
+    visibility: visible !important; 
     position: absolute;
     left: 0;
     top: 0;
@@ -126,7 +132,6 @@ html, body {
 
 /* Estilo para sub-listas (padding para identação) */
 #treeViewContainer .xeokit-tree-view-children {
-    list-style: none; /* Remove os pontos dos sub-níveis */
     padding: 0;
     margin: 0;
     padding-left: 15px; 
@@ -173,6 +178,7 @@ html, body {
     background-color: #007bff; /* Azul para o ativo */
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
+
 
 
 
