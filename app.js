@@ -55,8 +55,9 @@ function adjustCameraOnLoad() {
         viewer.cameraFlight.jumpTo(viewer.scene); // Enquadra TUDO na cena
         console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
         
-        // Ativa o modo de medição de ângulo por padrão
-        setMeasurementMode('angle', document.getElementById('btnAngle')); 
+        // 🛑 MUDANÇA AQUI: Ativa o modo 'none' (Desativar) por padrão, conforme solicitado.
+        // O botão "Desativar" (btnDeactivate) ficará com a classe 'active'.
+        setMeasurementMode('none', document.getElementById('btnDeactivate')); 
     }
 }
 
@@ -98,12 +99,16 @@ const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMea
     pointerLens: new PointerLens(viewer), 
     snapping: true 
 });
+// Garante que o controle de ângulo inicie desativado
+angleMeasurementsMouseControl.deactivate(); 
+
 
 const distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer, { zIndex: 100000 });
 const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(distanceMeasurementsPlugin, {
     pointerLens: new PointerLens(viewer), 
     snapping: true 
 });
+// Garante que o controle de distância inicie desativado
 distanceMeasurementsMouseControl.deactivate(); 
 
 /**
@@ -121,12 +126,9 @@ function setMeasurementMode(mode, clickedButton) {
     }
     
     // Define o estado ativo do botão
+    // Se um botão foi clicado ou o modo é 'none' (botão 'Desativar'), ele recebe a classe 'active'.
     if (clickedButton) {
          clickedButton.classList.add('active');
-    } else if (mode === 'angle') {
-        // Inicialização: Ativa o botão Ângulo
-        const btn = document.getElementById('btnAngle');
-        if (btn) btn.classList.add('active');
     }
 
     // Reseta medições incompletas ao trocar de modo
@@ -176,4 +178,3 @@ function setupMeasurementEvents(plugin) {
 
 setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
-
