@@ -1,3 +1,5 @@
+// app.js
+
 import {
     Viewer, 
     LocaleService, 
@@ -10,13 +12,13 @@ import {
     PointerLens,
     NavCubePlugin, 
     TreeViewPlugin,
-    SectionPlanesPlugin // <--- NOVO: Plugin de Plano de Corte
+    SectionPlanesPlugin 
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 let treeView; 
 let modelIsolateController; 
-let sectionPlanesPlugin; // <--- NOVO
-let horizontalSectionPlane; // <--- NOVO
+let sectionPlanesPlugin; 
+let horizontalSectionPlane; 
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -91,7 +93,7 @@ function adjustCameraOnLoad() {
         setMeasurementMode('none', document.getElementById('btnDeactivate')); 
         
         setupModelIsolateController();
-        setupSectionPlane(); // <--- NOVO: Inicializa o plano de corte
+        setupSectionPlane(); // Inicializa o plano de corte
     }
 }
 
@@ -278,7 +280,7 @@ window.resetModelVisibility = resetModelVisibility;
 
 
 // -----------------------------------------------------------------------------
-// 7. Plano de Corte (Section Plane) - NOVO
+// 7. Plano de Corte (Section Plane)
 // -----------------------------------------------------------------------------
 
 function setupSectionPlane() {
@@ -300,7 +302,7 @@ function setupSectionPlane() {
 }
 
 /**
- * Alterna o estado ativo do plano de corte e ajusta a câmera.
+ * Alterna o estado ativo do plano de corte e AJUSTA a visualização do widget de controle.
  */
 function toggleSectionPlane(button) {
     if (!horizontalSectionPlane) {
@@ -311,11 +313,13 @@ function toggleSectionPlane(button) {
     if (horizontalSectionPlane.active) {
         // Desativa
         horizontalSectionPlane.active = false;
+        sectionPlanesPlugin.hideControl(horizontalSectionPlane.id); // <--- NOVO: Esconde o controle
         button.classList.remove('active');
         viewer.cameraFlight.jumpTo(viewer.scene); // Volta para a vista completa
     } else {
         // Ativa
         horizontalSectionPlane.active = true;
+        sectionPlanesPlugin.showControl(horizontalSectionPlane.id); // <--- NOVO: Mostra o controle
         button.classList.add('active');
         
         // Faz um pequeno voo de câmera para centralizar a vista no plano de corte
