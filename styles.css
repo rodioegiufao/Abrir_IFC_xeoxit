@@ -29,22 +29,81 @@ html, body {
 }
 
 /* ---------------------------------------------------- */
-/* Estilos da Árvore de Estrutura (TreeView) - NOVO */
+/* Estilos da Árvore de Estrutura (TreeView) - NOVO E AJUSTADO */
 /* ---------------------------------------------------- */
 
 #treeViewContainer {
     position: fixed;
     top: 80px; /* Abaixo da toolbar */
     left: 20px; /* Alinhado com a toolbar */
-    width: 300px; /* Largura padrão */
+    width: 320px; /* Largura padrão um pouco maior */
+    max-width: 90vw; /* Garante que fique bom em telas pequenas */
     height: calc(100% - 100px); /* Altura do resto da tela */
-    background-color: rgba(0, 0, 0, 0.7); /* Fundo escuro semi-transparente */
-    color: white;
-    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.9); /* Fundo quase preto sólido */
+    color: #f0f0f0; /* Texto claro */
+    padding: 5px;
     overflow-y: auto; /* Adiciona scroll se o conteúdo for grande */
     z-index: 100000;
     border-radius: 5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     display: none; /* Inicia ESCONDIDO */
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+}
+
+/* Estilo da Lista Principal (xeokit-tree-view) */
+#treeViewContainer .xeokit-tree-view {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Estilo de cada Item/Nó da Árvore */
+#treeViewContainer .xeokit-tree-view-item {
+    cursor: pointer;
+    line-height: 1.4;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Linha divisória sutil */
+    user-select: none;
+    display: flex; /* Para alinhar o conteúdo */
+    align-items: center;
+    padding-left: 5px;
+}
+
+/* Efeito de HOVER/Mouse sobre o item */
+#treeViewContainer .xeokit-tree-view-item:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Fundo claro ao passar o mouse */
+    color: #007bff; /* Texto azul para destaque */
+}
+
+/* Estilo para nós com filhos */
+#treeViewContainer .xeokit-tree-view-with-children {
+    font-weight: bold;
+}
+
+/* Estilo para os ícones de expansão (setas/triângulos) */
+#treeViewContainer .xeokit-tree-view-item-toggle {
+    display: inline-block;
+    width: 15px;
+    text-align: center;
+    font-size: 12px;
+    margin-right: 5px;
+    color: #4CAF50; /* Cor verde para os toggles */
+}
+
+/* Estilo para o texto do item */
+#treeViewContainer .xeokit-tree-view-item-title {
+    flex-grow: 1;
+    margin-right: 5px;
+}
+
+/* Estilo para sub-listas (padding para identação) */
+#treeViewContainer .xeokit-tree-view-children {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    /* Indentação para sub-níveis */
+    padding-left: 15px; 
 }
 
 /* ---------------------------------------------------- */
@@ -88,4 +147,5 @@ html, body {
     background-color: #007bff; /* Azul para o ativo */
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
+
 
