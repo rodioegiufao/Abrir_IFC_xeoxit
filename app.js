@@ -18,12 +18,12 @@ import {
 let treeView; 
 let modelIsolateController; 
 let sectionPlanesPlugin; 
-let horizontalSectionPlane; 
-let horizontalPlaneControl;  
+let horizontalSectionPlane = null; // 🛑 NOVO: Inicializado como null. Será criado ao ativar.
 
-// -----------------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 const viewer = new Viewer({
 
@@ -61,44 +61,44 @@ function onWindowResize() {
 window.addEventListener('resize', onWindowResize);
 onWindowResize(); 
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // 2. Carregamento dos Modelos e Ajuste da Câmera
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 const xktLoader = new XKTLoaderPlugin(viewer);
 
 let modelsLoadedCount = 0;
 const totalModels = 2; 
 
-function resetModelVisibility() {
+/**
+ * Reseta a visibilidade, removendo isolamento e X-ray.
+ */
+function showAll() {
     if (modelIsolateController) {
-        // Volta a exibir todos os objetos
         modelIsolateController.setObjectsVisible(modelIsolateController.getObjectsIds(), true);
-        // Remove X-ray
         modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false);
-        // Remove destaque
         modelIsolateController.setObjectsHighlighted(modelIsolateController.getObjectsIds(), false);
-        // Centraliza a câmera no modelo inteiro
         viewer.cameraFlight.jumpTo(viewer.scene);
     }
 }
-
+window.showAll = showAll; // expõe a função showAll
 
 function adjustCameraOnLoad() {
     modelsLoadedCount++;
     
     if (modelsLoadedCount === totalModels) {
-        setTimeout(() => {
-            viewer.cameraFlight.jumpTo(viewer.scene);
-            console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
-            setMeasurementMode('none', document.getElementById('btnDeactivate')); 
-            setupModelIsolateController();
-            // ❌ NÃO chamamos setupSectionPlane aqui
-        }, 300);
+        viewer.cameraFlight.jumpTo(viewer.scene); 
+        console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
+        
+        setMeasurementMode('none', document.getElementById('btnDeactivate')); 
+        
+        setupModelIsolateController();
+        setupSectionPlane(); // Inicializa o plugin de corte
     }
 }
 
-// CARREGAMENTO DOS MODELOS (MANTIDO)
+
+// CARREGAMENTO DOS MODELOS
 const model1 = xktLoader.load({
     id: "meuModeloBIM",
     src: "assets/meu_modelo.xkt", 
@@ -124,9 +124,9 @@ model2.on("error", (err) => {
 });
 
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // 3. Plugins de Medição e Função de Troca (MANTIDO)
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, { zIndex: 100000 });
 const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMeasurementsPlugin, {
@@ -164,9 +164,9 @@ function setMeasurementMode(mode, clickedButton) {
 
 window.setMeasurementMode = setMeasurementMode;
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // 4. Menu de Contexto (Deletar Medição) (MANTIDO)
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 const contextMenu = new ContextMenu({
     items: [
@@ -204,9 +204,9 @@ function setupMeasurementEvents(plugin) {
 setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // 5. Cubo de Navegação (NavCube) (MANTIDO)
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 new NavCubePlugin(viewer, {
     canvasId: "myNavCubeCanvas", 
@@ -217,9 +217,9 @@ new NavCubePlugin(viewer, {
     rightMargin: 20 
 });
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // 6. TreeViewPlugin e Lógica de Isolamento (MANTIDO)
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 function setupModelIsolateController() {
     
@@ -252,144 +252,97 @@ function setupModelIsolateController() {
             });
 
         } else {
-            // Se o usuário clicar em um nó que não contém objetos (como o nó raiz do projeto ou um item folha)
-            // Apenas reseta a visibilidade.
-            resetModelVisibility(); 
+            // Se o usuário clicar em um nó que não contém objetos, mostra o modelo inteiro
+            showAll(); 
         }
     });
 }
 
 /**
- * Alterna a visibilidade do contêiner do TreeView e reseta a visibilidade do modelo se estiver fechando.
+ * Alterna a visibilidade do contêiner do TreeView.
  */
 function toggleTreeView() {
     const container = document.getElementById('treeViewContainer');
     
     if (container.style.display === 'block') {
         container.style.display = 'none';
-        // Ação de "Mostrar Tudo" ao fechar o painel
-        resetModelVisibility(); 
+        showAll(); // Ação de "Mostrar Tudo" ao fechar o painel
     } else {
         container.style.display = 'block';
     }
 }
 
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
-window.toggleTreeView = toggleTreeView;
-window.resetModelVisibility = resetModelVisibility; 
+window.toggleTreeView = toggleTreeView; 
 
 
-// -----------------------------------------------------------------------------
-// 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// 7. Plano de Corte (Section Plane) - CORREÇÃO DE DESTRUIÇÃO DO GIZMO
+// ----------------------------------------------------------------------------
 
+/**
+ * Inicializa apenas o plugin. O plano em si será criado/destruído em toggleSectionPlane.
+ */
 function setupSectionPlane() {
     sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
-
-    // 🔹 Desliga completamente o sistema de planos na inicialização
-    viewer.scene.sectionPlanes.active = false;
-
-    // Cria o plano horizontal (ainda inativo)
-    horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
-        id: "horizontalPlane",
-        pos: [0, 0, 0],
-        dir: [0, -1, 0],
-        active: false
-    });
-
-    // 🔹 Não mostra controle ainda
-    if (horizontalSectionPlane.control) {
-        horizontalSectionPlane.control.visible = false;
-    }
-
-    console.log("Plano de corte inicializado (inativo)");
-
-    // 🔹 Força uma atualização visual completa após o carregamento
-    viewer.scene.on("tick", () => {
-        // Assim que houver algo na cena, centraliza a câmera
-        if (viewer.scene.numEntities > 0 && !setupSectionPlane._initialized) {
-            setupSectionPlane._initialized = true;
-            const aabb = viewer.scene.getAABB();
-            viewer.cameraFlight.jumpTo({ aabb, duration: 0 });
-            console.log("Câmera centralizada automaticamente após carregamento inicial.");
-        }
-    });
+    
+    // Garante que o sistema de corte esteja inativo no início
+    viewer.scene.sectionPlanes.active = false; 
+    console.log(`Plugin de corte inicializado.`);
 }
 
+/**
+ * Alterna o estado do corte horizontal, destruindo/recriando o plano para remover o gizmo.
+ */
 function toggleSectionPlane(button) {
     const scene = viewer.scene;
-
-    // cria o plugin e o plano na primeira vez
-    if (!horizontalSectionPlane) {
-        sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
-
-        const aabb = scene.getAABB();
-        const modelCenterY = (aabb[1] + aabb[4]) / 2;
-
-        horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
-            id: "horizontalPlane",
-            pos: [0, modelCenterY, 0],
-            dir: [0, -1, 0],
-            active: false
-        });
-
-        console.log("Plano de corte criado sob demanda.");
-    }
-
-    // --- DESATIVAR ---
-    if (horizontalSectionPlane.active) {
-        horizontalSectionPlane.active = false;
-        scene.sectionPlanes.active = false;
-
-        // destrói o controle, remove listeners e força redraw
-        if (horizontalSectionPlane.control) {
-            try {
-                viewer.input.removeCanvasElement(horizontalSectionPlane.control.canvas);
-            } catch (e) {}
-            horizontalSectionPlane.control.destroy();
-            horizontalSectionPlane.control = null;
-        }
-
-        // alguns builds deixam o gizmo em viewer.input._activeCanvasElements
-        if (viewer.input && viewer.input._activeCanvasElements) {
-            viewer.input._activeCanvasElements.clear?.();
-        }
-
-        viewer.scene.render(); // força re-render
-        button.classList.remove("active");
-        viewer.cameraFlight.flyTo(scene);
+    
+    if (!sectionPlanesPlugin) {
+        console.error("SectionPlanesPlugin não está inicializado.");
         return;
     }
+    
+    // --- 1. DESATIVAR (Plano existe) ---
+    if (horizontalSectionPlane) {
+        
+        // 🛑 Destrói o plano E seu controle (gizmo) associado
+        horizontalSectionPlane.destroy(); 
+        horizontalSectionPlane = null; // Zera a referência
+        
+        scene.sectionPlanes.active = false; // Desativa a renderização do corte
+        
+        button.classList.remove('active');
+        viewer.cameraFlight.jumpTo(scene); // Volta para a vista completa
+        return;
+    } 
 
-    // --- ATIVAR ---
-    const aabb = scene.getAABB();
-    const modelCenterY = (aabb[1] + aabb[4]) / 2;
+    // --- 2. ATIVAR (Plano não existe) ---
+    
+    // Recria o plano com base na AABB atual
+    const aabb = scene.getAABB(); 
+    const modelCenterY = (aabb[1] + aabb[4]) / 2; 
 
-    horizontalSectionPlane.pos = [0, modelCenterY, 0];
-    horizontalSectionPlane.dir = [0, -1, 0];
-    horizontalSectionPlane.active = true;
-    scene.sectionPlanes.active = true;
+    horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
+        id: "horizontalPlane",
+        pos: [0, modelCenterY, 0], 
+        dir: [0, -1, 0],         
+        active: true // Já cria ativado
+    });
+    
+    // Cria e mostra o controle (gizmo). A referência do controle é anexada internamente ao plano.
+    sectionPlanesPlugin.showControl(horizontalSectionPlane.id); 
 
-    // cria novamente o controle
-    horizontalSectionPlane.control = sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
+    // Ativa o sistema de corte global
+    scene.sectionPlanes.active = true; 
 
-    button.classList.add("active");
-
+    // Atualiza o botão e a câmera
+    button.classList.add('active');
+    
     viewer.cameraFlight.flyTo({
-        aabb: scene.aabb,
+        // Foca a câmera no centro do modelo, na altura do corte
+        look: [scene.center[0], modelCenterY, scene.center[2]],
         duration: 0.5
     });
 }
 
-
-
-window.toggleSectionPlane = toggleSectionPlane;
-
-
-
-
-
-
-
-
-
+window.toggleSectionPlane = toggleSectionPlane; // Expõe a função para o HTML
