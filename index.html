@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador BIM com Cubo de Navegação e Medição</title>
+    <title>Visualizador BIM com Medição de Ângulo e Distância</title>
     
     <link rel="stylesheet" href="styles.css"> 
     
@@ -12,12 +12,10 @@
 <body>
     <canvas id="meuCanvas"></canvas>
 
-    <canvas id="navCubeCanvas"></canvas> 
-    
     <div id="toolbar">
         <button 
             id="btnAngle" 
-            class="tool-button" 
+            class="tool-button active" 
             onclick="setMeasurementMode('angle', this)" 
             title="Medir Ângulo (Transferidor)" 
         >
@@ -37,7 +35,7 @@
 
         <button 
             id="btnDeactivate" 
-            class="tool-button active" 
+            class="tool-button" 
             onclick="setMeasurementMode('none', this)" 
             title="Desativar Medição"
         >
