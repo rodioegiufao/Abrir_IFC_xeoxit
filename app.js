@@ -19,6 +19,7 @@ let treeView;
 let modelIsolateController; 
 let sectionPlanesPlugin; 
 let horizontalSectionPlane; 
+let horizontalPlaneControl;  
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -318,7 +319,7 @@ function setupSectionPlane() {
 function toggleSectionPlane(button) {
     const scene = viewer.scene;
 
-    // 🔹 Cria o plugin e o plano na primeira vez que o botão é clicado
+    // Cria o plugin/plano na primeira vez
     if (!horizontalSectionPlane) {
         sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
 
@@ -331,54 +332,47 @@ function toggleSectionPlane(button) {
             dir: [0, -1, 0],
             active: false
         });
-
-        console.log("Plano de corte criado sob demanda.");
     }
 
-    // 🔹 Alterna o estado
+    // --- DESATIVAR ---
     if (horizontalSectionPlane.active) {
-        // --- DESATIVAR ---
         horizontalSectionPlane.active = false;
         scene.sectionPlanes.active = false;
 
-        // 🔸 Remove helpers e controles residuais da cena
-        if (horizontalSectionPlane.control) {
-            horizontalSectionPlane.control.destroy();
-            horizontalSectionPlane.control = null;
+        // remove o controle se existir
+        if (horizontalPlaneControl) {
+            horizontalPlaneControl.destroy();
+            horizontalPlaneControl = null;
         }
 
-        // Remove quaisquer entidades auxiliares que o plugin tenha criado
-        const helpers = Object.values(scene.objects).filter(o =>
-            o.id && o.id.toLowerCase().includes("sectionplane")
-        );
-        helpers.forEach(helper => helper.destroy());
-
-        button.classList.remove('active');
+        button.classList.remove("active");
         viewer.cameraFlight.flyTo(scene);
-
-    } else {
-        // --- ATIVAR ---
-        const aabb = scene.getAABB();
-        const modelCenterY = (aabb[1] + aabb[4]) / 2;
-
-        horizontalSectionPlane.pos = [0, modelCenterY, 0];
-        horizontalSectionPlane.dir = [0, -1, 0];
-        horizontalSectionPlane.active = true;
-        scene.sectionPlanes.active = true;
-
-        // Cria novamente o controle visível (setas/arcos)
-        sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
-
-        button.classList.add('active');
-
-        viewer.cameraFlight.flyTo({
-            aabb: scene.aabb,
-            duration: 0.5
-        });
+        return;
     }
+
+    // --- ATIVAR ---
+    const aabb = scene.getAABB();
+    const modelCenterY = (aabb[1] + aabb[4]) / 2;
+
+    horizontalSectionPlane.pos = [0, modelCenterY, 0];
+    horizontalSectionPlane.dir = [0, -1, 0];
+    horizontalSectionPlane.active = true;
+    scene.sectionPlanes.active = true;
+
+    // cria e guarda o widget de controle
+    horizontalPlaneControl = sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
+
+    button.classList.add("active");
+
+    viewer.cameraFlight.flyTo({
+        aabb: scene.aabb,
+        duration: 0.5
+    });
 }
 
+
 window.toggleSectionPlane = toggleSectionPlane;
+
 
 
 
