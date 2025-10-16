@@ -280,7 +280,7 @@ window.resetModelVisibility = resetModelVisibility;
 
 
 // -----------------------------------------------------------------------------
-// 7. Plano de Corte (Section Plane)
+// 7. Plano de Corte (Section Plane) - CORRIGIDO
 // -----------------------------------------------------------------------------
 
 function setupSectionPlane() {
@@ -290,13 +290,17 @@ function setupSectionPlane() {
     const aabb = viewer.scene.getAABB(); 
     const modelCenterY = (aabb[1] + aabb[4]) / 2; 
 
-    // Cria o plano de corte principal, mas o mantém inativo
+    // Cria o plano de corte principal. O widget de controle será gerenciado separadamente.
     horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
         id: "horizontalPlane",
         pos: [0, modelCenterY, 0], // Posição no centro Y do modelo
         dir: [0, -1, 0],         // Corte horizontal (vetor normal apontando para baixo)
-        active: false            // Inicia inativo
+        active: false            // Inicia INATIVO
     });
+    
+    // 🛑 NOVO: Garante que o controle do widget COMECE ESCONDIDO
+    // O controle só deve ser visível quando o botão "Corte" for clicado.
+    sectionPlanesPlugin.setControlVisible("horizontalPlane", false); 
     
     console.log(`Plano de corte inicializado na altura Y: ${modelCenterY}`);
 }
@@ -313,14 +317,18 @@ function toggleSectionPlane(button) {
     if (horizontalSectionPlane.active) {
         // Desativa
         horizontalSectionPlane.active = false;
-        sectionPlanesPlugin.hideControl(horizontalSectionPlane.id); // <--- NOVO: Esconde o controle
+        sectionPlanesPlugin.setControlVisible(horizontalSectionPlane.id, false); // Esconde o controle
         button.classList.remove('active');
+        viewer.scene.sectionPlanes.active = false; // Garante que todos os planos estejam desativados
         viewer.cameraFlight.jumpTo(viewer.scene); // Volta para a vista completa
     } else {
         // Ativa
         horizontalSectionPlane.active = true;
-        sectionPlanesPlugin.showControl(horizontalSectionPlane.id); // <--- NOVO: Mostra o controle
+        sectionPlanesPlugin.setControlVisible(horizontalSectionPlane.id, true); // Mostra o controle
         button.classList.add('active');
+        
+        // Garante que o plugin esteja ativo
+        viewer.scene.sectionPlanes.active = true;
         
         // Faz um pequeno voo de câmera para centralizar a vista no plano de corte
         const aabb = viewer.scene.getAABB(); 
@@ -334,3 +342,4 @@ function toggleSectionPlane(button) {
 }
 
 window.toggleSectionPlane = toggleSectionPlane; // Expõe a função para o HTML
+
