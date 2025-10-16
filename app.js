@@ -8,7 +8,8 @@ import {
     DistanceMeasurementsPlugin,
     DistanceMeasurementsMouseControl,
     ContextMenu, 
-    PointerLens 
+    PointerLens,
+    NavCubePlugin 
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 // -----------------------------------------------------------------------------
@@ -193,3 +194,4 @@ new NavCubePlugin(viewer, {
     bottomMargin: 20, 
     rightMargin: 20 
 });
+
