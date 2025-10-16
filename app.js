@@ -9,8 +9,7 @@ import {
     DistanceMeasurementsMouseControl,
     ContextMenu, 
     PointerLens,
-    // 🛑 NOVIDADE: NavCubePlugin
-    NavCubePlugin
+    NavCubePlugin // Importado para o Cubo de Navegação
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 // -----------------------------------------------------------------------------
@@ -37,18 +36,15 @@ window.addEventListener('resize', onWindowResize);
 onWindowResize(); 
 
 
-// 🛑 -------------------------------------------------------------------------
-// 2. NOVIDADE: Cubo de Navegação (NavCubePlugin)
-// 🛑 -------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 2. Cubo de Navegação (NavCubePlugin)
+// -----------------------------------------------------------------------------
 
 const navCube = new NavCubePlugin(viewer, {
     canvasId: "navCubeCanvas",
     visible: true,
-    size: 200, // Deve corresponder ao tamanho definido no CSS
-    alignment: "bottomRight", // Posiciona no canto inferior direito
-    // As margens são definidas pelo CSS, mas o plugin pode ajustá-las
-    // rightMargin: 20, 
-    // bottomMargin: 20
+    size: 200, 
+    alignment: "bottomRight", 
 });
 
 // -----------------------------------------------------------------------------
@@ -62,8 +58,9 @@ const angleControl = new AngleMeasurementsMouseControl(angleMeasurement);
 const distanceControl = new DistanceMeasurementsMouseControl(distanceMeasurement);
 
 // Estado inicial: Apenas o controle de ângulo ativo
-angleControl.active = true;
-distanceControl.active = false;
+// 🛑 CORREÇÃO DE ERRO: Usando setActive() em vez de .active = 
+angleControl.setActive(true);
+distanceControl.setActive(false);
 
 
 // -----------------------------------------------------------------------------
@@ -71,16 +68,16 @@ distanceControl.active = false;
 // -----------------------------------------------------------------------------
 
 function setMeasurementMode(mode, button) {
-    // 1. Desativa todos os controles
-    angleControl.active = false;
-    distanceControl.active = false;
+    // 1. Desativa todos os controles usando o método .setActive(false)
+    angleControl.setActive(false);
+    distanceControl.setActive(false);
     
-    // 2. Ativa o controle selecionado
+    // 2. Ativa o controle selecionado usando o método .setActive(true)
     if (mode === 'angle') {
-        angleControl.active = true;
+        angleControl.setActive(true);
         distanceControl.reset(); 
     } else if (mode === 'distance') {
-        distanceControl.active = true;
+        distanceControl.setActive(true);
         angleControl.reset(); 
     } else {
         // Modo 'none' (Desativar)
