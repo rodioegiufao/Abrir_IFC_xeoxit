@@ -143,6 +143,6 @@ const xktLoader = new XKTLoaderPlugin(viewer);
 
 xktLoader.load({
     id: "myModel",
-    // 🛑 CORREÇÃO: Usando um modelo de exemplo conhecido (Duplex.xkt)
-    src: "https://xeokit.github.io/xeokit-sdk/assets/models/xkt/Duplex.xkt", 
+    // 🛑 CORREÇÃO FINAL: Usando um novo link de modelo XKT ativo
+    src: "https://dl.dropboxusercontent.com/s/s7k99320e8y051s/Duplex.xkt", 
 });
