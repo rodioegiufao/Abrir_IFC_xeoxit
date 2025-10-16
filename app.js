@@ -87,15 +87,25 @@ function adjustCameraOnLoad() {
     modelsLoadedCount++;
     
     if (modelsLoadedCount === totalModels) {
-        viewer.cameraFlight.jumpTo(viewer.scene); 
-        console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
-        
-        setMeasurementMode('none', document.getElementById('btnDeactivate')); 
-        
-        setupModelIsolateController();
-        setupSectionPlane(); // Inicializa o plano de corte
+        // 🔹 Garante que todos os objetos foram carregados
+        setTimeout(() => {
+            const scene = viewer.scene;
+            const aabb = scene.getAABB();
+
+            viewer.cameraFlight.jumpTo({
+                aabb,
+                duration: 0
+            });
+
+            console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
+
+            setMeasurementMode('none', document.getElementById('btnDeactivate')); 
+            setupModelIsolateController();
+            setupSectionPlane(); // Inicializa o plano de corte
+        }, 500); // pequeno delay para garantir renderização completa
     }
 }
+
 
 
 // CARREGAMENTO DOS MODELOS (MANTIDO)
@@ -350,4 +360,5 @@ function toggleSectionPlane(button) {
 }
 
 window.toggleSectionPlane = toggleSectionPlane;
+
 
