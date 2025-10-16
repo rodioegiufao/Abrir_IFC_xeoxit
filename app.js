@@ -319,7 +319,7 @@ function setupSectionPlane() {
 function toggleSectionPlane(button) {
     const scene = viewer.scene;
 
-    // Cria o plugin/plano na primeira vez
+    // cria o plugin e o plano na primeira vez
     if (!horizontalSectionPlane) {
         sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
 
@@ -332,6 +332,8 @@ function toggleSectionPlane(button) {
             dir: [0, -1, 0],
             active: false
         });
+
+        console.log("Plano de corte criado sob demanda.");
     }
 
     // --- DESATIVAR ---
@@ -339,12 +341,21 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = false;
         scene.sectionPlanes.active = false;
 
-        // remove o controle se existir
-        if (horizontalPlaneControl) {
-            horizontalPlaneControl.destroy();
-            horizontalPlaneControl = null;
+        // destrói o controle, remove listeners e força redraw
+        if (horizontalSectionPlane.control) {
+            try {
+                viewer.input.removeCanvasElement(horizontalSectionPlane.control.canvas);
+            } catch (e) {}
+            horizontalSectionPlane.control.destroy();
+            horizontalSectionPlane.control = null;
         }
 
+        // alguns builds deixam o gizmo em viewer.input._activeCanvasElements
+        if (viewer.input && viewer.input._activeCanvasElements) {
+            viewer.input._activeCanvasElements.clear?.();
+        }
+
+        viewer.scene.render(); // força re-render
         button.classList.remove("active");
         viewer.cameraFlight.flyTo(scene);
         return;
@@ -359,8 +370,8 @@ function toggleSectionPlane(button) {
     horizontalSectionPlane.active = true;
     scene.sectionPlanes.active = true;
 
-    // cria e guarda o widget de controle
-    horizontalPlaneControl = sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
+    // cria novamente o controle
+    horizontalSectionPlane.control = sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
 
     button.classList.add("active");
 
@@ -371,7 +382,9 @@ function toggleSectionPlane(button) {
 }
 
 
+
 window.toggleSectionPlane = toggleSectionPlane;
+
 
 
 
