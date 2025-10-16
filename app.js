@@ -1,8 +1,8 @@
 // app.js
 
 import {
-    Viewer,
-    LocaleService,
+    Viewer, 
+    LocaleService, // <--- NOVO: Importa o serviço de localização
     XKTLoaderPlugin, 
     AngleMeasurementsPlugin, 
     AngleMeasurementsMouseControl, 
@@ -10,27 +10,25 @@ import {
     DistanceMeasurementsMouseControl,
     ContextMenu, 
     PointerLens,
-    NavCubePlugin,
-    TreeViewPlugin
+    NavCubePlugin, 
+    TreeViewPlugin 
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
-// Variável global para o TreeView (necessária para as funções de toggle)
 let treeView; 
-let modelIsolateController;
+let modelIsolateController; 
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
 // -----------------------------------------------------------------------------
 
 const viewer = new Viewer({
+
     canvasId: "meuCanvas",
-    // 🛑 ATUALIZAÇÃO AQUI: Remove 'transparent: true' e define a cor de fundo.
-    transparent: false, // Não precisa ser transparente se você definir uma cor sólida
+    transparent: false, 
     saoEnabled: true,
     edgesEnabled: true,
+    backgroundColor: [0.8, 0.8, 0.8],
     
-    // 🛑 NOVA CONFIGURAÇÃO DE COR DE FUNDO (Cinza Claro)
-    backgroundColor: [0.8, 0.8, 0.8] 
     // CONFIGURAÇÃO DE LOCALIZAÇÃO ADICIONADA:
     localeService: new LocaleService({
         messages: {
@@ -50,7 +48,6 @@ const viewer = new Viewer({
 });
 
 
-// GARANTE QUE O VIEWER SE AJUSTE ÀS DIMENSÕES DA JANELA (Correção da tela minúscula)
 function onWindowResize() {
     const canvas = viewer.scene.canvas;
     canvas.width = window.innerWidth;
@@ -58,10 +55,10 @@ function onWindowResize() {
 }
 
 window.addEventListener('resize', onWindowResize);
-onWindowResize(); // Chama na inicialização
+onWindowResize(); 
 
 // -----------------------------------------------------------------------------
-// 2. Carregamento dos Modelos e Ajuste da Câmera (💥 FOCO AQUI 💥)
+// 2. Carregamento dos Modelos e Ajuste da Câmera
 // -----------------------------------------------------------------------------
 
 const xktLoader = new XKTLoaderPlugin(viewer);
@@ -69,7 +66,6 @@ const xktLoader = new XKTLoaderPlugin(viewer);
 let modelsLoadedCount = 0;
 const totalModels = 2; 
 
-// Função para ajustar a câmera após o carregamento
 function resetModelVisibility() {
     if (modelIsolateController) {
         // Volta a exibir todos os objetos
@@ -98,7 +94,7 @@ function adjustCameraOnLoad() {
 }
 
 
-// CARREGAMENTO DO MODELO 1: meu_modelo.xkt
+// CARREGAMENTO DOS MODELOS (MANTIDO)
 const model1 = xktLoader.load({
     id: "meuModeloBIM",
     src: "assets/meu_modelo.xkt", 
@@ -111,8 +107,6 @@ model1.on("error", (err) => {
     adjustCameraOnLoad(); 
 });
 
-
-// CARREGAMENTO DO MODELO 2: modelo-02.xkt
 const model2 = xktLoader.load({
     id: "meuModeloBIM_02", 
     src: "assets/modelo-02.xkt", 
@@ -127,7 +121,7 @@ model2.on("error", (err) => {
 
 
 // -----------------------------------------------------------------------------
-// 3. Plugins de Medição e Função de Troca
+// 3. Plugins de Medição e Função de Troca (MANTIDO)
 // -----------------------------------------------------------------------------
 
 const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, { zIndex: 100000 });
@@ -135,7 +129,6 @@ const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMea
     pointerLens: new PointerLens(viewer), 
     snapping: true 
 });
-// Garante que o controle de ângulo inicie desativado
 angleMeasurementsMouseControl.deactivate(); 
 
 
@@ -144,12 +137,8 @@ const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(di
     pointerLens: new PointerLens(viewer), 
     snapping: true 
 });
-// Garante que o controle de distância inicie desativado
 distanceMeasurementsMouseControl.deactivate(); 
 
-/**
- * Ativa o controle de medição especificado e desativa os outros.
- */
 function setMeasurementMode(mode, clickedButton) {
     angleMeasurementsMouseControl.deactivate();
     distanceMeasurementsMouseControl.deactivate();
@@ -161,22 +150,18 @@ function setMeasurementMode(mode, clickedButton) {
         distanceMeasurementsMouseControl.activate();
     }
     
-    // Define o estado ativo do botão
-    // Se um botão foi clicado ou o modo é 'none' (botão 'Desativar'), ele recebe a classe 'active'.
     if (clickedButton) {
          clickedButton.classList.add('active');
     }
 
-    // Reseta medições incompletas ao trocar de modo
     angleMeasurementsMouseControl.reset(); 
     distanceMeasurementsMouseControl.reset(); 
 }
 
-// 🛑 EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.setMeasurementMode = setMeasurementMode;
 
 // -----------------------------------------------------------------------------
-// 4. Menu de Contexto (Deletar Medição) - Mantido para funcionalidade completa
+// 4. Menu de Contexto (Deletar Medição) (MANTIDO)
 // -----------------------------------------------------------------------------
 
 const contextMenu = new ContextMenu({
@@ -216,13 +201,11 @@ setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
 
 // -----------------------------------------------------------------------------
-// 5. Cubo de Navegação (NavCube) - Implementação Adicionada
+// 5. Cubo de Navegação (NavCube) (MANTIDO)
 // -----------------------------------------------------------------------------
 
-// NOVO: Instancia o NavCubePlugin
-// Configurado para usar o canvas 'myNavCubeCanvas' (adicionado no index.html)
 new NavCubePlugin(viewer, {
-    canvasId: "myNavCubeCanvas", // ID do canvas dedicado
+    canvasId: "myNavCubeCanvas", 
     visible: true,
     size: 150, 
     alignment: "bottomRight", 
@@ -232,12 +215,9 @@ new NavCubePlugin(viewer, {
 
 
 // -----------------------------------------------------------------------------
-// 6. TreeViewPlugin e Lógica de Isolamento (NOVO)
+// 6. TreeViewPlugin e Lógica de Isolamento (MANTIDO)
 // -----------------------------------------------------------------------------
 
-/**
- * Inicializa o TreeViewPlugin e configura a lógica de isolamento.
- */
 function setupModelIsolateController() {
     
     treeView = new TreeViewPlugin(viewer, {
@@ -294,7 +274,3 @@ function toggleTreeView() {
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.toggleTreeView = toggleTreeView;
 window.resetModelVisibility = resetModelVisibility;
-
-
-
-
