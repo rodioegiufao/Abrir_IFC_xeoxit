@@ -318,7 +318,7 @@ function setupSectionPlane() {
 function toggleSectionPlane(button) {
     const scene = viewer.scene;
 
-    // Se o plano ainda não foi criado, criamos só agora 👇
+    // 🔹 Cria o plugin e o plano na primeira vez que o botão é clicado
     if (!horizontalSectionPlane) {
         sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
 
@@ -339,24 +339,36 @@ function toggleSectionPlane(button) {
         console.log("Plano de corte criado sob demanda.");
     }
 
-    // Agora alternamos o estado normalmente 👇
+    // 🔹 Alterna o estado
     if (horizontalSectionPlane.active) {
-        // Desativa
+        // --- DESATIVAR ---
         horizontalSectionPlane.active = false;
         scene.sectionPlanes.active = false;
 
+        // Esconde o widget de controle
         if (horizontalSectionPlane.control) {
             horizontalSectionPlane.control.visible = false;
+        }
+
+        // Também esconde qualquer controle visível criado pelo plugin
+        if (sectionPlanesPlugin._sectionPlaneControl) {
+            sectionPlanesPlugin._sectionPlaneControl.visible = false;
         }
 
         button.classList.remove('active');
         viewer.cameraFlight.flyTo(scene);
 
     } else {
-        // Ativa
+        // --- ATIVAR ---
+        const aabb = scene.getAABB();
+        const modelCenterY = (aabb[1] + aabb[4]) / 2;
+
+        horizontalSectionPlane.pos = [0, modelCenterY, 0];
+        horizontalSectionPlane.dir = [0, -1, 0];
         horizontalSectionPlane.active = true;
         scene.sectionPlanes.active = true;
 
+        // Mostra o controle (arcos e setas)
         if (horizontalSectionPlane.control) {
             horizontalSectionPlane.control.visible = true;
         } else {
@@ -372,8 +384,8 @@ function toggleSectionPlane(button) {
     }
 }
 
-
 window.toggleSectionPlane = toggleSectionPlane;
+
 
 
 
