@@ -28,6 +28,24 @@ html, body {
     z-index: 200000; 
 }
 
+/* ---------------------------------------------------- */
+/* Estilos da Árvore de Estrutura (TreeView) - NOVO */
+/* ---------------------------------------------------- */
+
+#treeViewContainer {
+    position: fixed;
+    top: 80px; /* Abaixo da toolbar */
+    left: 20px; /* Alinhado com a toolbar */
+    width: 300px; /* Largura padrão */
+    height: calc(100% - 100px); /* Altura do resto da tela */
+    background-color: rgba(0, 0, 0, 0.7); /* Fundo escuro semi-transparente */
+    color: white;
+    padding: 10px;
+    overflow-y: auto; /* Adiciona scroll se o conteúdo for grande */
+    z-index: 100000;
+    border-radius: 5px;
+    display: none; /* Inicia ESCONDIDO */
+}
 
 /* ---------------------------------------------------- */
 /* Estilos da Barra de Ferramentas e Botões */
@@ -70,3 +88,4 @@ html, body {
     background-color: #007bff; /* Azul para o ativo */
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
+
