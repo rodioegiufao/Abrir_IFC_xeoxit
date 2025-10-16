@@ -53,6 +53,20 @@ let modelsLoadedCount = 0;
 const totalModels = 2; 
 
 // Função para ajustar a câmera após o carregamento
+function resetModelVisibility() {
+    if (modelIsolateController) {
+        // Volta a exibir todos os objetos
+        modelIsolateController.setObjectsVisible(modelIsolateController.getObjectsIds(), true);
+        // Remove X-ray
+        modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false);
+        // Remove destaque
+        modelIsolateController.setObjectsHighlighted(modelIsolateController.getObjectsIds(), false);
+        // Centraliza a câmera no modelo inteiro
+        viewer.cameraFlight.jumpTo(viewer.scene);
+    }
+}
+
+
 function adjustCameraOnLoad() {
     modelsLoadedCount++;
     
@@ -60,10 +74,8 @@ function adjustCameraOnLoad() {
         viewer.cameraFlight.jumpTo(viewer.scene); 
         console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
         
-        // Ativa o modo 'none' (Desativar) por padrão
         setMeasurementMode('none', document.getElementById('btnDeactivate')); 
         
-        // Inicializa o controle de isolamento após o carregamento de todos os modelos
         setupModelIsolateController();
     }
 }
@@ -211,70 +223,60 @@ new NavCubePlugin(viewer, {
  */
 function setupModelIsolateController() {
     
-    // 6.1. Inicializa o TreeViewPlugin com hierarquia de contenção
     treeView = new TreeViewPlugin(viewer, {
         containerElement: document.getElementById("treeViewContainer"),
-        // Garante que o TreeView utilize a estrutura de níveis/pavimentos
         hierarchy: "containment", 
         autoExpandDepth: 2 
     });
 
-    // 6.2. Armazena o controlador de isolamento da cena
     modelIsolateController = viewer.scene.objects;
 
-    // 6.3. Ouve o evento de "seleção" no TreeView
+    // Ouve o evento de "seleção" no TreeView
     treeView.on("nodeClicked", (event) => {
         const entityId = event.entityId;
         
-        // Verifica se é o clique no Site (nó raiz, que representa o modelo inteiro)
+        // Verifica se há alguma entidade associada ao nó
         if (entityId && viewer.scene.getObjectsInSubtree(entityId).length > 0) {
             
-            // Isola (mostra apenas) a parte do modelo (pavimento, por exemplo) clicada
-            modelIsolateController.setObjectsXRayed([entityId], true); // X-ray no resto
-            modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false); // Tira o X-ray de todos
-
-            // Isola o subconjunto de objetos que estão na subárvore deste nó
-            modelIsolateController.isolate(viewer.scene.getObjectsInSubtree(entityId)); 
+            const subtreeIds = viewer.scene.getObjectsInSubtree(entityId);
             
-            // Opcional: Centraliza a câmera no objeto isolado
+            // Isola (mostra apenas) a parte do modelo (pavimento, por exemplo) clicada
+            modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), true); // X-ray em TUDO
+            modelIsolateController.setObjectsXRayed(subtreeIds, false); // Tira o X-ray do subconjunto isolado
+
+            modelIsolateController.isolate(subtreeIds); // Isola o subconjunto
+            
             viewer.cameraFlight.flyTo({
                 aabb: viewer.scene.getAABB(entityId),
                 duration: 0.5
             });
 
         } else {
-            // Se o usuário clicar em um objeto folha ou em um nó vazio, mostra o modelo inteiro
-            showAll(); 
+            // Se o usuário clicar em um nó que não contém objetos (como o nó raiz do projeto ou um item folha)
+            // Apenas reseta a visibilidade.
+            resetModelVisibility(); 
         }
     });
 }
 
 /**
- * Alterna a visibilidade do contêiner do TreeView.
+ * Alterna a visibilidade do contêiner do TreeView e reseta a visibilidade do modelo se estiver fechando.
  */
 function toggleTreeView() {
     const container = document.getElementById('treeViewContainer');
+    
     if (container.style.display === 'block') {
         container.style.display = 'none';
+        // Ação de "Mostrar Tudo" ao fechar o painel
+        resetModelVisibility();
     } else {
         container.style.display = 'block';
     }
 }
 
-/**
- * Mostra todos os objetos e reseta o isolamento.
- */
-function showAll() {
-    if (modelIsolateController) {
-        modelIsolateController.setObjectsVisible(modelIsolateController.getObjectsIds(), true);
-        modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false);
-        modelIsolateController.setObjectsHighlighted(modelIsolateController.getObjectsIds(), false);
-        viewer.cameraFlight.jumpTo(viewer.scene);
-    }
-}
-
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.toggleTreeView = toggleTreeView;
-window.showAll = showAll;
+window.resetModelVisibility = resetModelVisibility;
+
 
 
