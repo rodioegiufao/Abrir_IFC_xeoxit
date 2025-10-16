@@ -53,9 +53,14 @@ html, body {
 
 /* Estilo da Lista Principal (xeokit-tree-view) */
 #treeViewContainer .xeokit-tree-view {
-    list-style: none;
+    list-style: none; /* Remove pontos da lista principal */
     padding: 0;
     margin: 0;
+}
+
+/* Esconde as checkboxes no TreeView */
+#treeViewContainer .xeokit-tree-view input[type="checkbox"] {
+    display: none;
 }
 
 /* Estilo de cada Item/Nó da Árvore */
@@ -81,14 +86,36 @@ html, body {
     font-weight: bold;
 }
 
-/* Estilo para os ícones de expansão (setas/triângulos) */
+/* ESTILOS DOS ÍCONES DE EXPANSÃO - AJUSTADO (Seta) */
 #treeViewContainer .xeokit-tree-view-item-toggle {
     display: inline-block;
-    width: 15px;
+    width: 15px; /* Largura para o ícone */
     text-align: center;
     font-size: 12px;
     margin-right: 5px;
     color: #4CAF50; /* Cor verde para os toggles */
+    /* Esconde o conteúdo original (+ ou -) */
+    visibility: hidden; 
+    position: relative;
+}
+
+/* Substitui o conteúdo visível por setas Unicode */
+#treeViewContainer .xeokit-tree-view-item-toggle::before {
+    content: '▶'; /* Seta para a direita (colapsado) */
+    visibility: visible; /* Torna a seta visível */
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Altera a seta quando o item está expandido */
+#treeViewContainer .xeokit-tree-view-item-expanded > .xeokit-tree-view-item-toggle::before {
+    content: '▼'; /* Seta para baixo (expandido) */
 }
 
 /* Estilo para o texto do item */
@@ -99,10 +126,9 @@ html, body {
 
 /* Estilo para sub-listas (padding para identação) */
 #treeViewContainer .xeokit-tree-view-children {
-    list-style: none;
+    list-style: none; /* Remove os pontos dos sub-níveis */
     padding: 0;
     margin: 0;
-    /* Indentação para sub-níveis */
     padding-left: 15px; 
 }
 
@@ -147,5 +173,6 @@ html, body {
     background-color: #007bff; /* Azul para o ativo */
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
+
 
 
