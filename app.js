@@ -1,8 +1,6 @@
-// app.js
-
 import {
     Viewer, 
-    LocaleService, // <--- NOVO: Importa o serviço de localização
+    LocaleService, 
     XKTLoaderPlugin, 
     AngleMeasurementsPlugin, 
     AngleMeasurementsMouseControl, 
@@ -11,11 +9,14 @@ import {
     ContextMenu, 
     PointerLens,
     NavCubePlugin, 
-    TreeViewPlugin 
+    TreeViewPlugin,
+    SectionPlanesPlugin // <--- NOVO: Plugin de Plano de Corte
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 let treeView; 
 let modelIsolateController; 
+let sectionPlanesPlugin; // <--- NOVO
+let horizontalSectionPlane; // <--- NOVO
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -29,7 +30,7 @@ const viewer = new Viewer({
     edgesEnabled: true,
     backgroundColor: [0.8, 0.8, 0.8],
     
-    // CONFIGURAÇÃO DE LOCALIZAÇÃO ADICIONADA:
+    // CONFIGURAÇÃO DE LOCALIZAÇÃO (NavCube em Português)
     localeService: new LocaleService({
         messages: {
             "pt": { // Português
@@ -90,6 +91,7 @@ function adjustCameraOnLoad() {
         setMeasurementMode('none', document.getElementById('btnDeactivate')); 
         
         setupModelIsolateController();
+        setupSectionPlane(); // <--- NOVO: Inicializa o plano de corte
     }
 }
 
@@ -213,7 +215,6 @@ new NavCubePlugin(viewer, {
     rightMargin: 20 
 });
 
-
 // -----------------------------------------------------------------------------
 // 6. TreeViewPlugin e Lógica de Isolamento (MANTIDO)
 // -----------------------------------------------------------------------------
@@ -273,4 +274,59 @@ function toggleTreeView() {
 
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.toggleTreeView = toggleTreeView;
-window.resetModelVisibility = resetModelVisibility;
+window.resetModelVisibility = resetModelVisibility; 
+
+
+// -----------------------------------------------------------------------------
+// 7. Plano de Corte (Section Plane) - NOVO
+// -----------------------------------------------------------------------------
+
+function setupSectionPlane() {
+    sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
+    
+    // Calcula o centro Y da AABB para posicionar o plano no meio do modelo
+    const aabb = viewer.scene.getAABB(); 
+    const modelCenterY = (aabb[1] + aabb[4]) / 2; 
+
+    // Cria o plano de corte principal, mas o mantém inativo
+    horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
+        id: "horizontalPlane",
+        pos: [0, modelCenterY, 0], // Posição no centro Y do modelo
+        dir: [0, -1, 0],         // Corte horizontal (vetor normal apontando para baixo)
+        active: false            // Inicia inativo
+    });
+    
+    console.log(`Plano de corte inicializado na altura Y: ${modelCenterY}`);
+}
+
+/**
+ * Alterna o estado ativo do plano de corte e ajusta a câmera.
+ */
+function toggleSectionPlane(button) {
+    if (!horizontalSectionPlane) {
+        console.error("Plano de corte não está inicializado.");
+        return;
+    }
+    
+    if (horizontalSectionPlane.active) {
+        // Desativa
+        horizontalSectionPlane.active = false;
+        button.classList.remove('active');
+        viewer.cameraFlight.jumpTo(viewer.scene); // Volta para a vista completa
+    } else {
+        // Ativa
+        horizontalSectionPlane.active = true;
+        button.classList.add('active');
+        
+        // Faz um pequeno voo de câmera para centralizar a vista no plano de corte
+        const aabb = viewer.scene.getAABB(); 
+        const modelCenterY = (aabb[1] + aabb[4]) / 2; 
+
+        viewer.cameraFlight.flyTo({
+            look: [aabb[0] + (aabb[3] - aabb[0]) / 2, modelCenterY, aabb[2] + (aabb[5] - aabb[2]) / 2],
+            duration: 0.5
+        });
+    }
+}
+
+window.toggleSectionPlane = toggleSectionPlane; // Expõe a função para o HTML
