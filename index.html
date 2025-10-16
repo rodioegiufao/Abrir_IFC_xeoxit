@@ -13,35 +13,9 @@
     <canvas id="meuCanvas"></canvas>
 
     <div id="toolbar">
-        <button 
-            id="btnAngle" 
-            class="tool-button active" 
-            onclick="setMeasurementMode('angle', this)" 
-            title="Medir Ângulo (Transferidor)" 
-        >
-            <span style="font-size: 1.2em;">📐</span>
-            Ângulo
-        </button>
-
-        <button 
-            id="btnDistance" 
-            class="tool-button" 
-            onclick="setMeasurementMode('distance', this)" 
-            title="Medir Distância (Régua)"
-        >
-            <span style="font-size: 1.2em;">📏</span>
-            Distância
-        </button>
-
-        <button 
-            id="btnDeactivate" 
-            class="tool-button" 
-            onclick="setMeasurementMode('none', this)" 
-            title="Desativar Medição"
-        >
-            <span style="font-size: 1.2em;">🚫</span>
-            Desativar
-        </button>
+        <button id="btnAngle" class="tool-button active" onclick="setMeasurementMode('angle', this)">Medir Ângulo</button>
+        <button id="btnDistance" class="tool-button" onclick="setMeasurementMode('distance', this)">Medir Distância</button>
+        <button id="btnDeactivate" class="tool-button" onclick="setMeasurementMode('none', this)">Desativar</button>
     </div>
 
     <script type="module" src="app.js"></script>
