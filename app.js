@@ -12,15 +12,14 @@ import {
     PointerLens,
     NavCubePlugin, 
     TreeViewPlugin,
-    SectionPlanesPlugin,
-    ModelIsolateController // 🛑 CORREÇÃO: Importa a classe ModelIsolateController
+    SectionPlanesPlugin 
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
-// Variáveis globais para os plugins
 let treeView; 
 let modelIsolateController; 
 let sectionPlanesPlugin; 
 let horizontalSectionPlane; 
+let horizontalPlaneControl;  
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -44,15 +43,7 @@ const viewer = new Viewer({
                     "top": "Topo",
                     "bottom": "Baixo",
                     "left": "Esquerda",
-                    "right": "Direita",
-                    "frontTopLeft": "Frente-Topo-Esquerda",
-                    "frontTopRight": "Frente-Topo-Direita",
-                    "backTopLeft": "Trás-Topo-Esquerda",
-                    "backTopRight": "Trás-Topo-Direita",
-                    "frontBottomLeft": "Frente-Baixo-Esquerda",
-                    "frontBottomRight": "Frente-Baixo-Direita",
-                    "backBottomLeft": "Trás-Baixo-Esquerda",
-                    "backBottomRight": "Trás-Baixo-Direita"
+                    "right": "Direita"
                 }
             }
         },
@@ -60,7 +51,7 @@ const viewer = new Viewer({
     })
 });
 
-// Garante que o viewer se ajuste às dimensões da janela
+
 function onWindowResize() {
     const canvas = viewer.scene.canvas;
     canvas.width = window.innerWidth;
@@ -68,201 +59,114 @@ function onWindowResize() {
 }
 
 window.addEventListener('resize', onWindowResize);
-onWindowResize(); // Chama na inicialização
-
-
-// -----------------------------------------------------------------------------
-// 2. Plugins e Controles de Interação
-// -----------------------------------------------------------------------------
-
-// 🛑 NOVA INSTANCIAÇÃO: Inicializa o ModelIsolateController 
-modelIsolateController = new ModelIsolateController(viewer);
-
-// Adiciona o Cube de Navegação
-new NavCubePlugin(viewer, {
-    canvasId: "myNavCubeCanvas",
-    visible: true,
-    size: 150,
-    alignment: "bottomRight",
-    bottomMargin: 20,
-    rightMargin: 20
-});
-
-// Adiciona o plugin de medição de ângulo
-const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer);
-
-// Adiciona o plugin de medição de distância
-const distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer);
-
-// Inicializa os controles de mouse para medição
-const angleControl = new AngleMeasurementsMouseControl(angleMeasurementsPlugin);
-const distanceControl = new DistanceMeasurementsMouseControl(distanceMeasurementsPlugin);
-
-// Inicializa o PointerLens (ajuda a mirar)
-new PointerLens(viewer);
-
-// Inicializa o plugin de planos de corte
-sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
-
-// Cria um SectionPlane para ser usado pelo botão de corte
-horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
-    id: "horizontalSectionPlane",
-    dir: [0, -1, 0], // Inicia apontando para baixo (corte horizontal)
-    active: false
-});
-
-// Inicializa o TreeViewPlugin
-treeView = new TreeViewPlugin(viewer, {
-    containerElement: document.getElementById("treeViewContainer"),
-    autoExpandDepth: 1, // Expande apenas o primeiro nível ao carregar
-    hierarchy: "containment" // Mostra a estrutura por níveis (andar, sala, etc)
-});
-
-// Adiciona listener para o clique na TreeView para isolar o objeto/sub-estrutura
-setupTreeViewEvents();
+onWindowResize(); 
 
 // -----------------------------------------------------------------------------
-// 3. Funções de Controle (Toolbar)
+// 2. Carregamento dos Modelos e Ajuste da Câmera
 // -----------------------------------------------------------------------------
 
-/**
- * Alterna o modo de medição ativo e o estilo do botão.
- * @param {string} mode 'angle', 'distance', ou 'none'
- * @param {HTMLElement} button O botão que foi clicado.
- */
-function setMeasurementMode(mode, button) {
-    const buttons = document.querySelectorAll('#toolbar .tool-button');
-    buttons.forEach(btn => btn.classList.remove('active'));
+const xktLoader = new XKTLoaderPlugin(viewer);
 
-    // Desativa ambos os controles
-    angleControl.active = false;
-    distanceControl.active = false;
+let modelsLoadedCount = 0;
+const totalModels = 2; 
 
-    if (mode === 'angle') {
-        angleControl.active = true;
-        button.classList.add('active');
-    } else if (mode === 'distance') {
-        distanceControl.active = true;
-        button.classList.add('active');
-    }
-
-    // Se o modo for 'none', o botão de desativar (ou o último ativo) pode ser mantido, mas o controle é resetado.
-    if (mode === 'none') {
-        // Limpa todas as medições e controles, mas não ativa nenhum modo
-        angleMeasurementsPlugin.clear();
-        distanceMeasurementsPlugin.clear();
-        angleControl.reset();
-        distanceControl.reset(); 
-        
-        // Ativa o botão de desativar (se foi ele que chamou)
-        if (button?.id === 'btnDeactivate') { // Adicionei '?' para segurança, caso o parâmetro button não venha
-            button.classList.add('active');
-        }
-    }
-}
-
-/**
- * Alterna o plano de corte horizontal.
- * @param {HTMLElement} button O botão de corte.
- */
-function toggleSectionPlane(button) {
-    const scene = viewer.scene;
-
-    // --- DESATIVAR ---
-    if (horizontalSectionPlane.active) {
-        horizontalSectionPlane.active = false;
-        scene.sectionPlanes.active = false;
-
-        // destrói o controle (gizmo), remove listeners e força redraw
-        if (horizontalSectionPlane.control) {
-            try {
-                // Tenta remover o canvas do controle (gizmo) do input
-                viewer.input.removeCanvasElement(horizontalSectionPlane.control.canvas);
-            } catch (e) {} // Ignora erro se o canvas já foi removido
-            horizontalSectionPlane.control.destroy();
-            horizontalSectionPlane.control = null;
-        }
-
-        // alguns builds deixam o gizmo em viewer.input._activeCanvasElements
-        // Limpa o cache de elementos ativos para garantir que o gizmo desapareça
-        if (viewer.input && viewer.input._activeCanvasElements) {
-            viewer.input._activeCanvasElements.clear?.();
-        }
-
-        viewer.scene.render(); // força re-render
-        button.classList.remove("active");
-        viewer.cameraFlight.flyTo(scene); // Retorna a câmera para a vista geral
-        return;
-    }
-
-    // --- ATIVAR ---\
-    const aabb = scene.getAABB();
-    // Posição Y no centro do AABB (caixa delimitadora)
-    const modelCenterY = (aabb[1] + aabb[4]) / 2;
-
-    horizontalSectionPlane.pos = [0, modelCenterY, 0]; // Define a posição Y no centro
-    horizontalSectionPlane.dir = [0, -1, 0]; // Garante que o corte é horizontal
-    horizontalSectionPlane.active = true;
-    scene.sectionPlanes.active = true; // Ativa o plugin
-
-    // cria novamente o controle (gizmo)
-    horizontalSectionPlane.control = sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
-
-    button.classList.add("active");
-    viewer.cameraFlight.flyTo(horizontalSectionPlane.control.getAABB()); // Voa para o plano de corte
-
-    // Garante que o botão de desativar medição não esteja ativo
-    document.getElementById('btnAngle').classList.remove('active');
-    document.getElementById('btnDistance').classList.remove('active');
-    document.getElementById('btnDeactivate').classList.remove('active');
-}
-
-
-/**
- * Alterna a visibilidade do contêiner do TreeView.
- */
-function toggleTreeView() {
-    const container = document.getElementById('treeViewContainer');
-    const button = document.getElementById('btnToggleTree');
-
-    if (container.style.display === 'block') {
-        container.style.display = 'none';
-        button.classList.remove('active');
-    } else {
-        container.style.display = 'block';
-        button.classList.add('active');
-    }
-}
-
-/**
- * Mostra todos os objetos e reseta o isolamento.
- */
-function showAll() {
+function resetModelVisibility() {
     if (modelIsolateController) {
-        // Reseta todos os estados visuais para o modelo inteiro
+        // Volta a exibir todos os objetos
         modelIsolateController.setObjectsVisible(modelIsolateController.getObjectsIds(), true);
+        // Remove X-ray
         modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false);
+        // Remove destaque
         modelIsolateController.setObjectsHighlighted(modelIsolateController.getObjectsIds(), false);
+        // Centraliza a câmera no modelo inteiro
         viewer.cameraFlight.jumpTo(viewer.scene);
     }
-    // Garante que todos os botões de modo (incluindo o próprio 'showAll') estejam desativados
-    document.querySelectorAll('#toolbar .tool-button').forEach(btn => btn.classList.remove('active'));
-    
-    // Força o modo 'none' para medição, limpando as medições ativas
-    setMeasurementMode('none'); 
 }
 
 
-// 🛑 EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
+function adjustCameraOnLoad() {
+    modelsLoadedCount++;
+    
+    if (modelsLoadedCount === totalModels) {
+        setTimeout(() => {
+            viewer.cameraFlight.jumpTo(viewer.scene);
+            console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
+            setMeasurementMode('none', document.getElementById('btnDeactivate')); 
+            setupModelIsolateController();
+            // ❌ NÃO chamamos setupSectionPlane aqui
+        }, 300);
+    }
+}
+
+// CARREGAMENTO DOS MODELOS (MANTIDO)
+const model1 = xktLoader.load({
+    id: "meuModeloBIM",
+    src: "assets/meu_modelo.xkt", 
+    edges: true
+});
+
+model1.on("loaded", adjustCameraOnLoad);
+model1.on("error", (err) => {
+    console.error("Erro ao carregar meu_modelo.xkt:", err);
+    adjustCameraOnLoad(); 
+});
+
+const model2 = xktLoader.load({
+    id: "meuModeloBIM_02", 
+    src: "assets/modelo-02.xkt", 
+    edges: true
+});
+
+model2.on("loaded", adjustCameraOnLoad);
+model2.on("error", (err) => {
+    console.error("Erro ao carregar modelo-02.xkt:", err);
+    adjustCameraOnLoad(); 
+});
+
+
+// -----------------------------------------------------------------------------
+// 3. Plugins de Medição e Função de Troca (MANTIDO)
+// -----------------------------------------------------------------------------
+
+const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, { zIndex: 100000 });
+const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMeasurementsPlugin, {
+    pointerLens: new PointerLens(viewer), 
+    snapping: true 
+});
+angleMeasurementsMouseControl.deactivate(); 
+
+
+const distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer, { zIndex: 100000 });
+const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(distanceMeasurementsPlugin, {
+    pointerLens: new PointerLens(viewer), 
+    snapping: true 
+});
+distanceMeasurementsMouseControl.deactivate(); 
+
+function setMeasurementMode(mode, clickedButton) {
+    angleMeasurementsMouseControl.deactivate();
+    distanceMeasurementsMouseControl.deactivate();
+    document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active'));
+
+    if (mode === 'angle') {
+        angleMeasurementsMouseControl.activate();
+    } else if (mode === 'distance') {
+        distanceMeasurementsMouseControl.activate();
+    }
+    
+    if (clickedButton) {
+         clickedButton.classList.add('active');
+    }
+
+    angleMeasurementsMouseControl.reset(); 
+    distanceMeasurementsMouseControl.reset(); 
+}
+
 window.setMeasurementMode = setMeasurementMode;
-window.toggleTreeView = toggleTreeView;
-window.showAll = showAll;
-window.toggleSectionPlane = toggleSectionPlane;
 
-
-// ----------------------------------------------------------------------------
-// 4. Menu de Contexto (Deletar Medição)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 4. Menu de Contexto (Deletar Medição) (MANTIDO)
+// -----------------------------------------------------------------------------
 
 const contextMenu = new ContextMenu({
     items: [
@@ -300,46 +204,192 @@ function setupMeasurementEvents(plugin) {
 setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
 
+// -----------------------------------------------------------------------------
+// 5. Cubo de Navegação (NavCube) (MANTIDO)
+// -----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
-// 5. Carregamento do Modelo
-// ----------------------------------------------------------------------------
-
-const xktLoader = new XKTLoaderPlugin(viewer);
-
-xktLoader.load({
-    id: "myModel",
-    src: "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/assets/models/xkt/v10/ifc/Schependomlaan.ifc.xkt",
-    edges: true,
-    excludeUnclassifiedObjects: false
+new NavCubePlugin(viewer, {
+    canvasId: "myNavCubeCanvas", 
+    visible: true,
+    size: 150, 
+    alignment: "bottomRight", 
+    bottomMargin: 20, 
+    rightMargin: 20 
 });
 
-// ----------------------------------------------------------------------------
-// 6. Eventos da Árvore de Estrutura (TreeView)
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 6. TreeViewPlugin e Lógica de Isolamento (MANTIDO)
+// -----------------------------------------------------------------------------
 
-function setupTreeViewEvents() {
-    treeView.on("objectClicked", (e) => {
+function setupModelIsolateController() {
+    
+    treeView = new TreeViewPlugin(viewer, {
+        containerElement: document.getElementById("treeViewContainer"),
+        hierarchy: "containment", 
+        autoExpandDepth: 2 
+    });
 
-        const entityId = e.entityId;
+    modelIsolateController = viewer.scene.objects;
 
-        if (entityId) {
+    // Ouve o evento de "seleção" no TreeView
+    treeView.on("nodeClicked", (event) => {
+        const entityId = event.entityId;
+        
+        // Verifica se há alguma entidade associada ao nó
+        if (entityId && viewer.scene.getObjectsInSubtree(entityId).length > 0) {
             
-            // Oculta o modelo inteiro primeiro
-            modelIsolateController.setObjectsVisible(modelIsolateController.getObjectsIds(), false); 
-
-            // Isola o subconjunto de objetos que estão na subárvore deste nó
-            modelIsolateController.isolate(viewer.scene.getObjectsInSubtree(entityId)); 
+            const subtreeIds = viewer.scene.getObjectsInSubtree(entityId);
             
-            // Opcional: Centraliza a câmera no objeto isolado
+            // Isola (mostra apenas) a parte do modelo (pavimento, por exemplo) clicada
+            modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), true); // X-ray em TUDO
+            modelIsolateController.setObjectsXRayed(subtreeIds, false); // Tira o X-ray do subconjunto isolado
+
+            modelIsolateController.isolate(subtreeIds); // Isola o subconjunto
+            
             viewer.cameraFlight.flyTo({
                 aabb: viewer.scene.getAABB(entityId),
                 duration: 0.5
             });
 
         } else {
-            // Se o usuário clicar em um objeto folha ou em um nó vazio, mostra o modelo inteiro
-            showAll(); 
+            // Se o usuário clicar em um nó que não contém objetos (como o nó raiz do projeto ou um item folha)
+            // Apenas reseta a visibilidade.
+            resetModelVisibility(); 
         }
     });
 }
+
+/**
+ * Alterna a visibilidade do contêiner do TreeView e reseta a visibilidade do modelo se estiver fechando.
+ */
+function toggleTreeView() {
+    const container = document.getElementById('treeViewContainer');
+    
+    if (container.style.display === 'block') {
+        container.style.display = 'none';
+        // Ação de "Mostrar Tudo" ao fechar o painel
+        resetModelVisibility(); 
+    } else {
+        container.style.display = 'block';
+    }
+}
+
+// EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
+window.toggleTreeView = toggleTreeView;
+window.resetModelVisibility = resetModelVisibility; 
+
+
+// -----------------------------------------------------------------------------
+// 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL
+// -----------------------------------------------------------------------------
+
+function setupSectionPlane() {
+    sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
+
+    // 🔹 Desliga completamente o sistema de planos na inicialização
+    viewer.scene.sectionPlanes.active = false;
+
+    // Cria o plano horizontal (ainda inativo)
+    horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
+        id: "horizontalPlane",
+        pos: [0, 0, 0],
+        dir: [0, -1, 0],
+        active: false
+    });
+
+    // 🔹 Não mostra controle ainda
+    if (horizontalSectionPlane.control) {
+        horizontalSectionPlane.control.visible = false;
+    }
+
+    console.log("Plano de corte inicializado (inativo)");
+
+    // 🔹 Força uma atualização visual completa após o carregamento
+    viewer.scene.on("tick", () => {
+        // Assim que houver algo na cena, centraliza a câmera
+        if (viewer.scene.numEntities > 0 && !setupSectionPlane._initialized) {
+            setupSectionPlane._initialized = true;
+            const aabb = viewer.scene.getAABB();
+            viewer.cameraFlight.jumpTo({ aabb, duration: 0 });
+            console.log("Câmera centralizada automaticamente após carregamento inicial.");
+        }
+    });
+}
+
+function toggleSectionPlane(button) {
+    const scene = viewer.scene;
+
+    // cria o plugin e o plano na primeira vez
+    if (!horizontalSectionPlane) {
+        sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
+
+        const aabb = scene.getAABB();
+        const modelCenterY = (aabb[1] + aabb[4]) / 2;
+
+        horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
+            id: "horizontalPlane",
+            pos: [0, modelCenterY, 0],
+            dir: [0, -1, 0],
+            active: false
+        });
+
+        console.log("Plano de corte criado sob demanda.");
+    }
+
+    // --- DESATIVAR ---
+    if (horizontalSectionPlane.active) {
+        horizontalSectionPlane.active = false;
+        scene.sectionPlanes.active = false;
+
+        // destrói o controle, remove listeners e força redraw
+        if (horizontalSectionPlane.control) {
+            try {
+                viewer.input.removeCanvasElement(horizontalSectionPlane.control.canvas);
+            } catch (e) {}
+            horizontalSectionPlane.control.destroy();
+            horizontalSectionPlane.control = null;
+        }
+
+        // alguns builds deixam o gizmo em viewer.input._activeCanvasElements
+        if (viewer.input && viewer.input._activeCanvasElements) {
+            viewer.input._activeCanvasElements.clear?.();
+        }
+
+        viewer.scene.render(); // força re-render
+        button.classList.remove("active");
+        viewer.cameraFlight.flyTo(scene);
+        return;
+    }
+
+    // --- ATIVAR ---
+    const aabb = scene.getAABB();
+    const modelCenterY = (aabb[1] + aabb[4]) / 2;
+
+    horizontalSectionPlane.pos = [0, modelCenterY, 0];
+    horizontalSectionPlane.dir = [0, -1, 0];
+    horizontalSectionPlane.active = true;
+    scene.sectionPlanes.active = true;
+
+    // cria novamente o controle
+    horizontalSectionPlane.control = sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
+
+    button.classList.add("active");
+
+    viewer.cameraFlight.flyTo({
+        aabb: scene.aabb,
+        duration: 0.5
+    });
+}
+
+
+
+window.toggleSectionPlane = toggleSectionPlane;
+
+
+
+
+
+
+
+
+
