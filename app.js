@@ -12,7 +12,8 @@ import {
     PointerLens,
     NavCubePlugin, 
     TreeViewPlugin,
-    SectionPlanesPlugin 
+    SectionPlanesPlugin, // Certifique-se de que o SectionPlanesPlugin está importado
+    math 
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 let treeView; 
@@ -79,6 +80,13 @@ function showAll() {
         modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false);
         modelIsolateController.setObjectsHighlighted(modelIsolateController.getObjectsIds(), false);
         viewer.cameraFlight.jumpTo(viewer.scene);
+    }
+    // Garante que o corte seja desativado ao "Mostrar Tudo"
+    if (horizontalSectionPlane) {
+        horizontalSectionPlane.destroy(); 
+        horizontalSectionPlane = null;
+        viewer.scene.sectionPlanes.active = false;
+        document.getElementById('btnSectionPlane')?.classList.remove('active');
     }
 }
 window.showAll = showAll; // expõe a função showAll
@@ -277,7 +285,7 @@ window.toggleTreeView = toggleTreeView;
 
 
 // ----------------------------------------------------------------------------
-// 7. Plano de Corte (Section Plane) - CORREÇÃO DE DESTRUIÇÃO DO GIZMO
+// 7. Plano de Corte (Section Plane) - CORREÇÃO FINAL
 // ----------------------------------------------------------------------------
 
 /**
@@ -304,35 +312,45 @@ function toggleSectionPlane(button) {
     
     // --- 1. DESATIVAR (Plano existe) ---
     if (horizontalSectionPlane) {
+        console.log("DESATIVANDO CORTE: Destruindo plano e gizmo.");
         
         // 🛑 Destrói o plano E seu controle (gizmo) associado
-        // O método destroy() do SectionPlane se encarrega de destruir o controle (gizmo) associado
         horizontalSectionPlane.destroy(); 
         horizontalSectionPlane = null; // Zera a referência
         
         scene.sectionPlanes.active = false; // Desativa a renderização do corte
         
         button.classList.remove('active');
-        viewer.cameraFlight.jumpTo(viewer.scene); // Volta para a vista completa
+        // Volta para a vista completa usando o AABB da cena inteira
+        viewer.cameraFlight.flyTo({
+            aabb: viewer.scene.aabb, 
+            duration: 0.5
+        }); 
+        
         return;
     } 
 
     // --- 2. ATIVAR (Plano não existe) ---
-    
-    // Recria o plano com base na AABB atual
+    console.log("ATIVANDO CORTE: Criando novo plano e gizmo.");
+
+    // Calcula a AABB da cena para centralizar o corte
     const aabb = scene.getAABB(); 
-    const modelCenterY = (aabb[1] + aabb[4]) / 2; 
+    const modelHeight = aabb[4] - aabb[1]; 
+    // Posição inicial: 2/3 da altura do modelo (para ver o interior)
+    const initialCutY = aabb[1] + (modelHeight * 0.66); 
 
     // Cria um NOVO SectionPlane
     horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
         id: "horizontalPlane",
-        pos: [0, modelCenterY, 0], 
-        dir: [0, -1, 0],         
+        // Posição centralizada em X/Z e na altura calculada (initialCutY)
+        pos: [scene.center[0], initialCutY, scene.center[2]], 
+        
+        // Dir [0, 1, 0] aponta para cima, cortando o topo do modelo
+        dir: [0, 1, 0],         
         active: true 
     });
     
     // Cria e mostra o controle (gizmo) para o NOVO SectionPlane.
-    // O plugin de corte anexa o controle (gizmo) automaticamente ao plano.
     sectionPlanesPlugin.showControl(horizontalSectionPlane.id); 
 
     // Ativa o sistema de corte global
@@ -343,8 +361,8 @@ function toggleSectionPlane(button) {
     
     viewer.cameraFlight.flyTo({
         // Foca a câmera no centro do modelo, na altura do corte
-        look: [scene.center[0], modelCenterY, scene.center[2]],
-        duration: 0.5
+        look: [scene.center[0], initialCutY, scene.center[2]],
+        duration: 0.8
     });
 }
 
