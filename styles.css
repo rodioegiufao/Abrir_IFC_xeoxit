@@ -28,13 +28,13 @@ html, body {
 }
 
 .tool-button {
-    /* Ajustado para centralizar ícone e texto */
+    /* Ajustado para centralizar ícone acima do texto */
     display: flex;
-    flex-direction: column; /* Coloca o ícone acima do texto */
+    flex-direction: column; 
     align-items: center;
     justify-content: center;
     
-    min-width: 80px; /* Garante largura mínima para todos */
+    min-width: 80px; 
     padding: 8px 10px;
     background-color: rgba(51, 51, 51, 0.8);
     color: white;
@@ -42,7 +42,7 @@ html, body {
     cursor: pointer;
     border-radius: 5px;
     transition: background-color 0.2s;
-    font-size: 0.8em; /* Fonte menor para o texto */
+    font-size: 0.8em; 
     font-weight: bold;
     line-height: 1.2;
 }
@@ -54,6 +54,20 @@ html, body {
 .tool-button.active {
     background-color: #007bff; /* Azul para o ativo */
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* ---------------------------------------------------- */
+/* Estilos do Cubo de Navegação (NavCube) - NOVIDADE */
+/* ---------------------------------------------------- */
+
+#navCubeCanvas {
+    position: fixed;
+    width: 200px; /* Tamanho do cubo */
+    height: 200px;
+    bottom: 20px; /* Distância da parte inferior */
+    right: 20px; /* Distância da direita */
+    z-index: 200000; 
+    pointer-events: all; /* Permite a interação com o mouse */
 }
 
 /* ---------------------------------------------------- */
@@ -79,18 +93,4 @@ html, body {
 .xeokit-context-menu-item:hover {
     background: #007bff;
     color: white;
-}
-
-/* ---------------------------------------------------- */
-/* Estilos do Cubo de Navegação (NavCube) */
-/* ---------------------------------------------------- */
-
-#navCubeCanvas {
-    position: fixed;
-    width: 200px; /* Tamanho do cubo */
-    height: 200px;
-    bottom: 20px; /* Distância da parte inferior */
-    right: 20px; /* Distância da direita */
-    z-index: 200000; /* Garante que fique acima de outros elementos */
-    pointer-events: all; /* Permite a interação com o mouse */
 }
