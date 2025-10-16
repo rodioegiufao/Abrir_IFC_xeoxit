@@ -18,7 +18,7 @@ import {
 let treeView; 
 let modelIsolateController; 
 let sectionPlanesPlugin; 
-let horizontalSectionPlane = null; // 🛑 NOVO: Inicializado como null. Será criado ao ativar.
+let horizontalSectionPlane = null; // MANTIDO: Inicializado como null. Será criado ao ativar.
 
 
 // ----------------------------------------------------------------------------
@@ -125,7 +125,7 @@ model2.on("error", (err) => {
 
 
 // ----------------------------------------------------------------------------
-// 3. Plugins de Medição e Função de Troca (MANTIDO)
+// 3. Plugins de Medição e Função de Troca
 // ----------------------------------------------------------------------------
 
 const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, { zIndex: 100000 });
@@ -165,7 +165,7 @@ function setMeasurementMode(mode, clickedButton) {
 window.setMeasurementMode = setMeasurementMode;
 
 // ----------------------------------------------------------------------------
-// 4. Menu de Contexto (Deletar Medição) (MANTIDO)
+// 4. Menu de Contexto (Deletar Medição)
 // ----------------------------------------------------------------------------
 
 const contextMenu = new ContextMenu({
@@ -205,7 +205,7 @@ setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
 
 // ----------------------------------------------------------------------------
-// 5. Cubo de Navegação (NavCube) (MANTIDO)
+// 5. Cubo de Navegação (NavCube)
 // ----------------------------------------------------------------------------
 
 new NavCubePlugin(viewer, {
@@ -218,7 +218,7 @@ new NavCubePlugin(viewer, {
 });
 
 // ----------------------------------------------------------------------------
-// 6. TreeViewPlugin e Lógica de Isolamento (MANTIDO)
+// 6. TreeViewPlugin e Lógica de Isolamento
 // ----------------------------------------------------------------------------
 
 function setupModelIsolateController() {
@@ -306,13 +306,14 @@ function toggleSectionPlane(button) {
     if (horizontalSectionPlane) {
         
         // 🛑 Destrói o plano E seu controle (gizmo) associado
+        // O método destroy() do SectionPlane se encarrega de destruir o controle (gizmo) associado
         horizontalSectionPlane.destroy(); 
         horizontalSectionPlane = null; // Zera a referência
         
         scene.sectionPlanes.active = false; // Desativa a renderização do corte
         
         button.classList.remove('active');
-        viewer.cameraFlight.jumpTo(scene); // Volta para a vista completa
+        viewer.cameraFlight.jumpTo(viewer.scene); // Volta para a vista completa
         return;
     } 
 
@@ -322,14 +323,16 @@ function toggleSectionPlane(button) {
     const aabb = scene.getAABB(); 
     const modelCenterY = (aabb[1] + aabb[4]) / 2; 
 
+    // Cria um NOVO SectionPlane
     horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
         id: "horizontalPlane",
         pos: [0, modelCenterY, 0], 
         dir: [0, -1, 0],         
-        active: true // Já cria ativado
+        active: true 
     });
     
-    // Cria e mostra o controle (gizmo). A referência do controle é anexada internamente ao plano.
+    // Cria e mostra o controle (gizmo) para o NOVO SectionPlane.
+    // O plugin de corte anexa o controle (gizmo) automaticamente ao plano.
     sectionPlanesPlugin.showControl(horizontalSectionPlane.id); 
 
     // Ativa o sistema de corte global
