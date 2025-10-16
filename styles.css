@@ -80,3 +80,17 @@ html, body {
     background: #007bff;
     color: white;
 }
+
+/* ---------------------------------------------------- */
+/* Estilos do Cubo de Navegação (NavCube) */
+/* ---------------------------------------------------- */
+
+#navCubeCanvas {
+    position: fixed;
+    width: 200px; /* Tamanho do cubo */
+    height: 200px;
+    bottom: 20px; /* Distância da parte inferior */
+    right: 20px; /* Distância da direita */
+    z-index: 200000; /* Garante que fique acima de outros elementos */
+    pointer-events: all; /* Permite a interação com o mouse */
+}
