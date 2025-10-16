@@ -314,12 +314,14 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = false;
         scene.sectionPlanes.active = false;
 
+        // Esconde o controle se existir
         if (horizontalSectionPlane.control) {
             horizontalSectionPlane.control.visible = false;
         }
 
         button.classList.remove('active');
-        viewer.cameraFlight.flyTo(scene); // mostra tudo novamente
+        viewer.cameraFlight.flyTo(scene);
+
     } else {
         // 🔹 ATIVAR
         const aabb = scene.getAABB();
@@ -330,8 +332,12 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = true;
         scene.sectionPlanes.active = true;
 
+        // 🔹 Aqui está o ponto crucial
         if (horizontalSectionPlane.control) {
             horizontalSectionPlane.control.visible = true;
+        } else {
+            // Se o controle ainda não existe, pede explicitamente ao plugin para criar e exibir
+            sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
         }
 
         button.classList.add('active');
@@ -344,3 +350,4 @@ function toggleSectionPlane(button) {
 }
 
 window.toggleSectionPlane = toggleSectionPlane;
+
