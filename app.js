@@ -195,3 +195,78 @@ new NavCubePlugin(viewer, {
     rightMargin: 20 
 });
 
+
+// -----------------------------------------------------------------------------
+// 6. TreeViewPlugin e Lógica de Isolamento (NOVO)
+// -----------------------------------------------------------------------------
+
+/**
+ * Inicializa o TreeViewPlugin e configura a lógica de isolamento.
+ */
+function setupModelIsolateController() {
+    
+    // 6.1. Inicializa o TreeViewPlugin com hierarquia de contenção
+    treeView = new TreeViewPlugin(viewer, {
+        containerElement: document.getElementById("treeViewContainer"),
+        // Garante que o TreeView utilize a estrutura de níveis/pavimentos
+        hierarchy: "containment", 
+        autoExpandDepth: 2 
+    });
+
+    // 6.2. Armazena o controlador de isolamento da cena
+    modelIsolateController = viewer.scene.objects;
+
+    // 6.3. Ouve o evento de "seleção" no TreeView
+    treeView.on("nodeClicked", (event) => {
+        const entityId = event.entityId;
+        
+        // Verifica se é o clique no Site (nó raiz, que representa o modelo inteiro)
+        if (entityId && viewer.scene.getObjectsInSubtree(entityId).length > 0) {
+            
+            // Isola (mostra apenas) a parte do modelo (pavimento, por exemplo) clicada
+            modelIsolateController.setObjectsXRayed([entityId], true); // X-ray no resto
+            modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false); // Tira o X-ray de todos
+
+            // Isola o subconjunto de objetos que estão na subárvore deste nó
+            modelIsolateController.isolate(viewer.scene.getObjectsInSubtree(entityId)); 
+            
+            // Opcional: Centraliza a câmera no objeto isolado
+            viewer.cameraFlight.flyTo({
+                aabb: viewer.scene.getAABB(entityId),
+                duration: 0.5
+            });
+
+        } else {
+            // Se o usuário clicar em um objeto folha ou em um nó vazio, mostra o modelo inteiro
+            showAll(); 
+        }
+    });
+}
+
+/**
+ * Alterna a visibilidade do contêiner do TreeView.
+ */
+function toggleTreeView() {
+    const container = document.getElementById('treeViewContainer');
+    if (container.style.display === 'block') {
+        container.style.display = 'none';
+    } else {
+        container.style.display = 'block';
+    }
+}
+
+/**
+ * Mostra todos os objetos e reseta o isolamento.
+ */
+function showAll() {
+    if (modelIsolateController) {
+        modelIsolateController.setObjectsVisible(modelIsolateController.getObjectsIds(), true);
+        modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false);
+        modelIsolateController.setObjectsHighlighted(modelIsolateController.getObjectsIds(), false);
+        viewer.cameraFlight.jumpTo(viewer.scene);
+    }
+}
+
+// EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
+window.toggleTreeView = toggleTreeView;
+window.showAll = showAll;
