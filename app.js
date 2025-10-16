@@ -9,8 +9,13 @@ import {
     DistanceMeasurementsMouseControl,
     ContextMenu, 
     PointerLens,
-    NavCubePlugin 
+    NavCubePlugin,
+    TreeViewPlugin
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
+
+// Variável global para o TreeView (necessária para as funções de toggle)
+let treeView; 
+let modelIsolateController;
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -271,4 +276,5 @@ function showAll() {
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.toggleTreeView = toggleTreeView;
 window.showAll = showAll;
+
 
