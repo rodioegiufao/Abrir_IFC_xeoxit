@@ -19,8 +19,7 @@ let treeView;
 let modelIsolateController; 
 let sectionPlanesPlugin; 
 let horizontalSectionPlane; 
-// let horizontalPlaneControl; // Removida, usaremos horizontalSectionPlane.control
-
+let horizontalPlaneControl;  
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -89,16 +88,15 @@ function adjustCameraOnLoad() {
     modelsLoadedCount++;
     
     if (modelsLoadedCount === totalModels) {
-        viewer.cameraFlight.jumpTo(viewer.scene); 
-        console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
-        
-        setMeasurementMode('none', document.getElementById('btnDeactivate')); 
-        
-        setupModelIsolateController();
-        setupSectionPlane(); // Inicializa o plano de corte
+        setTimeout(() => {
+            viewer.cameraFlight.jumpTo(viewer.scene);
+            console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
+            setMeasurementMode('none', document.getElementById('btnDeactivate')); 
+            setupModelIsolateController();
+            // ❌ NÃO chamamos setupSectionPlane aqui
+        }, 300);
     }
 }
-
 
 // CARREGAMENTO DOS MODELOS (MANTIDO)
 const model1 = xktLoader.load({
@@ -282,82 +280,116 @@ window.resetModelVisibility = resetModelVisibility;
 
 
 // -----------------------------------------------------------------------------
-// 7. Plano de Corte (Section Plane) - CORREÇÃO DE DESTRUIÇÃO DO GIZMO
+// 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL
 // -----------------------------------------------------------------------------
 
 function setupSectionPlane() {
     sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
-    
-    // Calcula o centro Y da AABB para posicionar o plano no meio do modelo
-    const aabb = viewer.scene.getAABB(); 
-    const modelCenterY = (aabb[1] + aabb[4]) / 2; 
 
-    // Cria o plano de corte. OBS: Não tentamos criar o controle aqui.
+    // 🔹 Desliga completamente o sistema de planos na inicialização
+    viewer.scene.sectionPlanes.active = false;
+
+    // Cria o plano horizontal (ainda inativo)
     horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
         id: "horizontalPlane",
-        pos: [0, modelCenterY, 0], // Posição no centro Y do modelo
-        dir: [0, -1, 0],         // Corte horizontal (vetor normal apontando para baixo)
-        active: false            // Inicia INATIVO
+        pos: [0, 0, 0],
+        dir: [0, -1, 0],
+        active: false
     });
-    
-    // Garante que o plugin principal esteja inativo no início
-    viewer.scene.sectionPlanes.active = false; 
-    
-    console.log(`Plano de corte inicializado na altura Y: ${modelCenterY}`);
+
+    // 🔹 Não mostra controle ainda
+    if (horizontalSectionPlane.control) {
+        horizontalSectionPlane.control.visible = false;
+    }
+
+    console.log("Plano de corte inicializado (inativo)");
+
+    // 🔹 Força uma atualização visual completa após o carregamento
+    viewer.scene.on("tick", () => {
+        // Assim que houver algo na cena, centraliza a câmera
+        if (viewer.scene.numEntities > 0 && !setupSectionPlane._initialized) {
+            setupSectionPlane._initialized = true;
+            const aabb = viewer.scene.getAABB();
+            viewer.cameraFlight.jumpTo({ aabb, duration: 0 });
+            console.log("Câmera centralizada automaticamente após carregamento inicial.");
+        }
+    });
 }
 
-/**
- * Alterna o estado ativo do plano de corte e gerencia o widget de controle (gizmo).
- */
 function toggleSectionPlane(button) {
     const scene = viewer.scene;
-    
+
+    // cria o plugin e o plano na primeira vez
     if (!horizontalSectionPlane) {
-        console.error("Plano de corte não está inicializado.");
-        return;
+        sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
+
+        const aabb = scene.getAABB();
+        const modelCenterY = (aabb[1] + aabb[4]) / 2;
+
+        horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
+            id: "horizontalPlane",
+            pos: [0, modelCenterY, 0],
+            dir: [0, -1, 0],
+            active: false
+        });
+
+        console.log("Plano de corte criado sob demanda.");
     }
-    
+
     // --- DESATIVAR ---
     if (horizontalSectionPlane.active) {
         horizontalSectionPlane.active = false;
-        scene.sectionPlanes.active = false; // Desativa a renderização do corte
-        
-        // 🛑 CORREÇÃO CRÍTICA: DESTRÓI o controle para garantir que ele suma
+        scene.sectionPlanes.active = false;
+
+        // destrói o controle, remove listeners e força redraw
         if (horizontalSectionPlane.control) {
+            try {
+                viewer.input.removeCanvasElement(horizontalSectionPlane.control.canvas);
+            } catch (e) {}
             horizontalSectionPlane.control.destroy();
-            horizontalSectionPlane.control = null; // Zera a referência
-            
-            // Força a re-renderização para limpar o gizmo imediatamente
-            scene.render(); 
+            horizontalSectionPlane.control = null;
         }
-        
-        button.classList.remove('active');
-        viewer.cameraFlight.jumpTo(scene); // Volta para a vista completa
+
+        // alguns builds deixam o gizmo em viewer.input._activeCanvasElements
+        if (viewer.input && viewer.input._activeCanvasElements) {
+            viewer.input._activeCanvasElements.clear?.();
+        }
+
+        viewer.scene.render(); // força re-render
+        button.classList.remove("active");
+        viewer.cameraFlight.flyTo(scene);
         return;
-    } 
+    }
 
     // --- ATIVAR ---
-    
-    // 1. Ativa o plano
-    horizontalSectionPlane.active = true;
-    scene.sectionPlanes.active = true; // Ativa o sistema de corte global
-    
-    // 2. Recria o controle (gizmo)
-    // O método showControl cria um novo widget e anexa-o ao plano de corte,
-    // armazenando a referência em horizontalSectionPlane.control
-    horizontalSectionPlane.control = sectionPlanesPlugin.showControl(horizontalSectionPlane.id); 
+    const aabb = scene.getAABB();
+    const modelCenterY = (aabb[1] + aabb[4]) / 2;
 
-    // 3. Atualiza o botão e a câmera
-    button.classList.add('active');
-    
-    const aabb = scene.getAABB(); 
-    const modelCenterY = (aabb[1] + aabb[4]) / 2; 
+    horizontalSectionPlane.pos = [0, modelCenterY, 0];
+    horizontalSectionPlane.dir = [0, -1, 0];
+    horizontalSectionPlane.active = true;
+    scene.sectionPlanes.active = true;
+
+    // cria novamente o controle
+    horizontalSectionPlane.control = sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
+
+    button.classList.add("active");
 
     viewer.cameraFlight.flyTo({
-        // Foca a câmera no centro do plano de corte
-        look: [aabb[0] + (aabb[3] - aabb[0]) / 2, modelCenterY, aabb[2] + (aabb[5] - aabb[2]) / 2],
+        aabb: scene.aabb,
         duration: 0.5
     });
 }
 
-window.toggleSectionPlane = toggleSectionPlane; // Expõe a função para o HTML
+
+
+window.toggleSectionPlane = toggleSectionPlane;
+
+
+
+
+
+
+
+
+
