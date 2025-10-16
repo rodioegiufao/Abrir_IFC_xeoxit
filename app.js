@@ -101,7 +101,7 @@ function adjustCameraOnLoad() {
 
             setMeasurementMode('none', document.getElementById('btnDeactivate')); 
             setupModelIsolateController();
-            setupSectionPlane(); // Inicializa o plano de corte
+            //setupSectionPlane(); // Inicializa o plano de corte
         }, 500); // pequeno delay para garantir renderização completa
     }
 }
@@ -327,12 +327,32 @@ function setupSectionPlane() {
 }
 
 function toggleSectionPlane(button) {
-    if (!horizontalSectionPlane) return;
-
     const scene = viewer.scene;
 
+    // Se o plano ainda não foi criado, criamos só agora 👇
+    if (!horizontalSectionPlane) {
+        sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
+
+        const aabb = scene.getAABB();
+        const modelCenterY = (aabb[1] + aabb[4]) / 2;
+
+        horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
+            id: "horizontalPlane",
+            pos: [0, modelCenterY, 0],
+            dir: [0, -1, 0],
+            active: false
+        });
+
+        if (horizontalSectionPlane.control) {
+            horizontalSectionPlane.control.visible = false;
+        }
+
+        console.log("Plano de corte criado sob demanda.");
+    }
+
+    // Agora alternamos o estado normalmente 👇
     if (horizontalSectionPlane.active) {
-        // 🔹 DESATIVAR
+        // Desativa
         horizontalSectionPlane.active = false;
         scene.sectionPlanes.active = false;
 
@@ -344,12 +364,7 @@ function toggleSectionPlane(button) {
         viewer.cameraFlight.flyTo(scene);
 
     } else {
-        // 🔹 ATIVAR
-        const aabb = scene.getAABB();
-        const modelCenterY = (aabb[1] + aabb[4]) / 2;
-
-        horizontalSectionPlane.pos = [0, modelCenterY, 0];
-        horizontalSectionPlane.dir = [0, -1, 0];
+        // Ativa
         horizontalSectionPlane.active = true;
         scene.sectionPlanes.active = true;
 
@@ -368,6 +383,8 @@ function toggleSectionPlane(button) {
     }
 }
 
+
 window.toggleSectionPlane = toggleSectionPlane;
+
 
 
