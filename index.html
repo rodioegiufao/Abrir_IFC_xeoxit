@@ -12,10 +12,7 @@
 <body>
     <canvas id="meuCanvas"></canvas>
 
-    <!-- NOVO: Canvas dedicado para renderizar o Cubo de Navegação -->
-    <canvas id="myNavCubeCanvas"></canvas>
-
-    <div id="toolbar">
+    <canvas id="myNavCubeCanvas"></canvas> <div id="toolbar">
         <button 
             id="btnAngle" 
             class="tool-button" 
@@ -45,7 +42,29 @@
             <span style="font-size: 1.2em;">🚫</span>
             Desativar
         </button>
+        
+        <button 
+            id="btnToggleTree" 
+            class="tool-button" 
+            onclick="toggleTreeView()" 
+            title="Mostrar/Esconder Estrutura (Níveis/Pavimentos)"
+        >
+            <span style="font-size: 1.2em;">🏗️</span>
+            Estrutura
+        </button>
+
+        <button 
+            id="btnShowAll" 
+            class="tool-button" 
+            onclick="showAll()" 
+            title="Mostrar Modelo Completo"
+        >
+            <span style="font-size: 1.2em;">🌍</span>
+            Tudo
+        </button>
     </div>
+
+    <div id="treeViewContainer"></div>
 
     <script type="module" src="app.js"></script>
 </body>
