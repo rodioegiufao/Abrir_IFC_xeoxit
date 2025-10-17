@@ -459,7 +459,7 @@ viewer.cameraControl.on("doublePicked", pickResult => {
     }
 });
 // -----------------------------------------------------------------------------
-// 9. Menu de Contexto (Propriedades do Material) - NOVO (MANTIDO)
+// 9. Menu de Contexto (Propriedades + Visibilidade + X-Ray) - VERSÃO FINAL
 // -----------------------------------------------------------------------------
 
 // Desabilita o pan com o botão direito (para permitir o menu)
@@ -489,7 +489,7 @@ const materialContextMenu = new ContextMenu({
                     propriedades += `<strong style='color:#4CAF50;'>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
                     if (metaObject.name) propriedades += `<strong style='color:#4CAF50;'>Nome:</strong> ${metaObject.name}<br><br>`;
 
-                    // --- 🔍 NOVO: Varre os PropertySets IFC (Psets, Identificação, Geometria, etc.) ---
+                    // --- Varre todos os conjuntos de propriedades IFC ---
                     if (metaObject.propertySets && metaObject.propertySets.length > 0) {
                         for (const pset of metaObject.propertySets) {
                             propriedades += `<div style="margin-top:10px;border-top:1px solid #444;padding-top:5px;">`;
@@ -520,7 +520,7 @@ const materialContextMenu = new ContextMenu({
                         painel.style.width = "350px";
                         painel.style.maxHeight = "65vh";
                         painel.style.overflowY = "auto";
-                        // Esses estilos serão sobrescritos pelo styles.css
+                        // Esses estilos podem ser sobrescritos via styles.css
                         painel.style.background = "rgba(0,0,0,0.9)";
                         painel.style.color = "white";
                         painel.style.padding = "15px";
@@ -534,7 +534,89 @@ const materialContextMenu = new ContextMenu({
 
                     painel.innerHTML = `<h3 style='margin-top:0;'>Propriedades IFC</h3>${propriedades}`;
                 }
-
+            }
+        ],
+        [
+            {
+                title: "Ocultar",
+                getEnabled: (context) => context.entity.visible,
+                doAction: (context) => {
+                    context.entity.visible = false;
+                }
+            },
+            {
+                title: "Ocultar Outros",
+                doAction: (context) => {
+                    const scene = context.viewer.scene;
+                    const entity = context.entity;
+                    const metaObject = viewer.metaScene.metaObjects[entity.id];
+                    if (!metaObject) return;
+                    scene.setObjectsVisible(scene.visibleObjectIds, false);
+                    scene.setObjectsXRayed(scene.xrayedObjectIds, false);
+                    scene.setObjectsSelected(scene.selectedObjectIds, false);
+                    metaObject.withMetaObjectsInSubtree((mo) => {
+                        const e = scene.objects[mo.id];
+                        if (e) e.visible = true;
+                    });
+                }
+            },
+            {
+                title: "Ocultar Todos",
+                getEnabled: (context) => context.viewer.scene.numVisibleObjects > 0,
+                doAction: (context) => {
+                    context.viewer.scene.setObjectsVisible(context.viewer.scene.visibleObjectIds, false);
+                }
+            },
+            {
+                title: "Mostrar Todos",
+                getEnabled: (context) => {
+                    const scene = context.viewer.scene;
+                    return scene.numVisibleObjects < scene.numObjects;
+                },
+                doAction: (context) => {
+                    const scene = context.viewer.scene;
+                    scene.setObjectsVisible(scene.objectIds, true);
+                    scene.setObjectsXRayed(scene.xrayedObjectIds, false);
+                    scene.setObjectsSelected(scene.selectedObjectIds, false);
+                }
+            }
+        ],
+        [
+            {
+                title: "Aplicar X-Ray",
+                getEnabled: (context) => !context.entity.xrayed,
+                doAction: (context) => {
+                    context.entity.xrayed = true;
+                }
+            },
+            {
+                title: "Remover X-Ray",
+                getEnabled: (context) => context.entity.xrayed,
+                doAction: (context) => {
+                    context.entity.xrayed = false;
+                }
+            },
+            {
+                title: "X-Ray em Outros",
+                doAction: (context) => {
+                    const scene = context.viewer.scene;
+                    const entity = context.entity;
+                    const metaObject = viewer.metaScene.metaObjects[entity.id];
+                    if (!metaObject) return;
+                    scene.setObjectsVisible(scene.objectIds, true);
+                    scene.setObjectsXRayed(scene.objectIds, true);
+                    metaObject.withMetaObjectsInSubtree((mo) => {
+                        const e = scene.objects[mo.id];
+                        if (e) e.xrayed = false;
+                    });
+                }
+            },
+            {
+                title: "Redefinir X-Ray",
+                getEnabled: (context) => context.viewer.scene.numXRayedObjects > 0,
+                doAction: (context) => {
+                    context.viewer.scene.setObjectsXRayed(context.viewer.scene.xrayedObjectIds, false);
+                }
             }
         ]
     ]
@@ -552,3 +634,5 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
+
