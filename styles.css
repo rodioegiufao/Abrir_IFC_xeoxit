@@ -194,7 +194,7 @@ html, body {
 }
 
 /* ---------------------------------------------------- */
-/* NOVO: Estilos do Painel de Propriedades (propertyPanel) */
+/* Estilos do Painel de Propriedades (propertyPanel) */
 /* ---------------------------------------------------- */
 
 #propertyPanel {
@@ -238,38 +238,69 @@ html, body {
 }
 
 /* ---------------------------------------------------- */
-/* NOVO: Estilos do Menu de Contexto (ContextMenu) do xeokit */
+/* MELHORIA: Estilos do Menu de Contexto (ContextMenu) do xeokit */
 /* ---------------------------------------------------- */
 
-/* Estilo do container principal do menu de contexto (classe padrão do xeokit) */
+/* 1. Container Principal (Visual Nativo Escuro) */
 .xeokit-context-menu {
     background: #333 !important; /* Fundo cinza escuro, como o nativo */
     border: 1px solid #444 !important; /* Borda sutil */
     border-radius: 4px !important;
-    padding: 5px 0 !important; /* Espaçamento vertical */
+    padding: 5px 0 !important; 
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6) !important;
-    z-index: 300000 !important; /* Garante que ele apareça sobre o painel de propriedades */
+    z-index: 300000 !important; 
+    
+    /* 🛑 GARANTE A REMOÇÃO DOS PONTOS DE LISTA */
+    list-style: none !important;
+    padding: 0 !important; /* Remove padding padrão que pode ser usado para bullets */
+    margin: 0 !important;  /* Remove margem padrão */
 }
 
-/* Estilo de cada item do menu */
+/* 2. Item Individual do Menu */
 .xeokit-context-menu-item {
-    padding: 8px 20px 8px 15px !important; /* Mais padding para parecer um item de menu real */
-    color: #f0f0f0 !important; /* Texto claro */
+    padding: 8px 20px 8px 15px !important; 
+    color: #f0f0f0 !important; 
     cursor: pointer !important;
     font-family: Arial, sans-serif !important;
     font-size: 14px !important;
     transition: background-color 0.1s;
+    
+    /* 🛑 GARANTE A REMOÇÃO DOS PONTOS DE LISTA no item */
+    list-style: none !important;
 }
 
-/* Efeito de hover no item */
+/* 3. Efeito de hover no item */
 .xeokit-context-menu-item:hover {
     background-color: #007bff !important; /* Destaque azul ao passar o mouse */
     color: white !important;
 }
 
-/* Estilo para itens desabilitados (se houver) */
+/* 4. Estilo para Itens Desabilitados */
 .xeokit-context-menu-item.disabled {
     color: #888 !important;
     cursor: default !important;
     background-color: transparent !important;
+}
+
+/* 5. 🛑 NOVO: Estilo para a SEÇÃO (Substitui os pontos por barra horizontal) */
+.xeokit-context-menu-section {
+    
+    /* Remove a marcação/ponto/bullet que o navegador pode adicionar */
+    list-style: none !important;
+    
+    /* Remove qualquer espaçamento indesejado */
+    margin: 0 !important;
+    padding: 0 !important;
+    
+    /* Adiciona uma barra divisória (semelhante ao menu nativo) */
+    border-top: 1px solid #555 !important;
+    margin-top: 5px !important; /* Espaçamento acima da barra */
+    padding-top: 5px !important; /* Espaçamento abaixo da barra */
+}
+
+/* O primeiro bloco de itens não precisa de barra divisória */
+.xeokit-context-menu-section:first-child {
+    border-top: none !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
