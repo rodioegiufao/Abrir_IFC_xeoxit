@@ -102,6 +102,10 @@ function adjustCameraOnLoad() {
             console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
             setMeasurementMode('none', document.getElementById('btnDeactivate')); 
             setupModelIsolateController();
+            
+            // CHAMADA ESSENCIAL: Configura as interações de mouse após o carregamento.
+            setupUserInteractions();
+            
         }, 300);
     }
 }
@@ -176,7 +180,7 @@ function setMeasurementMode(mode, clickedButton) {
 window.setMeasurementMode = setMeasurementMode;
 
 // -----------------------------------------------------------------------------
-// 4. Menu de Contexto (Deletar Medição e PROPRIEDADES)
+// 4. Menu de Contexto (Definição e Lógica)
 // -----------------------------------------------------------------------------
 
 /**
@@ -252,7 +256,7 @@ function showEntityProperties(entity) {
     console.log("Propriedades da Entidade:", propertiesText); 
 }
 
-// Definição do Menu de Contexto (Adiciona o item Propriedades)
+// Definição do Menu de Contexto
 const contextMenu = new ContextMenu({
     items: [
         [
@@ -446,7 +450,7 @@ function toggleSectionPlane(button) {
 window.toggleSectionPlane = toggleSectionPlane;
 
 // -----------------------------------------------------------------------------
-// 8. Seleção de Entidade (Listener movido para o final do script)
+// 8. Seleção de Entidade e ContextMenu (Garantindo a ordem de inicialização)
 // -----------------------------------------------------------------------------
 
 /**
@@ -468,64 +472,67 @@ function clearSelection(log = true) {
 
 window.clearSelection = clearSelection; 
 
-/**
- * Evento acionado ao dar duplo-clique em uma entidade (Seleção e Zoom).
- * O listener foi movido para o final do arquivo para garantir que o cameraControl esteja pronto.
- */
-viewer.cameraControl.on("doublePicked", pickResult => {
-
-    clearSelection(false); 
-
-    if (pickResult.entity) {
-        const entity = pickResult.entity;
-
-        entity.highlighted = true;
-        lastPickedEntity = entity; 
-
-        viewer.cameraFlight.flyTo({
-            aabb: viewer.scene.getAABB(entity.id),
-            duration: 0.5
-        });
-
-        console.log(`Entidade selecionada por duplo-clique: ${entity.id}`);
-        
-        const btnClearSelection = document.getElementById('btnClearSelection');
-        if (btnClearSelection) {
-            btnClearSelection.classList.add('active');
-        }
-
-    } else {
-        console.log("Duplo-clique no vazio.");
-    }
-});
-
 
 /**
- * Listener do ContextMenu (Botão direito) - Movido para o final.
+ * CONFIGURAÇÃO DOS LISTENERS DE INTERAÇÃO DO USUÁRIO.
+ * Esta função só é chamada após o carregamento dos modelos em adjustCameraOnLoad().
  */
-viewer.input.on("contextMenu", (e) => {
-    
-    // 1. Limpa o contexto de medição
-    contextMenu.context = {}; 
+function setupUserInteractions() {
 
-    // 2. Tenta pegar a entidade na posição do clique
-    viewer.scene.pick({ 
-        canvasPos: e.canvasPos, 
-        pickSurface: true 
-    }, (pickResult) => {
+    // Listener do Duplo-Clique (Duplo-clique para Seleção/Zoom)
+    viewer.cameraControl.on("doublePicked", pickResult => {
+
+        clearSelection(false); 
+
         if (pickResult.entity) {
-            // Se encontrou uma entidade, armazena para o menu de contexto
-            rightClickedEntity = pickResult.entity;
-            console.log(`Entidade rastreada por botão direito: ${rightClickedEntity.id}`);
+            const entity = pickResult.entity;
+
+            entity.highlighted = true;
+            lastPickedEntity = entity; 
+
+            viewer.cameraFlight.flyTo({
+                aabb: viewer.scene.getAABB(entity.id),
+                duration: 0.5
+            });
+
+            console.log(`Entidade selecionada por duplo-clique: ${entity.id}`);
+            
+            const btnClearSelection = document.getElementById('btnClearSelection');
+            if (btnClearSelection) {
+                btnClearSelection.classList.add('active');
+            }
+
         } else {
-            // Se clicou no vazio, não há entidade para propriedades
-            rightClickedEntity = null;
+            console.log("Duplo-clique no vazio.");
         }
-        
-        // 3. Mostra o menu de contexto
-        contextMenu.show(e.event.clientX, e.event.clientY);
     });
-    
-    // Previne o menu de contexto nativo do navegador
-    e.event.preventDefault(); 
-});
+
+
+    // Listener do ContextMenu (Botão direito)
+    viewer.input.on("contextMenu", (e) => {
+        
+        // 1. Limpa o contexto de medição
+        contextMenu.context = {}; 
+
+        // 2. Tenta pegar a entidade na posição do clique
+        viewer.scene.pick({ 
+            canvasPos: e.canvasPos, 
+            pickSurface: true 
+        }, (pickResult) => {
+            if (pickResult.entity) {
+                // Se encontrou uma entidade, armazena para o menu de contexto
+                rightClickedEntity = pickResult.entity;
+                console.log(`Entidade rastreada por botão direito: ${rightClickedEntity.id}`);
+            } else {
+                // Se clicou no vazio, não há entidade para propriedades
+                rightClickedEntity = null;
+            }
+            
+            // 3. Mostra o menu de contexto
+            contextMenu.show(e.event.clientX, e.event.clientY);
+        });
+        
+        // Previne o menu de contexto nativo do navegador
+        e.event.preventDefault(); 
+    });
+}
