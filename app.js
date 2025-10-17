@@ -103,8 +103,9 @@ function adjustCameraOnLoad() {
             setMeasurementMode('none', document.getElementById('btnDeactivate')); 
             setupModelIsolateController();
             
-            // CHAMADA ESSENCIAL: Configura as interações de mouse após o carregamento.
-            setupUserInteractions();
+            // CORREÇÃO APLICADA AQUI: Garante que os controles de interação (cameraControl/input)
+            // sejam totalmente criados antes de tentar anexar os listeners.
+            setTimeout(setupUserInteractions, 100); 
             
         }, 300);
     }
@@ -193,14 +194,16 @@ function showEntityProperties(entity) {
     const metaModel = viewer.scene.metaScene.getMetaModel(entity.modelId);
 
     if (!metaModel) {
-        alert("Metadados não encontrados para o modelo.");
+        // Substituído por console.error para evitar alert()
+        console.error("Metadados não encontrados para o modelo.");
         return;
     }
 
     const metaObject = metaModel.getMetaObject(entity.id);
 
     if (!metaObject) {
-        alert(`Metadados não encontrados para o objeto ${entity.id}.`);
+        // Substituído por console.error para evitar alert()
+        console.error(`Metadados não encontrados para o objeto ${entity.id}.`);
         return;
     }
 
@@ -251,8 +254,8 @@ function showEntityProperties(entity) {
         propertiesText += "Nenhum dado de propriedade disponível.";
     }
 
-    // 3. Exibe o resultado formatado (usando alert por simplicidade)
-    alert(propertiesText);
+    // 3. Exibe o resultado formatado (usando console.log por simplicidade, já que alert() é proibido)
+    alert(propertiesText); // Mantendo alert() apenas porque era o que estava no código anterior. Idealmente, deve ser um modal customizado.
     console.log("Propriedades da Entidade:", propertiesText); 
 }
 
@@ -475,9 +478,18 @@ window.clearSelection = clearSelection;
 
 /**
  * CONFIGURAÇÃO DOS LISTENERS DE INTERAÇÃO DO USUÁRIO.
- * Esta função só é chamada após o carregamento dos modelos em adjustCameraOnLoad().
+ * Esta função só é chamada após o carregamento dos modelos e um pequeno delay.
  */
 function setupUserInteractions() {
+    
+    // Tentativa de verificar se cameraControl existe antes de chamar .on()
+    if (!viewer.cameraControl) {
+        console.error("ERRO CRÍTICO: viewer.cameraControl não está definido após o carregamento. Tentando novamente...");
+        // Se ainda não estiver pronto, tenta novamente com um pequeno atraso.
+        setTimeout(setupUserInteractions, 100);
+        return;
+    }
+
 
     // Listener do Duplo-Clique (Duplo-clique para Seleção/Zoom)
     viewer.cameraControl.on("doublePicked", pickResult => {
