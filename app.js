@@ -20,7 +20,10 @@ let modelIsolateController;
 let sectionPlanesPlugin; 
 let horizontalSectionPlane; 
 let horizontalPlaneControl; 
-let lastPickedEntity = null; // NOVO: Variável para rastrear a entidade selecionada
+let lastPickedEntity = null; // Entidade selecionada por duplo-clique (highlight)
+
+// NOVO: Variável para armazenar a entidade clicada com o botão direito (contextMenu)
+let rightClickedEntity = null; 
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -85,8 +88,8 @@ function resetModelVisibility() {
         // Centraliza a câmera no modelo inteiro
         viewer.cameraFlight.jumpTo(viewer.scene);
     }
-    lastPickedEntity = null; // Garante que a referência de seleção também seja limpa.
-    clearSelection(false); // Limpa o estado visual do botão "Limpar Seleção"
+    lastPickedEntity = null; 
+    clearSelection(false); 
 }
 
 
@@ -103,7 +106,7 @@ function adjustCameraOnLoad() {
     }
 }
 
-// CARREGAMENTO DOS MODELOS (MANTIDO)
+// CARREGAMENTO DOS MODELOS
 const model1 = xktLoader.load({
     id: "meuModeloBIM",
     src: "assets/meu_modelo.xkt", 
@@ -130,7 +133,7 @@ model2.on("error", (err) => {
 
 
 // -----------------------------------------------------------------------------
-// 3. Plugins de Medição e Função de Troca (MANTIDO)
+// 3. Plugins de Medição e Função de Troca
 // -----------------------------------------------------------------------------
 
 const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, { zIndex: 100000 });
@@ -173,26 +176,120 @@ function setMeasurementMode(mode, clickedButton) {
 window.setMeasurementMode = setMeasurementMode;
 
 // -----------------------------------------------------------------------------
-// 4. Menu de Contexto (Deletar Medição) (MANTIDO)
+// 4. Menu de Contexto (Deletar Medição e PROPRIEDADES) - NOVO/REVISADO
 // -----------------------------------------------------------------------------
 
+/**
+ * Formata e exibe as propriedades do Material da entidade.
+ */
+function showEntityProperties(entity) {
+    if (!entity) return;
+
+    // Acesso à MetaScene para obter os metadados
+    const metaModel = viewer.scene.metaScene.getMetaModel(entity.modelId);
+
+    if (!metaModel) {
+        alert("Metadados não encontrados para o modelo.");
+        return;
+    }
+
+    const metaObject = metaModel.getMetaObject(entity.id);
+
+    if (!metaObject) {
+        alert(`Metadados não encontrados para o objeto ${entity.id}.`);
+        return;
+    }
+
+    let propertiesText = `--- Propriedades de ${metaObject.name} (${metaObject.type}) ---\n\n`;
+
+    const propertySets = metaObject.propertySets;
+    let materialProperties = [];
+    
+    if (propertySets && propertySets.length > 0) {
+        
+        let foundMaterial = false;
+
+        // Tenta encontrar o PropertySet específico de Material
+        for (const ps of propertySets) {
+            if (ps.name === 'Material' || ps.name === 'Materiais' || ps.name === 'Pset_Material') { 
+                materialProperties = ps.properties;
+                foundMaterial = true;
+                propertiesText += `Propriedades do Conjunto: ${ps.name}\n`;
+                break;
+            }
+        }
+        
+        // Fallback: Se não encontrar "Material", usa o primeiro PropertySet
+        if (!foundMaterial && propertySets[0].properties) {
+            propertiesText += `Propriedades Gerais (Conjunto: ${propertySets[0].name})\n`;
+            materialProperties = propertySets[0].properties;
+        } else if (!foundMaterial) {
+             propertiesText += `Nenhum PropertySet com propriedades encontrado.\n`;
+        }
+        
+        // 2. Formata e lista as propriedades
+        if (materialProperties.length > 0) {
+            materialProperties.forEach(prop => {
+                // Adiciona a unidade se existir
+                const unit = prop.unit ? ` (${prop.unit})` : '';
+                propertiesText += `- ${prop.name}: ${prop.value}${unit}\n`;
+            });
+        }
+        
+    } else if (metaObject.properties && metaObject.properties.length > 0) {
+         // Fallback para propriedades de nível de objeto simples
+        propertiesText += `Propriedades de Nível de Objeto:\n`;
+        metaObject.properties.forEach(prop => {
+            const unit = prop.unit ? ` (${prop.unit})` : '';
+            propertiesText += `- ${prop.name}: ${prop.value}${unit}\n`;
+        });
+    } else {
+        propertiesText += "Nenhum dado de propriedade disponível.";
+    }
+
+    // 3. Exibe o resultado formatado (usando alert por simplicidade)
+    alert(propertiesText);
+    console.log("Propriedades da Entidade:", propertiesText); 
+}
+
+// Definição do Menu de Contexto (Adiciona o item Propriedades)
 const contextMenu = new ContextMenu({
     items: [
         [
             {
+                // NOVO ITEM: Propriedades
+                title: "Propriedades",
+                doAction: function (context) {
+                    showEntityProperties(rightClickedEntity);
+                },
+                // Habilita/desabilita se uma entidade foi rastreada pelo botão direito
+                getEnabled: function(context) {
+                    return !!rightClickedEntity;
+                }
+            },
+            {
                 title: "Deletar Medição",
                 doAction: function (context) {
-                    context.measurement.destroy();
+                    if (context.measurement) {
+                        context.measurement.destroy();
+                    }
+                },
+                // Habilita/desabilita se o clique foi em uma medição
+                 getEnabled: function(context) {
+                    return !!context.measurement;
                 }
             }
         ]
     ]
 });
 
+
+// Listener para o clique com o botão direito nas Medições
 function setupMeasurementEvents(plugin) {
     plugin.on("contextMenu", (e) => {
         const measurement = e.angleMeasurement || e.distanceMeasurement;
         contextMenu.context = { measurement: measurement };
+        rightClickedEntity = null; // Zera a entidade para focar na medição
         contextMenu.show(e.event.clientX, e.event.clientY);
         e.event.preventDefault();
     });
@@ -212,8 +309,37 @@ function setupMeasurementEvents(plugin) {
 setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
 
+// NOVO: Adiciona um listener para o clique com o botão direito em GERAL (no canvas)
+viewer.input.on("contextMenu", (e) => {
+    
+    // 1. Limpa o contexto de medição
+    contextMenu.context = {}; 
+
+    // 2. Tenta pegar a entidade na posição do clique
+    viewer.scene.pick({ 
+        canvasPos: e.canvasPos, 
+        pickSurface: true 
+    }, (pickResult) => {
+        if (pickResult.entity) {
+            // Se encontrou uma entidade, armazena para o menu de contexto
+            rightClickedEntity = pickResult.entity;
+            console.log(`Entidade rastreada por botão direito: ${rightClickedEntity.id}`);
+        } else {
+            // Se clicou no vazio, não há entidade para propriedades
+            rightClickedEntity = null;
+        }
+        
+        // 3. Mostra o menu de contexto
+        contextMenu.show(e.event.clientX, e.event.clientY);
+    });
+    
+    // Previne o menu de contexto nativo do navegador
+    e.event.preventDefault(); 
+});
+
+
 // -----------------------------------------------------------------------------
-// 5. Cubo de Navegação (NavCube) (MANTIDO)
+// 5. Cubo de Navegação (NavCube)
 // -----------------------------------------------------------------------------
 
 new NavCubePlugin(viewer, {
@@ -226,7 +352,7 @@ new NavCubePlugin(viewer, {
 });
 
 // -----------------------------------------------------------------------------
-// 6. TreeViewPlugin e Lógica de Isolamento (MANTIDO)
+// 6. TreeViewPlugin e Lógica de Isolamento
 // -----------------------------------------------------------------------------
 
 function setupModelIsolateController() {
@@ -243,41 +369,33 @@ function setupModelIsolateController() {
     treeView.on("nodeClicked", (event) => {
         const entityId = event.entityId;
         
-        // Verifica se há alguma entidade associada ao nó
         if (entityId && viewer.scene.getObjectsInSubtree(entityId).length > 0) {
             
             const subtreeIds = viewer.scene.getObjectsInSubtree(entityId);
             
-            // Isola (mostra apenas) a parte do modelo (pavimento, por exemplo) clicada
-            modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), true); // X-ray em TUDO
-            modelIsolateController.setObjectsXRayed(subtreeIds, false); // Tira o X-ray do subconjunto isolado
+            modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), true); 
+            modelIsolateController.setObjectsXRayed(subtreeIds, false); 
 
-            modelIsolateController.isolate(subtreeIds); // Isola o subconjunto
+            modelIsolateController.isolate(subtreeIds); 
             
             viewer.cameraFlight.flyTo({
                 aabb: viewer.scene.getAABB(entityId),
                 duration: 0.5
             });
             
-            clearSelection(); // Limpa a seleção específica quando se usa a TreeView
+            clearSelection(); 
 
         } else {
-            // Se o usuário clicar em um nó que não contém objetos (como o nó raiz do projeto ou um item folha)
-            // Apenas reseta a visibilidade.
             resetModelVisibility(); 
         }
     });
 }
 
-/**
- * Alterna a visibilidade do contêiner do TreeView e reseta a visibilidade do modelo se estiver fechando.
- */
 function toggleTreeView() {
     const container = document.getElementById('treeViewContainer');
     
     if (container.style.display === 'block') {
         container.style.display = 'none';
-        // Ação de "Mostrar Tudo" ao fechar o painel
         resetModelVisibility(); 
     } else {
         container.style.display = 'block';
@@ -289,14 +407,12 @@ window.toggleTreeView = toggleTreeView;
 window.resetModelVisibility = resetModelVisibility; 
 
 // -----------------------------------------------------------------------------
-// 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL
+// 7. Plano de Corte (Section Plane)
 // -----------------------------------------------------------------------------
-// ... setupSectionPlane (função que não é mais usada, mas mantida por segurança) ...
 
 function toggleSectionPlane(button) {
     const scene = viewer.scene;
 
-    // cria o plugin e o plano na primeira vez
     if (!horizontalSectionPlane) {
         sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
 
@@ -318,7 +434,6 @@ function toggleSectionPlane(button) {
         horizontalSectionPlane.active = false;
         scene.sectionPlanes.active = false;
 
-        // destrói o controle, remove listeners e força redraw
         if (horizontalSectionPlane.control) {
             try {
                 viewer.input.removeCanvasElement(horizontalSectionPlane.control.canvas);
@@ -327,12 +442,11 @@ function toggleSectionPlane(button) {
             horizontalSectionPlane.control = null;
         }
 
-        // alguns builds deixam o gizmo em viewer.input._activeCanvasElements
         if (viewer.input && viewer.input._activeCanvasElements) {
             viewer.input._activeCanvasElements.clear?.();
         }
 
-        viewer.scene.render(); // força re-render
+        viewer.scene.render(); 
         button.classList.remove("active");
         viewer.cameraFlight.flyTo(scene);
         return;
@@ -347,7 +461,6 @@ function toggleSectionPlane(button) {
     horizontalSectionPlane.active = true;
     scene.sectionPlanes.active = true;
 
-    // cria novamente o controle
     horizontalSectionPlane.control = sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
 
     button.classList.add("active");
@@ -361,20 +474,17 @@ function toggleSectionPlane(button) {
 window.toggleSectionPlane = toggleSectionPlane;
 
 // -----------------------------------------------------------------------------
-// 8. Seleção de Entidade (Highlighting) - NOVO
+// 8. Seleção de Entidade (Highlighting)
 // -----------------------------------------------------------------------------
 
 /**
- * Limpa a seleção atual, removendo o destaque da última entidade selecionada
- * e desativando o botão de Limpar visualmente.
- * @param {boolean} [log=true] Se deve logar no console.
+ * Limpa a seleção atual (destaque).
  */
 function clearSelection(log = true) {
     if (lastPickedEntity) {
         lastPickedEntity.highlighted = false;
         lastPickedEntity = null;
     }
-    // Garante que o botão 'Limpar Seleção' também seja desativado visualmente
     const btnClearSelection = document.getElementById('btnClearSelection');
     if (btnClearSelection) {
         btnClearSelection.classList.remove('active');
@@ -384,25 +494,21 @@ function clearSelection(log = true) {
     }
 }
 
-window.clearSelection = clearSelection; // Expõe a função de limpeza de seleção
+window.clearSelection = clearSelection; 
 
 /**
- * Evento acionado ao dar duplo-clique em uma entidade.
- * Seleciona (Highlight) a entidade, centraliza a câmera nela, e limpa a seleção anterior.
+ * Evento acionado ao dar duplo-clique em uma entidade (Seleção e Zoom).
  */
 viewer.cameraControl.on("doublePicked", pickResult => {
 
-    // 1. Limpa a seleção anterior e a referência.
-    clearSelection(false); // Limpa sem logar
+    clearSelection(false); 
 
     if (pickResult.entity) {
         const entity = pickResult.entity;
 
-        // 2. Destaca (Highlight) a nova entidade
         entity.highlighted = true;
-        lastPickedEntity = entity; // Armazena a referência
+        lastPickedEntity = entity; 
 
-        // 3. Centraliza a câmera nela
         viewer.cameraFlight.flyTo({
             aabb: viewer.scene.getAABB(entity.id),
             duration: 0.5
@@ -410,14 +516,12 @@ viewer.cameraControl.on("doublePicked", pickResult => {
 
         console.log(`Entidade selecionada por duplo-clique: ${entity.id}`);
         
-        // Ativa o botão de Limpar Seleção (feedback visual)
         const btnClearSelection = document.getElementById('btnClearSelection');
         if (btnClearSelection) {
             btnClearSelection.classList.add('active');
         }
 
     } else {
-        // Se o usuário deu duplo-clique no vazio, apenas informa.
         console.log("Duplo-clique no vazio.");
     }
 });
