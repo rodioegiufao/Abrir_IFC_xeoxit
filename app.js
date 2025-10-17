@@ -324,6 +324,91 @@ function toggleTreeView() {
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.toggleTreeView = toggleTreeView;
 window.resetModelVisibility = resetModelVisibility; 
+// -----------------------------------------------------------------------------
+// 6.1 Função de Pavimentos (Mostrar/Ocultar Níveis)
+// -----------------------------------------------------------------------------
+
+let pavimentos = [];
+let pavimentosVisiveis = true;
+
+/**
+ * Detecta automaticamente pavimentos (níveis) com base nos nomes de entidades IFC.
+ * Armazena uma lista simples de IDs para alternar visibilidade.
+ */
+function detectarPavimentos() {
+    pavimentos = []; // limpa lista
+
+    for (const [id, metaObj] of Object.entries(viewer.metaScene.metaObjects)) {
+        const nome = metaObj.name?.toLowerCase() || "";
+        if (nome.includes("pavimento") || nome.includes("nivel") || nome.includes("andar")) {
+            pavimentos.push({
+                id,
+                nome: metaObj.name
+            });
+        }
+    }
+
+    console.log(`🧱 Pavimentos detectados: ${pavimentos.length}`);
+}
+
+/**
+ * Alterna a visibilidade dos pavimentos (mostra/oculta todos).
+ */
+function togglePavimentos() {
+    if (pavimentos.length === 0) detectarPavimentos();
+
+    pavimentosVisiveis = !pavimentosVisiveis;
+
+    pavimentos.forEach(p => {
+        const entidade = viewer.scene.objects[p.id];
+        if (entidade) entidade.visible = pavimentosVisiveis;
+    });
+
+    console.log(pavimentosVisiveis ? "✅ Pavimentos exibidos" : "🚫 Pavimentos ocultos");
+}
+
+// -----------------------------------------------------------------------------
+// 6.2 Função de Grade (Grid do Solo com Ligar/Desligar)
+// -----------------------------------------------------------------------------
+
+let gradeAtiva = null;
+
+/**
+ * Cria uma grade se não existir, ou alterna sua visibilidade.
+ */
+function toggleGrid() {
+    const aabb = viewer.scene.getAABB();
+
+    if (!gradeAtiva) {
+        const groundY = aabb[1];
+        const geometryArrays = buildGridGeometry({
+            size: 200,
+            divisions: 50
+        });
+
+        gradeAtiva = new LineSet(viewer.scene, {
+            positions: geometryArrays.positions,
+            indices: geometryArrays.indices,
+            color: [0.5, 0.5, 0.5],
+            opacity: 0.8,
+            position: [
+                (aabb[0] + aabb[3]) / 2,
+                groundY,
+                (aabb[2] + aabb[5]) / 2
+            ],
+            visible: true
+        });
+
+        console.log("🟩 Grade criada e ativada.");
+    } else {
+        gradeAtiva.visible = !gradeAtiva.visible;
+        console.log(gradeAtiva.visible ? "🟩 Grade ativada" : "⬜ Grade desativada");
+    }
+}
+
+// Exportar para escopo global (para o botão no HTML)
+window.toggleGrid = toggleGrid;
+window.togglePavimentos = togglePavimentos;
 
 // -----------------------------------------------------------------------------
 // 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL (MANTIDO)
@@ -608,6 +693,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
