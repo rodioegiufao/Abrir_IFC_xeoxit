@@ -281,7 +281,7 @@ html, body {
     background-color: transparent !important;
 }
 
-/* 5. 🛑 NOVO/REFORÇADO: Estilo para a SEÇÃO (Aplica a barra divisória) */
+/* 5. 🛑 REFORÇADO: Estilo para a SEÇÃO (Aplica a barra divisória) */
 .xeokit-context-menu-section {
     
     /* Garante a remoção de qualquer marcador de lista */
@@ -291,8 +291,8 @@ html, body {
     border-top: 1px solid #555 !important;
     
     /* Espaçamento para a barra ficar visível e separada */
-    margin: 5px 0 0 0 !important; /* Margem apenas acima da barra */
-    padding: 5px 0 0 0 !important; /* Padding apenas acima da barra */
+    margin: 5px 0 0 0 !important; 
+    padding: 5px 0 0 0 !important; 
 }
 
 /* 6. O primeiro bloco de itens não precisa de barra divisória */
