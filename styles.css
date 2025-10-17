@@ -301,3 +301,8 @@ html, body {
     margin-top: 0 !important;
     padding-top: 0 !important;
 }
+
+#closePropertyPanel:hover {
+    color: #ff6b6b !important;
+    transform: scale(1.1);
+}
