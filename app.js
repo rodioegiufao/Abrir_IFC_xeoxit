@@ -103,9 +103,8 @@ function adjustCameraOnLoad() {
             setMeasurementMode('none', document.getElementById('btnDeactivate')); 
             setupModelIsolateController();
             
-            // CORREÇÃO APLICADA AQUI: Garante que os controles de interação (cameraControl/input)
-            // sejam totalmente criados antes de tentar anexar os listeners.
-            setTimeout(setupUserInteractions, 100); 
+            // CORREÇÃO: Chama setupUserInteractions com retryCount=0 para iniciar a lógica de verificação.
+            setTimeout(() => setupUserInteractions(0), 100); 
             
         }, 300);
     }
@@ -479,14 +478,22 @@ window.clearSelection = clearSelection;
 /**
  * CONFIGURAÇÃO DOS LISTENERS DE INTERAÇÃO DO USUÁRIO.
  * Esta função só é chamada após o carregamento dos modelos e um pequeno delay.
+ * @param {number} retryCount - Contador de tentativas para garantir que cameraControl esteja pronto.
  */
-function setupUserInteractions() {
+function setupUserInteractions(retryCount = 0) {
+    const MAX_RETRIES = 15; // Limite de 15 tentativas (1.5 segundos)
     
-    // Tentativa de verificar se cameraControl existe antes de chamar .on()
+    // Tenta verificar se cameraControl existe antes de chamar .on()
     if (!viewer.cameraControl) {
-        console.error("ERRO CRÍTICO: viewer.cameraControl não está definido após o carregamento. Tentando novamente...");
-        // Se ainda não estiver pronto, tenta novamente com um pequeno atraso.
-        setTimeout(setupUserInteractions, 100);
+        if (retryCount >= MAX_RETRIES) {
+            console.error("ERRO CRÍTICO: viewer.cameraControl não está definido após o carregamento. Máximo de retries atingido. Interações de duplo-clique desativadas.");
+            return;
+        }
+        
+        console.log(`viewer.cameraControl não definido. Tentativa ${retryCount + 1}/${MAX_RETRIES}...`);
+        
+        // Tenta novamente com um pequeno atraso, aumentando o contador.
+        setTimeout(() => setupUserInteractions(retryCount + 1), 100);
         return;
     }
 
