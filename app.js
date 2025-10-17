@@ -22,7 +22,7 @@ let horizontalSectionPlane;
 let horizontalPlaneControl; 
 let lastPickedEntity = null; // Entidade selecionada por duplo-clique (highlight)
 
-// NOVO: Variável para armazenar a entidade clicada com o botão direito (contextMenu)
+// Variável para armazenar a entidade clicada com o botão direito (contextMenu)
 let rightClickedEntity = null; 
 
 // -----------------------------------------------------------------------------
@@ -176,7 +176,7 @@ function setMeasurementMode(mode, clickedButton) {
 window.setMeasurementMode = setMeasurementMode;
 
 // -----------------------------------------------------------------------------
-// 4. Menu de Contexto (Deletar Medição e PROPRIEDADES) - NOVO/REVISADO
+// 4. Menu de Contexto (Deletar Medição e PROPRIEDADES)
 // -----------------------------------------------------------------------------
 
 /**
@@ -257,7 +257,7 @@ const contextMenu = new ContextMenu({
     items: [
         [
             {
-                // NOVO ITEM: Propriedades
+                // ITEM: Propriedades
                 title: "Propriedades",
                 doAction: function (context) {
                     showEntityProperties(rightClickedEntity);
@@ -308,34 +308,6 @@ function setupMeasurementEvents(plugin) {
 
 setupMeasurementEvents(angleMeasurementsPlugin);
 setupMeasurementEvents(distanceMeasurementsPlugin);
-
-// NOVO: Adiciona um listener para o clique com o botão direito em GERAL (no canvas)
-viewer.input.on("contextMenu", (e) => {
-    
-    // 1. Limpa o contexto de medição
-    contextMenu.context = {}; 
-
-    // 2. Tenta pegar a entidade na posição do clique
-    viewer.scene.pick({ 
-        canvasPos: e.canvasPos, 
-        pickSurface: true 
-    }, (pickResult) => {
-        if (pickResult.entity) {
-            // Se encontrou uma entidade, armazena para o menu de contexto
-            rightClickedEntity = pickResult.entity;
-            console.log(`Entidade rastreada por botão direito: ${rightClickedEntity.id}`);
-        } else {
-            // Se clicou no vazio, não há entidade para propriedades
-            rightClickedEntity = null;
-        }
-        
-        // 3. Mostra o menu de contexto
-        contextMenu.show(e.event.clientX, e.event.clientY);
-    });
-    
-    // Previne o menu de contexto nativo do navegador
-    e.event.preventDefault(); 
-});
 
 
 // -----------------------------------------------------------------------------
@@ -474,7 +446,7 @@ function toggleSectionPlane(button) {
 window.toggleSectionPlane = toggleSectionPlane;
 
 // -----------------------------------------------------------------------------
-// 8. Seleção de Entidade (Highlighting)
+// 8. Seleção de Entidade (Listener movido para o final do script)
 // -----------------------------------------------------------------------------
 
 /**
@@ -498,6 +470,7 @@ window.clearSelection = clearSelection;
 
 /**
  * Evento acionado ao dar duplo-clique em uma entidade (Seleção e Zoom).
+ * O listener foi movido para o final do arquivo para garantir que o cameraControl esteja pronto.
  */
 viewer.cameraControl.on("doublePicked", pickResult => {
 
@@ -524,4 +497,35 @@ viewer.cameraControl.on("doublePicked", pickResult => {
     } else {
         console.log("Duplo-clique no vazio.");
     }
+});
+
+
+/**
+ * Listener do ContextMenu (Botão direito) - Movido para o final.
+ */
+viewer.input.on("contextMenu", (e) => {
+    
+    // 1. Limpa o contexto de medição
+    contextMenu.context = {}; 
+
+    // 2. Tenta pegar a entidade na posição do clique
+    viewer.scene.pick({ 
+        canvasPos: e.canvasPos, 
+        pickSurface: true 
+    }, (pickResult) => {
+        if (pickResult.entity) {
+            // Se encontrou uma entidade, armazena para o menu de contexto
+            rightClickedEntity = pickResult.entity;
+            console.log(`Entidade rastreada por botão direito: ${rightClickedEntity.id}`);
+        } else {
+            // Se clicou no vazio, não há entidade para propriedades
+            rightClickedEntity = null;
+        }
+        
+        // 3. Mostra o menu de contexto
+        contextMenu.show(e.event.clientX, e.event.clientY);
+    });
+    
+    // Previne o menu de contexto nativo do navegador
+    e.event.preventDefault(); 
 });
