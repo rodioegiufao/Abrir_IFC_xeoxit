@@ -13,8 +13,8 @@ import {
     NavCubePlugin, 
     TreeViewPlugin,
     SectionPlanesPlugin,
-    LineSet,         // <--- RE-ADICIONADO: Importa LineSet
-    buildGridGeometry // <--- RE-ADICIONADO: Importa buildGridGeometry
+    LineSet,         // <--- NOVO: Importa LineSet
+    buildGridGeometry // <--- NOVO: Importa buildGridGeometry
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 let treeView; 
@@ -22,7 +22,7 @@ let modelIsolateController;
 let sectionPlanesPlugin; 
 let horizontalSectionPlane; 
 let horizontalPlaneControl; 
-let lastPickedEntity = null; 
+let lastPickedEntity = null; // NOVO: Variável para rastrear a entidade selecionada
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -92,7 +92,7 @@ function resetModelVisibility() {
 }
 
 /**
- * Função RE-ADICIONADA: Cria uma grade no plano do solo (elevação mínima Y).
+ * Função NOVO: Cria uma grade no plano do solo (elevação mínima Y).
  */
 function createGroundGrid() {
     // Pega o Bounding Box de toda a cena para centralizar e posicionar no solo
@@ -135,7 +135,7 @@ function adjustCameraOnLoad() {
             console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
             setMeasurementMode('none', document.getElementById('btnDeactivate')); 
             setupModelIsolateController();
-            createGroundGrid(); // <-- RE-CHAMADA: Chama a criação da grade
+            createGroundGrid(); // <-- NOVO: Chama a criação da grade
         }, 300);
     }
 }
@@ -398,68 +398,42 @@ function toggleSectionPlane(button) {
 window.toggleSectionPlane = toggleSectionPlane;
 
 // -----------------------------------------------------------------------------
-// 8. Seleção de Entidade (Highlighting) (MANTIDO)
+// 8. Destaque de Entidades ao Passar o Mouse (Hover Highlight)
 // -----------------------------------------------------------------------------
 
-/**
- * Limpa a seleção atual, removendo o destaque da última entidade selecionada
- * e desativando o botão de Limpar visualmente.
- * @param {boolean} [log=true] Se deve logar no console.
- */
-function clearSelection(log = true) {
-    if (lastPickedEntity) {
-        lastPickedEntity.highlighted = false;
-        lastPickedEntity = null;
-    }
-    // Garante que o botão 'Limpar Seleção' também seja desativado visualmente
-    const btnClearSelection = document.getElementById('btnClearSelection');
-    if (btnClearSelection) {
-        btnClearSelection.classList.remove('active');
-    }
-    if (log) {
-        console.log("Seleção limpa.");
-    }
-}
+let lastEntity = null;
 
-window.clearSelection = clearSelection; // Expõe a função de limpeza de seleção
+// Monitora o movimento do mouse sobre o canvas
+viewer.scene.input.on("mousemove", function (coords) {
 
-/**
- * Evento acionado ao dar duplo-clique em uma entidade.
- * Seleciona (Highlight) a entidade, centraliza a câmera nela, e limpa a seleção anterior.
- */
-viewer.cameraControl.on("doublePicked", pickResult => {
+    const hit = viewer.scene.pick({
+        canvasPos: coords
+    });
 
-    // 1. Limpa a seleção anterior e a referência.
-    clearSelection(false); // Limpa sem logar
+    if (hit && hit.entity && hit.entity.isObject) {
 
-    if (pickResult.entity) {
-        const entity = pickResult.entity;
+        // Se for um novo objeto, troca o destaque
+        if (!lastEntity || hit.entity.id !== lastEntity.id) {
 
-        // 2. Destaca (Highlight) a nova entidade
-        entity.highlighted = true;
-        lastPickedEntity = entity; // Armazena a referência
+            if (lastEntity) {
+                lastEntity.highlighted = false;
+            }
 
-        // 3. Centraliza a câmera nela
-        viewer.cameraFlight.flyTo({
-            aabb: viewer.scene.getAABB(entity.id),
-            duration: 0.5
-        });
-
-        console.log(`Entidade selecionada por duplo-clique: ${entity.id}`);
-        
-        // Ativa o botão de Limpar Seleção (feedback visual)
-        const btnClearSelection = document.getElementById('btnClearSelection');
-        if (btnClearSelection) {
-            btnClearSelection.classList.add('active');
+            lastEntity = hit.entity;
+            hit.entity.highlighted = true;
         }
 
     } else {
-        // Se o usuário deu duplo-clique no vazio, apenas informa.
-        console.log("Duplo-clique no vazio.");
+        // Saiu de qualquer entidade: remove o highlight
+        if (lastEntity) {
+            lastEntity.highlighted = false;
+            lastEntity = null;
+        }
     }
 });
+
 // -----------------------------------------------------------------------------
-// 9. Menu de Contexto (Propriedades do Material) (MANTIDO e EXPANDIDO)
+// 9. Menu de Contexto (Propriedades + Visibilidade + X-Ray) - VERSÃO FINAL
 // -----------------------------------------------------------------------------
 
 // Desabilita o pan com o botão direito (para permitir o menu)
@@ -489,7 +463,7 @@ const materialContextMenu = new ContextMenu({
                     propriedades += `<strong style='color:#4CAF50;'>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
                     if (metaObject.name) propriedades += `<strong style='color:#4CAF50;'>Nome:</strong> ${metaObject.name}<br><br>`;
 
-                    // --- 🔍 Varre os PropertySets IFC (Psets, Identificação, Geometria, etc.) ---
+                    // --- Varre todos os conjuntos de propriedades IFC ---
                     if (metaObject.propertySets && metaObject.propertySets.length > 0) {
                         for (const pset of metaObject.propertySets) {
                             propriedades += `<div style="margin-top:10px;border-top:1px solid #444;padding-top:5px;">`;
@@ -520,7 +494,7 @@ const materialContextMenu = new ContextMenu({
                         painel.style.width = "350px";
                         painel.style.maxHeight = "65vh";
                         painel.style.overflowY = "auto";
-                        // Esses estilos serão sobrescritos pelo styles.css
+                        // Esses estilos podem ser sobrescritos via styles.css
                         painel.style.background = "rgba(0,0,0,0.9)";
                         painel.style.color = "white";
                         painel.style.padding = "15px";
@@ -532,39 +506,68 @@ const materialContextMenu = new ContextMenu({
                         document.body.appendChild(painel);
                     }
 
-                    painel.innerHTML = `<h3 style='margin-top:0;color:#4CAF50;'>Propriedades IFC</h3>${propriedades}`;
+                    painel.innerHTML = `<h3 style='margin-top:0;'>Propriedades IFC</h3>${propriedades}`;
                 }
-
             }
         ],
-        // NOVO BLOCO DE FERRAMENTAS CONTEXTUAIS (MANTIDO)
         [
             {
-                title: "Ocultar Objeto",
+                title: "Ocultar",
+                getEnabled: (context) => context.entity.visible,
                 doAction: (context) => {
-                    const entity = context.entity;
-                    if (entity) entity.visible = false;
+                    context.entity.visible = false;
                 }
             },
             {
-                title: "Mostrar Tudo",
-                doAction: (context) => {
-                    resetModelVisibility();
-                }
-            }
-        ],
-        // NOVO BLOCO DE ISOLAMENTO (MANTIDO)
-        [
-            {
-                title: "Isolar Objeto",
+                title: "Isolar",
                 doAction: (context) => {
                     const scene = context.viewer.scene;
                     const entity = context.entity;
-                    scene.setObjectsXRayed(scene.objectIds, true);
-                    entity.xrayed = false;
-                    scene.setObjectsVisible(scene.objectIds, false);
-                    entity.visible = true;
-                    context.viewer.cameraFlight.flyTo({ aabb: entity.aabb, duration: 0.5 });
+                    const metaObject = viewer.metaScene.metaObjects[entity.id];
+                    if (!metaObject) return;
+                    scene.setObjectsVisible(scene.visibleObjectIds, false);
+                    scene.setObjectsXRayed(scene.xrayedObjectIds, false);
+                    scene.setObjectsSelected(scene.selectedObjectIds, false);
+                    metaObject.withMetaObjectsInSubtree((mo) => {
+                        const e = scene.objects[mo.id];
+                        if (e) e.visible = true;
+                    });
+                }
+            },
+            {
+                title: "Ocultar Todos",
+                getEnabled: (context) => context.viewer.scene.numVisibleObjects > 0,
+                doAction: (context) => {
+                    context.viewer.scene.setObjectsVisible(context.viewer.scene.visibleObjectIds, false);
+                }
+            },
+            {
+                title: "Mostrar Todos",
+                getEnabled: (context) => {
+                    const scene = context.viewer.scene;
+                    return scene.numVisibleObjects < scene.numObjects;
+                },
+                doAction: (context) => {
+                    const scene = context.viewer.scene;
+                    scene.setObjectsVisible(scene.objectIds, true);
+                    scene.setObjectsXRayed(scene.xrayedObjectIds, false);
+                    scene.setObjectsSelected(scene.selectedObjectIds, false);
+                }
+            }
+        ],
+        [
+            {
+                title: "Aplicar X-Ray",
+                getEnabled: (context) => !context.entity.xrayed,
+                doAction: (context) => {
+                    context.entity.xrayed = true;
+                }
+            },
+            {
+                title: "Remover X-Ray",
+                getEnabled: (context) => context.entity.xrayed,
+                doAction: (context) => {
+                    context.entity.xrayed = false;
                 }
             },
             {
@@ -605,3 +608,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
+
+
+
