@@ -29,7 +29,7 @@ html, body {
 }
 
 /* ---------------------------------------------------- */
-/* Estilos da Árvore de Estrutura (TreeView) - NOVO E AJUSTADO */
+/* Estilos da Árvore de Estrutura (TreeView) */
 /* ---------------------------------------------------- */
 
 #treeViewContainer {
@@ -91,25 +91,25 @@ html, body {
     font-weight: bold;
 }
 
-/* ESTILOS DOS ÍCONES DE EXPANSÃO - ÚLTIMA TENTATIVA */
+/* ESTILOS DOS ÍCONES DE EXPANSÃO */
 #treeViewContainer .xeokit-tree-view-item-toggle {
     display: inline-block;
     width: 15px; /* Largura para o ícone */
     height: 15px;
     text-align: center;
     
-    /* 🛑 NOVO: Move o texto original (+/-) para fora da área visível */
+    /* Move o texto original (+/-) para fora da área visível */
     text-indent: -9999px !important; 
     
-    font-size: 1px; /* Tentativa de reduzir o tamanho, caso text-indent falhe */
+    font-size: 1px;
     line-height: 1;
     margin-right: 5px;
     
-    color: transparent !important; /* Cor transparente para anular estilo de cor inline */
+    color: transparent !important;
     background-color: transparent !important;
     
     position: relative;
-    overflow: hidden; /* Corta o texto que saiu da tela */
+    overflow: hidden;
     cursor: pointer;
 }
 
@@ -214,9 +214,9 @@ html, body {
     color: #f0f0f0; /* Cor do título mais suave */
 }
 
-/* Estilo para as strong tags */
+/* Estilo para as strong tags dentro do painel */
 #propertyPanel strong {
-    color: #4CAF50; /* Mantém a cor verde para destacar chaves importantes */
+    color: #4CAF50; /* Cor verde para destacar chaves importantes */
 }
 
 /* Estilo da Tabela de Propriedades */
