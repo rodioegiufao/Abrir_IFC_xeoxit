@@ -519,7 +519,7 @@ const materialContextMenu = new ContextMenu({
                 }
             },
             {
-                title: "Ocultar Outros",
+                title: "Isolar",
                 doAction: (context) => {
                     const scene = context.viewer.scene;
                     const entity = context.entity;
@@ -608,6 +608,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
