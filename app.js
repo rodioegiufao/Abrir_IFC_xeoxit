@@ -612,28 +612,6 @@ const materialContextMenu = new ContextMenu({
                         painel.style.boxShadow = "0 4px 10px rgba(0,0,0,0.4)";
                         document.body.appendChild(painel);
                     }
-
-                    // --- Cria ou atualiza o painel flutuante ---
-                    let painel = document.getElementById("propertyPanel");
-                    if (!painel) {
-                        painel = document.createElement("div");
-                        painel.id = "propertyPanel";
-                        painel.style.position = "fixed";
-                        painel.style.right = "20px";
-                        painel.style.top = "80px";
-                        painel.style.width = "350px";
-                        painel.style.maxHeight = "65vh";
-                        painel.style.overflowY = "auto";
-                        painel.style.background = "rgba(0,0,0,0.9)";
-                        painel.style.color = "white";
-                        painel.style.padding = "15px";
-                        painel.style.borderRadius = "10px";
-                        painel.style.zIndex = 300000;
-                        painel.style.fontFamily = "Arial, sans-serif";
-                        painel.style.fontSize = "13px";
-                        painel.style.boxShadow = "0 4px 10px rgba(0,0,0,0.4)";
-                        document.body.appendChild(painel);
-                    }
                     
                     // 🟢 Adiciona botão X para fechar
                     painel.innerHTML = `
@@ -660,7 +638,6 @@ const materialContextMenu = new ContextMenu({
                     document.getElementById("closePropertyPanel").onclick = () => {
                         painel.remove();
                     };
-
                 }
             }
         ],
@@ -762,6 +739,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
