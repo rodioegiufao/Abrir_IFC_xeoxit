@@ -243,17 +243,16 @@ html, body {
 
 /* 1. Container Principal (Visual Nativo Escuro) */
 .xeokit-context-menu {
-    background: #333 !important; /* Fundo cinza escuro, como o nativo */
-    border: 1px solid #444 !important; /* Borda sutil */
+    background: #333 !important; 
+    border: 1px solid #444 !important; 
     border-radius: 4px !important;
-    padding: 5px 0 !important; 
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6) !important;
     z-index: 300000 !important; 
     
-    /* 🛑 GARANTE A REMOÇÃO DOS PONTOS DE LISTA */
+    /* 🛑 REGRAS PRINCIPAIS PARA REMOVER PONTOS DE LISTA */
     list-style: none !important;
-    padding: 0 !important; /* Remove padding padrão que pode ser usado para bullets */
-    margin: 0 !important;  /* Remove margem padrão */
+    padding: 5px 0 !important; /* Padding vertical no container principal */
+    margin: 0 !important;
 }
 
 /* 2. Item Individual do Menu */
@@ -271,7 +270,7 @@ html, body {
 
 /* 3. Efeito de hover no item */
 .xeokit-context-menu-item:hover {
-    background-color: #007bff !important; /* Destaque azul ao passar o mouse */
+    background-color: #007bff !important; 
     color: white !important;
 }
 
@@ -282,23 +281,21 @@ html, body {
     background-color: transparent !important;
 }
 
-/* 5. 🛑 NOVO: Estilo para a SEÇÃO (Substitui os pontos por barra horizontal) */
+/* 5. 🛑 NOVO/REFORÇADO: Estilo para a SEÇÃO (Aplica a barra divisória) */
 .xeokit-context-menu-section {
     
-    /* Remove a marcação/ponto/bullet que o navegador pode adicionar */
+    /* Garante a remoção de qualquer marcador de lista */
     list-style: none !important;
     
-    /* Remove qualquer espaçamento indesejado */
-    margin: 0 !important;
-    padding: 0 !important;
-    
-    /* Adiciona uma barra divisória (semelhante ao menu nativo) */
+    /* Aplica a barra divisória */
     border-top: 1px solid #555 !important;
-    margin-top: 5px !important; /* Espaçamento acima da barra */
-    padding-top: 5px !important; /* Espaçamento abaixo da barra */
+    
+    /* Espaçamento para a barra ficar visível e separada */
+    margin: 5px 0 0 0 !important; /* Margem apenas acima da barra */
+    padding: 5px 0 0 0 !important; /* Padding apenas acima da barra */
 }
 
-/* O primeiro bloco de itens não precisa de barra divisória */
+/* 6. O primeiro bloco de itens não precisa de barra divisória */
 .xeokit-context-menu-section:first-child {
     border-top: none !important;
     margin-top: 0 !important;
