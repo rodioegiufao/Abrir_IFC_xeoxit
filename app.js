@@ -613,7 +613,54 @@ const materialContextMenu = new ContextMenu({
                         document.body.appendChild(painel);
                     }
 
-                    painel.innerHTML = `<h3 style='margin-top:0;'>Propriedades IFC</h3>${propriedades}`;
+                    // --- Cria ou atualiza o painel flutuante ---
+                    let painel = document.getElementById("propertyPanel");
+                    if (!painel) {
+                        painel = document.createElement("div");
+                        painel.id = "propertyPanel";
+                        painel.style.position = "fixed";
+                        painel.style.right = "20px";
+                        painel.style.top = "80px";
+                        painel.style.width = "350px";
+                        painel.style.maxHeight = "65vh";
+                        painel.style.overflowY = "auto";
+                        painel.style.background = "rgba(0,0,0,0.9)";
+                        painel.style.color = "white";
+                        painel.style.padding = "15px";
+                        painel.style.borderRadius = "10px";
+                        painel.style.zIndex = 300000;
+                        painel.style.fontFamily = "Arial, sans-serif";
+                        painel.style.fontSize = "13px";
+                        painel.style.boxShadow = "0 4px 10px rgba(0,0,0,0.4)";
+                        document.body.appendChild(painel);
+                    }
+                    
+                    // 🟢 Adiciona botão X para fechar
+                    painel.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <h3 style='margin:0;'>Propriedades IFC</h3>
+                            <button id="closePropertyPanel" 
+                                style="
+                                    background:transparent;
+                                    border:none;
+                                    color:#f44336;
+                                    font-size:18px;
+                                    font-weight:bold;
+                                    cursor:pointer;
+                                    line-height:1;
+                                "
+                                title="Fechar painel">
+                                ✖
+                            </button>
+                        </div>
+                        ${propriedades}
+                    `;
+                    
+                    // 🟢 Evento do botão X
+                    document.getElementById("closePropertyPanel").onclick = () => {
+                        painel.remove();
+                    };
+
                 }
             }
         ],
@@ -715,6 +762,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
