@@ -12,7 +12,9 @@ import {
     PointerLens,
     NavCubePlugin, 
     TreeViewPlugin,
-    SectionPlanesPlugin 
+    SectionPlanesPlugin,
+    LineSet,         // <--- NOVO: Importa LineSet
+    buildGridGeometry // <--- NOVO: Importa buildGridGeometry
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 let treeView; 
@@ -89,6 +91,40 @@ function resetModelVisibility() {
     clearSelection(false); // Limpa o estado visual do botão "Limpar Seleção"
 }
 
+/**
+ * Função NOVO: Cria uma grade no plano do solo (elevação mínima Y).
+ */
+function createGroundGrid() {
+    // Pega o Bounding Box de toda a cena para centralizar e posicionar no solo
+    const aabb = viewer.scene.getAABB(); 
+    
+    // Determina a elevação do solo (o valor Y mínimo do AABB)
+    // O xeokit usa a convenção [minX, minY, minZ, maxX, maxY, maxZ]
+    const groundY = aabb[1]; 
+
+    // Cria a geometria da grade
+    const geometryArrays = buildGridGeometry({
+        size: 100, // Tamanho da grade (100x100 metros)
+        divisions: 50 // 50 divisões (linhas)
+    });
+
+    // Cria o LineSet para renderizar a grade
+    new LineSet(viewer.scene, {
+        positions: geometryArrays.positions,
+        indices: geometryArrays.indices,
+        color: [0.5, 0.5, 0.5], // Cor cinza suave
+        opacity: 0.8,
+        // Move a grade para o centro XZ do modelo e para a elevação correta.
+        position: [
+            (aabb[0] + aabb[3]) / 2, // Centro X
+            groundY,                 // Elevação Y
+            (aabb[2] + aabb[5]) / 2  // Centro Z
+        ]
+    });
+    
+    console.log("Grade do solo criada.");
+}
+
 
 function adjustCameraOnLoad() {
     modelsLoadedCount++;
@@ -99,6 +135,7 @@ function adjustCameraOnLoad() {
             console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
             setMeasurementMode('none', document.getElementById('btnDeactivate')); 
             setupModelIsolateController();
+            createGroundGrid(); // <-- NOVO: Chama a criação da grade
         }, 300);
     }
 }
@@ -289,7 +326,7 @@ window.toggleTreeView = toggleTreeView;
 window.resetModelVisibility = resetModelVisibility; 
 
 // -----------------------------------------------------------------------------
-// 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL
+// 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL (MANTIDO)
 // -----------------------------------------------------------------------------
 // ... setupSectionPlane (função que não é mais usada, mas mantida por segurança) ...
 
@@ -361,7 +398,7 @@ function toggleSectionPlane(button) {
 window.toggleSectionPlane = toggleSectionPlane;
 
 // -----------------------------------------------------------------------------
-// 8. Seleção de Entidade (Highlighting) - NOVO
+// 8. Seleção de Entidade (Highlighting) - NOVO (MANTIDO)
 // -----------------------------------------------------------------------------
 
 /**
@@ -422,7 +459,7 @@ viewer.cameraControl.on("doublePicked", pickResult => {
     }
 });
 // -----------------------------------------------------------------------------
-// 9. Menu de Contexto (Propriedades do Material) - NOVO
+// 9. Menu de Contexto (Propriedades do Material) - NOVO (MANTIDO)
 // -----------------------------------------------------------------------------
 
 // Desabilita o pan com o botão direito (para permitir o menu)
@@ -483,6 +520,7 @@ const materialContextMenu = new ContextMenu({
                         painel.style.width = "350px";
                         painel.style.maxHeight = "65vh";
                         painel.style.overflowY = "auto";
+                        // Esses estilos serão sobrescritos pelo styles.css
                         painel.style.background = "rgba(0,0,0,0.9)";
                         painel.style.color = "white";
                         painel.style.padding = "15px";
@@ -494,7 +532,7 @@ const materialContextMenu = new ContextMenu({
                         document.body.appendChild(painel);
                     }
 
-                    painel.innerHTML = `<h3 style='margin-top:0;color:#4CAF50;'>Propriedades IFC</h3>${propriedades}`;
+                    painel.innerHTML = `<h3 style='margin-top:0;'>Propriedades IFC</h3>${propriedades}`;
                 }
 
             }
