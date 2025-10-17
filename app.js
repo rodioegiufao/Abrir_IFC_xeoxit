@@ -184,7 +184,29 @@ const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(di
     snapping: true 
 });
 distanceMeasurementsMouseControl.deactivate(); 
+// -----------------------------------------------------------------------------
+// Função utilitária: Limpa qualquer seleção, destaque ou estado de botão ativo
+// -----------------------------------------------------------------------------
+function clearSelection(removeButtonHighlight = true) {
+    try {
+        // Remove seleção de qualquer entidade
+        if (viewer.scene && viewer.scene.selectedObjectIds) {
+            viewer.scene.setObjectsSelected(viewer.scene.selectedObjectIds, false);
+        }
 
+        // Remove destaque visual (highlight)
+        if (viewer.scene && viewer.scene.highlightedObjectIds) {
+            viewer.scene.setObjectsHighlighted(viewer.scene.highlightedObjectIds, false);
+        }
+
+        // Opcionalmente remove destaque do botão ativo
+        if (removeButtonHighlight) {
+            document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active'));
+        }
+    } catch (e) {
+        console.warn("⚠️ clearSelection(): falhou ao limpar seleção:", e);
+    }
+}
 function setMeasurementMode(mode, clickedButton) {
     angleMeasurementsMouseControl.deactivate();
     distanceMeasurementsMouseControl.deactivate();
@@ -693,6 +715,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
