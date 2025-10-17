@@ -442,25 +442,37 @@ const materialContextMenu = new ContextMenu({
                         return;
                     }
 
-                    // Busca o metaObject correspondente
                     const metaObject = viewer.metaScene.metaObjects[entity.id];
                     if (!metaObject) {
                         alert("Não há informações de metadados disponíveis para este objeto.");
                         return;
                     }
 
-                    // Monta um texto com as propriedades
-                    let propriedades = `<strong>ID:</strong> ${metaObject.id}<br><strong>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
+                    let propriedades = `<strong style='color:#4CAF50;'>ID:</strong> ${metaObject.id}<br>`;
+                    propriedades += `<strong style='color:#4CAF50;'>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
+                    if (metaObject.name) propriedades += `<strong style='color:#4CAF50;'>Nome:</strong> ${metaObject.name}<br><br>`;
 
-                    if (metaObject.name) propriedades += `<strong>Nome:</strong> ${metaObject.name}<br>`;
-                    if (metaObject.properties) {
-                        propriedades += "<br><strong>Propriedades:</strong><br>";
-                        for (const [key, val] of Object.entries(metaObject.properties)) {
-                            propriedades += `${key}: ${val}<br>`;
+                    // --- 🔍 NOVO: Varre os PropertySets IFC (Psets, Identificação, Geometria, etc.) ---
+                    if (metaObject.propertySets && metaObject.propertySets.length > 0) {
+                        for (const pset of metaObject.propertySets) {
+                            propriedades += `<div style="margin-top:10px;border-top:1px solid #444;padding-top:5px;">`;
+                            propriedades += `<strong style='color:#4CAF50;'>${pset.name}</strong><br>`;
+                            if (pset.properties && pset.properties.length > 0) {
+                                propriedades += "<table style='width:100%;font-size:12px;margin-top:5px;'>";
+                                for (const prop of pset.properties) {
+                                    const key = prop.name || prop.id;
+                                    const val = prop.value !== undefined ? prop.value : "(vazio)";
+                                    propriedades += `<tr><td style='width:40%;color:#ccc;'>${key}</td><td style='color:#fff;'>${val}</td></tr>`;
+                                }
+                                propriedades += "</table>";
+                            }
+                            propriedades += `</div>`;
                         }
+                    } else {
+                        propriedades += `<i style='color:gray;'>Nenhum conjunto de propriedades encontrado.</i>`;
                     }
 
-                    // Cria ou atualiza o painel flutuante
+                    // --- Cria ou atualiza o painel flutuante ---
                     let painel = document.getElementById("propertyPanel");
                     if (!painel) {
                         painel = document.createElement("div");
@@ -468,21 +480,23 @@ const materialContextMenu = new ContextMenu({
                         painel.style.position = "fixed";
                         painel.style.right = "20px";
                         painel.style.top = "80px";
-                        painel.style.width = "300px";
-                        painel.style.maxHeight = "60vh";
+                        painel.style.width = "350px";
+                        painel.style.maxHeight = "65vh";
                         painel.style.overflowY = "auto";
-                        painel.style.background = "rgba(0,0,0,0.85)";
+                        painel.style.background = "rgba(0,0,0,0.9)";
                         painel.style.color = "white";
                         painel.style.padding = "15px";
-                        painel.style.borderRadius = "8px";
+                        painel.style.borderRadius = "10px";
                         painel.style.zIndex = 300000;
                         painel.style.fontFamily = "Arial, sans-serif";
                         painel.style.fontSize = "13px";
+                        painel.style.boxShadow = "0 4px 10px rgba(0,0,0,0.4)";
                         document.body.appendChild(painel);
                     }
 
-                    painel.innerHTML = `<h3 style='margin-top:0;color:#4CAF50;'>Propriedades do Material</h3>${propriedades}`;
+                    painel.innerHTML = `<h3 style='margin-top:0;color:#4CAF50;'>Propriedades IFC</h3>${propriedades}`;
                 }
+
             }
         ]
     ]
