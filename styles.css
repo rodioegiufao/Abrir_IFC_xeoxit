@@ -193,13 +193,83 @@ html, body {
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
+/* ---------------------------------------------------- */
+/* NOVO: Estilos do Painel de Propriedades (propertyPanel) */
+/* ---------------------------------------------------- */
+
+#propertyPanel {
+    /* Aparência mais próxima do menu de contexto do navegador */
+    background: #202020 !important; /* Cinza bem escuro (fundo do menu nativo) */
+    color: #f0f0f0 !important; /* Texto claro */
+    border-radius: 4px !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.7) !important; /* Sombra mais forte */
+    padding: 15px;
+}
+
 #propertyPanel h3 {
     font-size: 16px;
     border-bottom: 1px solid #4CAF50;
     padding-bottom: 5px;
     margin-bottom: 10px;
-}
-#propertyPanel strong {
-    color: #4CAF50;
+    color: #f0f0f0; /* Cor do título mais suave */
 }
 
+/* Estilo para as strong tags */
+#propertyPanel strong {
+    color: #4CAF50; /* Mantém a cor verde para destacar chaves importantes */
+}
+
+/* Estilo da Tabela de Propriedades */
+#propertyPanel table {
+    border-collapse: collapse; /* Remove espaçamento entre células */
+    width: 100%;
+}
+
+#propertyPanel td {
+    padding: 2px 0;
+    /* Linhas pontilhadas/espaços de valor */
+}
+
+/* Linha divisória dos Psets */
+#propertyPanel > div {
+    border-top: 1px solid #333 !important; /* Divisor mais escuro e sutil */
+    padding-top: 8px !important;
+    margin-top: 12px !important;
+}
+
+/* ---------------------------------------------------- */
+/* NOVO: Estilos do Menu de Contexto (ContextMenu) do xeokit */
+/* ---------------------------------------------------- */
+
+/* Estilo do container principal do menu de contexto (classe padrão do xeokit) */
+.xeokit-context-menu {
+    background: #333 !important; /* Fundo cinza escuro, como o nativo */
+    border: 1px solid #444 !important; /* Borda sutil */
+    border-radius: 4px !important;
+    padding: 5px 0 !important; /* Espaçamento vertical */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6) !important;
+    z-index: 300000 !important; /* Garante que ele apareça sobre o painel de propriedades */
+}
+
+/* Estilo de cada item do menu */
+.xeokit-context-menu-item {
+    padding: 8px 20px 8px 15px !important; /* Mais padding para parecer um item de menu real */
+    color: #f0f0f0 !important; /* Texto claro */
+    cursor: pointer !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 14px !important;
+    transition: background-color 0.1s;
+}
+
+/* Efeito de hover no item */
+.xeokit-context-menu-item:hover {
+    background-color: #007bff !important; /* Destaque azul ao passar o mouse */
+    color: white !important;
+}
+
+/* Estilo para itens desabilitados (se houver) */
+.xeokit-context-menu-item.disabled {
+    color: #888 !important;
+    cursor: default !important;
+    background-color: transparent !important;
+}
