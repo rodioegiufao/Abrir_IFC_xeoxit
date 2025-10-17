@@ -398,66 +398,40 @@ function toggleSectionPlane(button) {
 window.toggleSectionPlane = toggleSectionPlane;
 
 // -----------------------------------------------------------------------------
-// 8. Seleção de Entidade (Highlighting) - NOVO (MANTIDO)
+// 8. Destaque de Entidades ao Passar o Mouse (Hover Highlight)
 // -----------------------------------------------------------------------------
 
-/**
- * Limpa a seleção atual, removendo o destaque da última entidade selecionada
- * e desativando o botão de Limpar visualmente.
- * @param {boolean} [log=true] Se deve logar no console.
- */
-function clearSelection(log = true) {
-    if (lastPickedEntity) {
-        lastPickedEntity.highlighted = false;
-        lastPickedEntity = null;
-    }
-    // Garante que o botão 'Limpar Seleção' também seja desativado visualmente
-    const btnClearSelection = document.getElementById('btnClearSelection');
-    if (btnClearSelection) {
-        btnClearSelection.classList.remove('active');
-    }
-    if (log) {
-        console.log("Seleção limpa.");
-    }
-}
+let lastEntity = null;
 
-window.clearSelection = clearSelection; // Expõe a função de limpeza de seleção
+// Monitora o movimento do mouse sobre o canvas
+viewer.scene.input.on("mousemove", function (coords) {
 
-/**
- * Evento acionado ao dar duplo-clique em uma entidade.
- * Seleciona (Highlight) a entidade, centraliza a câmera nela, e limpa a seleção anterior.
- */
-viewer.cameraControl.on("doublePicked", pickResult => {
+    const hit = viewer.scene.pick({
+        canvasPos: coords
+    });
 
-    // 1. Limpa a seleção anterior e a referência.
-    clearSelection(false); // Limpa sem logar
+    if (hit && hit.entity && hit.entity.isObject) {
 
-    if (pickResult.entity) {
-        const entity = pickResult.entity;
+        // Se for um novo objeto, troca o destaque
+        if (!lastEntity || hit.entity.id !== lastEntity.id) {
 
-        // 2. Destaca (Highlight) a nova entidade
-        entity.highlighted = true;
-        lastPickedEntity = entity; // Armazena a referência
+            if (lastEntity) {
+                lastEntity.highlighted = false;
+            }
 
-        // 3. Centraliza a câmera nela
-        viewer.cameraFlight.flyTo({
-            aabb: viewer.scene.getAABB(entity.id),
-            duration: 0.5
-        });
-
-        console.log(`Entidade selecionada por duplo-clique: ${entity.id}`);
-        
-        // Ativa o botão de Limpar Seleção (feedback visual)
-        const btnClearSelection = document.getElementById('btnClearSelection');
-        if (btnClearSelection) {
-            btnClearSelection.classList.add('active');
+            lastEntity = hit.entity;
+            hit.entity.highlighted = true;
         }
 
     } else {
-        // Se o usuário deu duplo-clique no vazio, apenas informa.
-        console.log("Duplo-clique no vazio.");
+        // Saiu de qualquer entidade: remove o highlight
+        if (lastEntity) {
+            lastEntity.highlighted = false;
+            lastEntity = null;
+        }
     }
 });
+
 // -----------------------------------------------------------------------------
 // 9. Menu de Contexto (Propriedades + Visibilidade + X-Ray) - VERSÃO FINAL
 // -----------------------------------------------------------------------------
@@ -634,5 +608,6 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
