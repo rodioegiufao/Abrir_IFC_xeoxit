@@ -29,7 +29,7 @@ html, body {
 }
 
 /* ---------------------------------------------------- */
-/* Estilos da Árvore de Estrutura (TreeView) - NOVO E AJUSTADO */
+/* Estilos da Árvore de Estrutura (TreeView) */
 /* ---------------------------------------------------- */
 
 #treeViewContainer {
@@ -91,25 +91,25 @@ html, body {
     font-weight: bold;
 }
 
-/* ESTILOS DOS ÍCONES DE EXPANSÃO - ÚLTIMA TENTATIVA */
+/* ESTILOS DOS ÍCONES DE EXPANSÃO */
 #treeViewContainer .xeokit-tree-view-item-toggle {
     display: inline-block;
     width: 15px; /* Largura para o ícone */
     height: 15px;
     text-align: center;
     
-    /* 🛑 NOVO: Move o texto original (+/-) para fora da área visível */
+    /* Move o texto original (+/-) para fora da área visível */
     text-indent: -9999px !important; 
     
-    font-size: 1px; /* Tentativa de reduzir o tamanho, caso text-indent falhe */
+    font-size: 1px;
     line-height: 1;
     margin-right: 5px;
     
-    color: transparent !important; /* Cor transparente para anular estilo de cor inline */
+    color: transparent !important;
     background-color: transparent !important;
     
     position: relative;
-    overflow: hidden; /* Corta o texto que saiu da tela */
+    overflow: hidden;
     cursor: pointer;
 }
 
@@ -193,8 +193,111 @@ html, body {
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
+/* ---------------------------------------------------- */
+/* Estilos do Painel de Propriedades (propertyPanel) */
+/* ---------------------------------------------------- */
 
+#propertyPanel {
+    /* Aparência mais próxima do menu de contexto do navegador */
+    background: #202020 !important; /* Cinza bem escuro (fundo do menu nativo) */
+    color: #f0f0f0 !important; /* Texto claro */
+    border-radius: 4px !important;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.7) !important; /* Sombra mais forte */
+    padding: 15px;
+}
 
+#propertyPanel h3 {
+    font-size: 16px;
+    border-bottom: 1px solid #4CAF50;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+    color: #f0f0f0; /* Cor do título mais suave */
+}
 
+/* Estilo para as strong tags dentro do painel */
+#propertyPanel strong {
+    color: #4CAF50; /* Cor verde para destacar chaves importantes */
+}
 
+/* Estilo da Tabela de Propriedades */
+#propertyPanel table {
+    border-collapse: collapse; /* Remove espaçamento entre células */
+    width: 100%;
+}
 
+#propertyPanel td {
+    padding: 2px 0;
+    /* Linhas pontilhadas/espaços de valor */
+}
+
+/* Linha divisória dos Psets */
+#propertyPanel > div {
+    border-top: 1px solid #333 !important; /* Divisor mais escuro e sutil */
+    padding-top: 8px !important;
+    margin-top: 12px !important;
+}
+
+/* ---------------------------------------------------- */
+/* MELHORIA: Estilos do Menu de Contexto (ContextMenu) do xeokit */
+/* ---------------------------------------------------- */
+
+/* 1. Container Principal (Visual Nativo Escuro) */
+.xeokit-context-menu {
+    background: #333 !important; 
+    border: 1px solid #444 !important; 
+    border-radius: 4px !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6) !important;
+    z-index: 300000 !important; 
+    
+    /* 🛑 REGRAS PRINCIPAIS PARA REMOVER PONTOS DE LISTA */
+    list-style: none !important;
+    padding: 5px 0 !important; /* Padding vertical no container principal */
+    margin: 0 !important;
+}
+
+/* 2. Item Individual do Menu */
+.xeokit-context-menu-item {
+    padding: 8px 20px 8px 15px !important; 
+    color: #f0f0f0 !important; 
+    cursor: pointer !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 14px !important;
+    transition: background-color 0.1s;
+    
+    /* 🛑 GARANTE A REMOÇÃO DOS PONTOS DE LISTA no item */
+    list-style: none !important;
+}
+
+/* 3. Efeito de hover no item */
+.xeokit-context-menu-item:hover {
+    background-color: #007bff !important; 
+    color: white !important;
+}
+
+/* 4. Estilo para Itens Desabilitados */
+.xeokit-context-menu-item.disabled {
+    color: #888 !important;
+    cursor: default !important;
+    background-color: transparent !important;
+}
+
+/* 5. 🛑 NOVO/REFORÇADO: Estilo para a SEÇÃO (Aplica a barra divisória) */
+.xeokit-context-menu-section {
+    
+    /* Garante a remoção de qualquer marcador de lista */
+    list-style: none !important;
+    
+    /* Aplica a barra divisória */
+    border-top: 1px solid #555 !important;
+    
+    /* Espaçamento para a barra ficar visível e separada */
+    margin: 5px 0 0 0 !important; /* Margem apenas acima da barra */
+    padding: 5px 0 0 0 !important; /* Padding apenas acima da barra */
+}
+
+/* 6. O primeiro bloco de itens não precisa de barra divisória */
+.xeokit-context-menu-section:first-child {
+    border-top: none !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
