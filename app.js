@@ -13,10 +13,8 @@ import {
     NavCubePlugin, 
     TreeViewPlugin,
     SectionPlanesPlugin,
-    SectionPlaneControl, // <--- NOVO: Importe esta classe para usar o controle de UI
-    LineSet,         
-    buildGridGeometry,
-    TransformControl
+    LineSet,         // <--- NOVO: Importa LineSet
+    buildGridGeometry // <--- NOVO: Importa buildGridGeometry
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 let treeView; 
@@ -24,8 +22,7 @@ let modelIsolateController;
 let sectionPlanesPlugin; 
 let horizontalSectionPlane; 
 let horizontalPlaneControl; 
-let lastPickedEntity = null;
-let transformControl; 
+let lastPickedEntity = null; // NOVO: Variável para rastrear a entidade selecionada
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -42,131 +39,164 @@ const viewer = new Viewer({
     // CONFIGURAÇÃO DE LOCALIZAÇÃO (NavCube em Português)
     localeService: new LocaleService({
         messages: {
-            "navCube.front": "Frente",
-            "navCube.back": "Trás",
-            "navCube.left": "Esquerda",
-            "navCube.right": "Direita",
-            "navCube.top": "Topo",
-            "navCube.bottom": "Base"
-        }
+            "pt": { // Português
+                "NavCube": {
+                    "front": "Frente",
+                    "back": "Trás",
+                    "top": "Topo",
+                    "bottom": "Baixo",
+                    "left": "Esquerda",
+                    "right": "Direita"
+                }
+            }
+        },
+        locale: "pt" // Define o idioma padrão como Português
     })
 });
 
-// Inicialização do TransformControl
-transformControl = new TransformControl(viewer);
-transformControl.visible = false; 
-transformControl.translateEnabled = true;
-transformControl.rotateEnabled = true;
-transformControl.scaleEnabled = false;
 
 function onWindowResize() {
-    viewer.resize();
-    if (horizontalPlaneControl) {
-        horizontalPlaneControl.resize(); 
-    }
+    const canvas = viewer.scene.canvas;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 }
 
-window.addEventListener("resize", onWindowResize);
+window.addEventListener('resize', onWindowResize);
+onWindowResize(); 
 
 // -----------------------------------------------------------------------------
-// 2. Controladores e Plugins - Funções e Inicialização
+// 2. Carregamento dos Modelos e Ajuste da Câmera
 // -----------------------------------------------------------------------------
 
-// Plugin para carregar modelos XKT
 const xktLoader = new XKTLoaderPlugin(viewer);
 
-// Plugin para o NavCube
-const navCube = new NavCubePlugin(viewer, {
-    canvasId: "myNavCubeCanvas",
-    visible: true,
-    size: 150
-});
-
-// Plugins e controles de medição
-const angleMeasurements = new AngleMeasurementsPlugin(viewer);
-const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMeasurements, {
-    pointerLens : new PointerLens(viewer)
-});
-angleMeasurementsMouseControl.snapping = true;
-
-const distanceMeasurements = new DistanceMeasurementsPlugin(viewer);
-const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(distanceMeasurements, {
-    pointerLens : new PointerLens(viewer)
-});
-distanceMeasurementsMouseControl.snapping = true;
-
-// Plugin de Plano de Corte
-sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
-horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
-    pos: [0, 0, 0],
-    dir: [0, -1, 0] // Corte horizontal, olhando para baixo
-});
-
-// CORREÇÃO APLICADA: Instancie SectionPlaneControl
-horizontalPlaneControl = new SectionPlaneControl(horizontalSectionPlane, {
-    // Configurações opcionais
-}); 
-horizontalPlaneControl.visible = false;
-
-
-// Plugin para a Árvore de Estrutura
-treeView = new TreeViewPlugin(viewer, {
-    containerElement: document.getElementById("treeViewContainer"),
-    enableContextMenu: false 
-});
-// Esconde a árvore por padrão
-document.getElementById("treeViewContainer").style.display = 'none';
+let modelsLoadedCount = 0;
+const totalModels = 2; 
 
 /**
- * Reseta a visibilidade de todos os objetos e remove o isolamento.
+ * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
  */
 function resetModelVisibility() {
-    if (viewer.scene.models['meu_modelo']) {
-        viewer.scene.models['meu_modelo'].visible = true;
-    }
-    if (viewer.scene.models['modelo-02']) {
-        viewer.scene.models['modelo-02'].visible = true;
-    }
-
     if (modelIsolateController) {
-        viewer.scene.setObjectsVisible(viewer.scene.objectIds, true);
-        viewer.scene.setObjectsXRayed(viewer.scene.objectIds, false);
-        viewer.scene.setObjectsHighlighted(viewer.scene.objectIds, false);
+        // Volta a exibir todos os objetos
+        modelIsolateController.setObjectsVisible(modelIsolateController.getObjectsIds(), true);
+        // Remove X-ray
+        modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false);
+        // Remove destaque
+        modelIsolateController.setObjectsHighlighted(modelIsolateController.getObjectsIds(), false);
+        // Centraliza a câmera no modelo inteiro
         viewer.cameraFlight.jumpTo(viewer.scene);
     }
-    
-    // Limpa o TransformControl
-    if (transformControl) { 
-        transformControl.setTarget(null);
-        transformControl.visible = false; 
-        viewer.cameraControl.active = true; 
-    }
-
-    lastPickedEntity = null; 
-    clearSelection(false);
+    lastPickedEntity = null; // Garante que a referência de seleção também seja limpa.
+    clearSelection(false); // Limpa o estado visual do botão "Limpar Seleção"
 }
 
+/**
+ * Função NOVO: Cria uma grade no plano do solo (elevação mínima Y).
+ */
+function createGroundGrid() {
+    // Pega o Bounding Box de toda a cena para centralizar e posicionar no solo
+    const aabb = viewer.scene.getAABB(); 
+    
+    // Determina a elevação do solo (o valor Y mínimo do AABB)
+    // O xeokit usa a convenção [minX, minY, minZ, maxX, maxY, maxZ]
+    const groundY = aabb[1]; 
+
+    // Cria a geometria da grade
+    const geometryArrays = buildGridGeometry({
+        size: 100, // Tamanho da grade (100x100 metros)
+        divisions: 50 // 50 divisões (linhas)
+    });
+
+    // Cria o LineSet para renderizar a grade
+    new LineSet(viewer.scene, {
+        positions: geometryArrays.positions,
+        indices: geometryArrays.indices,
+        color: [0.5, 0.5, 0.5], // Cor cinza suave
+        opacity: 0.8,
+        // Move a grade para o centro XZ do modelo e para a elevação correta.
+        position: [
+            (aabb[0] + aabb[3]) / 2, // Centro X
+            groundY,                 // Elevação Y
+            (aabb[2] + aabb[5]) / 2  // Centro Z
+        ]
+    });
+    
+    console.log("Grade do solo criada.");
+}
+
+
+function adjustCameraOnLoad() {
+    modelsLoadedCount++;
+    
+    if (modelsLoadedCount === totalModels) {
+        setTimeout(() => {
+            viewer.cameraFlight.jumpTo(viewer.scene);
+            console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
+            setMeasurementMode('none', document.getElementById('btnDeactivate')); 
+            setupModelIsolateController();
+            createGroundGrid(); // <-- NOVO: Chama a criação da grade
+        }, 300);
+    }
+}
+
+// CARREGAMENTO DOS MODELOS (MANTIDO)
+const model1 = xktLoader.load({
+    id: "meuModeloBIM",
+    src: "assets/meu_modelo.xkt", 
+    edges: true
+});
+
+model1.on("loaded", adjustCameraOnLoad);
+model1.on("error", (err) => {
+    console.error("Erro ao carregar meu_modelo.xkt:", err);
+    adjustCameraOnLoad(); 
+});
+
+const model2 = xktLoader.load({
+    id: "meuModeloBIM_02", 
+    src: "assets/modelo-02.xkt", 
+    edges: true
+});
+
+model2.on("loaded", adjustCameraOnLoad);
+model2.on("error", (err) => {
+    console.error("Erro ao carregar modelo-02.xkt:", err);
+    adjustCameraOnLoad(); 
+});
+
+
 // -----------------------------------------------------------------------------
-// 3. Funções de Utilidade (Seleção, Medição, Grade)
+// 3. Plugins de Medição e Função de Troca (MANTIDO)
 // -----------------------------------------------------------------------------
 
-/**
- * Limpa a seleção e o destaque de todos os objetos.
- * @param {boolean} [removeButtonHighlight=true] Se deve remover o destaque dos botões da toolbar.
- */
+const angleMeasurementsPlugin = new AngleMeasurementsPlugin(viewer, { zIndex: 100000 });
+const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMeasurementsPlugin, {
+    pointerLens: new PointerLens(viewer), 
+    snapping: true 
+});
+angleMeasurementsMouseControl.deactivate(); 
+
+
+const distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer, { zIndex: 100000 });
+const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(distanceMeasurementsPlugin, {
+    pointerLens: new PointerLens(viewer), 
+    snapping: true 
+});
+distanceMeasurementsMouseControl.deactivate(); 
+// -----------------------------------------------------------------------------
+// Função utilitária: Limpa qualquer seleção, destaque ou estado de botão ativo
+// -----------------------------------------------------------------------------
 function clearSelection(removeButtonHighlight = true) {
     try {
-        angleMeasurements.clear();
-        distanceMeasurements.clear();
-        viewer.scene.setObjectsHighlighted(viewer.scene.highlightedObjectIds, false);
-        viewer.scene.setObjectsSelected(viewer.scene.selectedObjectIds, false);
-        viewer.scene.setObjectsXRayed(viewer.scene.xrayedObjectIds, false);
+        // Remove seleção de qualquer entidade
+        if (viewer.scene && viewer.scene.selectedObjectIds) {
+            viewer.scene.setObjectsSelected(viewer.scene.selectedObjectIds, false);
+        }
 
-        // Limpa o TransformControl ao limpar a seleção
-        if (transformControl && transformControl.target) {
-            transformControl.setTarget(null);
-            transformControl.visible = false; 
-            viewer.cameraControl.active = true;
+        // Remove destaque visual (highlight)
+        if (viewer.scene && viewer.scene.highlightedObjectIds) {
+            viewer.scene.setObjectsHighlighted(viewer.scene.highlightedObjectIds, false);
         }
 
         // Opcionalmente remove destaque do botão ativo
@@ -177,293 +207,498 @@ function clearSelection(removeButtonHighlight = true) {
         console.warn("⚠️ clearSelection(): falhou ao limpar seleção:", e);
     }
 }
-
-/**
- * Define o modo de medição e atualiza o estado dos botões.
- * @param {'angle'|'distance'|'none'} mode 
- * @param {HTMLElement} [button=null] O botão clicado, para destacar.
- */
-function setMeasurementMode(mode, button = null) {
-    clearSelection(false); 
-
-    // Desativa todos os controles de medição e de câmera (se TransformControl estiver ativo)
+function setMeasurementMode(mode, clickedButton) {
     angleMeasurementsMouseControl.deactivate();
     distanceMeasurementsMouseControl.deactivate();
-    if (transformControl.target === null) {
-        viewer.cameraControl.active = true;
+    document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active'));
+
+    if (mode === 'angle') {
+        angleMeasurementsMouseControl.activate();
+    } else if (mode === 'distance') {
+        distanceMeasurementsMouseControl.activate();
     }
-
-    // Remove destaque de todos os botões de medição
-    document.querySelectorAll('.tool-button-measurement').forEach(btn => btn.classList.remove('active'));
-
-    switch (mode) {
-        case 'angle':
-            angleMeasurementsMouseControl.activate();
-            if (button) button.classList.add('active');
-            console.log("Modo: Medição de Ângulo Ativado.");
-            break;
-        case 'distance':
-            distanceMeasurementsMouseControl.activate();
-            if (button) button.classList.add('active');
-            console.log("Modo: Medição de Distância Ativada.");
-            break;
-        case 'none':
-            console.log("Modo: Desativado.");
-            break;
-    }
-}
-
-/**
- * Alterna a visibilidade da TreeView.
- */
-function toggleTreeView() {
-    const container = document.getElementById("treeViewContainer");
-    const isVisible = container.style.display === 'block';
-    container.style.display = isVisible ? 'none' : 'block';
     
-    // Altera o estado do botão
-    document.getElementById('btnToggleTree').classList.toggle('active', !isVisible);
-
-    // Ajusta o NavCube para não sobrepor
-    const navCubeCanvas = document.getElementById("myNavCubeCanvas");
-    if (!isVisible) {
-        navCubeCanvas.style.right = '20px';
-    } else {
-        navCubeCanvas.style.right = '320px'; // Move o NavCube para a esquerda da TreeView
+    if (clickedButton) {
+         clickedButton.classList.add('active');
     }
+
+    angleMeasurementsMouseControl.reset(); 
+    distanceMeasurementsMouseControl.reset(); 
+    
+    // Garante que o modo de seleção seja desativado ao iniciar uma medição
+    clearSelection(); 
 }
 
-/**
- * Cria a grade de fundo.
- */
-let gridLineSet = null;
-function createGrid() {
-    const halfSize = 200;
-    const spacing = 10;
-    const numLines = halfSize / spacing;
-    const size = halfSize * 2;
-    const color = [0.8, 0.8, 0.8];
+window.setMeasurementMode = setMeasurementMode;
 
-    const gridGeometry = buildGridGeometry(size, numLines, color);
+// -----------------------------------------------------------------------------
+// 4. Menu de Contexto (Deletar Medição) (MANTIDO)
+// -----------------------------------------------------------------------------
 
-    gridLineSet = new LineSet(viewer.scene, {
-        id: "myGrid",
-        geometry: gridGeometry,
-        matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 
-        visible: true
+const contextMenu = new ContextMenu({
+    items: [
+        [
+            {
+                title: "Deletar Medição",
+                doAction: function (context) {
+                    context.measurement.destroy();
+                }
+            }
+        ]
+    ]
+});
+
+function setupMeasurementEvents(plugin) {
+    plugin.on("contextMenu", (e) => {
+        const measurement = e.angleMeasurement || e.distanceMeasurement;
+        contextMenu.context = { measurement: measurement };
+        contextMenu.show(e.event.clientX, e.event.clientY);
+        e.event.preventDefault();
+    });
+
+    plugin.on("mouseOver", (e) => {
+        (e.angleMeasurement || e.distanceMeasurement).setHighlighted(true);
+    });
+
+    plugin.on("mouseLeave", (e) => {
+        const measurement = e.angleMeasurement || e.distanceMeasurement;
+        if (!contextMenu.shown || contextMenu.context.measurement.id !== measurement.id) {
+            measurement.setHighlighted(false);
+        }
     });
 }
-createGrid(); 
+
+setupMeasurementEvents(angleMeasurementsPlugin);
+setupMeasurementEvents(distanceMeasurementsPlugin);
+
+// -----------------------------------------------------------------------------
+// 5. Cubo de Navegação (NavCube) (MANTIDO)
+// -----------------------------------------------------------------------------
+
+new NavCubePlugin(viewer, {
+    canvasId: "myNavCubeCanvas", 
+    visible: true,
+    size: 150, 
+    alignment: "bottomRight", 
+    bottomMargin: 20, 
+    rightMargin: 20 
+});
+
+// -----------------------------------------------------------------------------
+// 6. TreeViewPlugin e Lógica de Isolamento (MANTIDO)
+// -----------------------------------------------------------------------------
+
+function setupModelIsolateController() {
+    
+    treeView = new TreeViewPlugin(viewer, {
+        containerElement: document.getElementById("treeViewContainer"),
+        hierarchy: "containment", 
+        autoExpandDepth: 2 
+    });
+
+    modelIsolateController = viewer.scene.objects;
+
+    // Ouve o evento de "seleção" no TreeView
+    treeView.on("nodeClicked", (event) => {
+        const entityId = event.entityId;
+        
+        // Verifica se há alguma entidade associada ao nó
+        if (entityId && viewer.scene.getObjectsInSubtree(entityId).length > 0) {
+            
+            const subtreeIds = viewer.scene.getObjectsInSubtree(entityId);
+            
+            // Isola (mostra apenas) a parte do modelo (pavimento, por exemplo) clicada
+            modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), true); // X-ray em TUDO
+            modelIsolateController.setObjectsXRayed(subtreeIds, false); // Tira o X-ray do subconjunto isolado
+
+            modelIsolateController.isolate(subtreeIds); // Isola o subconjunto
+            
+            viewer.cameraFlight.flyTo({
+                aabb: viewer.scene.getAABB(entityId),
+                duration: 0.5
+            });
+            
+            clearSelection(); // Limpa a seleção específica quando se usa a TreeView
+
+        } else {
+            // Se o usuário clicar em um nó que não contém objetos (como o nó raiz do projeto ou um item folha)
+            // Apenas reseta a visibilidade.
+            resetModelVisibility(); 
+        }
+    });
+}
 
 /**
- * Alterna a visibilidade da Grade no Solo.
+ * Alterna a visibilidade do contêiner do TreeView e reseta a visibilidade do modelo se estiver fechando.
+ */
+function toggleTreeView() {
+    const container = document.getElementById('treeViewContainer');
+    
+    if (container.style.display === 'block') {
+        container.style.display = 'none';
+        // Ação de "Mostrar Tudo" ao fechar o painel
+        resetModelVisibility(); 
+    } else {
+        container.style.display = 'block';
+    }
+}
+
+// EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
+window.toggleTreeView = toggleTreeView;
+window.resetModelVisibility = resetModelVisibility; 
+// -----------------------------------------------------------------------------
+// 6.1 Função de Pavimentos (Mostrar/Ocultar Níveis)
+// -----------------------------------------------------------------------------
+
+let pavimentos = [];
+let pavimentosVisiveis = true;
+
+/**
+ * Detecta automaticamente pavimentos (níveis) com base nos nomes de entidades IFC.
+ * Armazena uma lista simples de IDs para alternar visibilidade.
+ */
+function detectarPavimentos() {
+    pavimentos = []; // limpa lista
+
+    for (const [id, metaObj] of Object.entries(viewer.metaScene.metaObjects)) {
+        const nome = metaObj.name?.toLowerCase() || "";
+        if (nome.includes("pavimento") || nome.includes("nivel") || nome.includes("andar")) {
+            pavimentos.push({
+                id,
+                nome: metaObj.name
+            });
+        }
+    }
+
+    console.log(`🧱 Pavimentos detectados: ${pavimentos.length}`);
+}
+
+/**
+ * Alterna a visibilidade dos pavimentos (mostra/oculta todos).
+ */
+function togglePavimentos() {
+    if (pavimentos.length === 0) detectarPavimentos();
+
+    pavimentosVisiveis = !pavimentosVisiveis;
+
+    pavimentos.forEach(p => {
+        const entidade = viewer.scene.objects[p.id];
+        if (entidade) entidade.visible = pavimentosVisiveis;
+    });
+
+    console.log(pavimentosVisiveis ? "✅ Pavimentos exibidos" : "🚫 Pavimentos ocultos");
+}
+
+// -----------------------------------------------------------------------------
+// 6.2 Função de Grade (Grid do Solo com Ligar/Desligar)
+// -----------------------------------------------------------------------------
+
+let gradeAtiva = null;
+
+/**
+ * Cria uma grade se não existir, ou alterna sua visibilidade.
  */
 function toggleGrid() {
-    if (gridLineSet) {
-        gridLineSet.visible = !gridLineSet.visible;
-        document.getElementById('btnGrid').classList.toggle('active', gridLineSet.visible);
-    }
-}
+    const aabb = viewer.scene.getAABB();
 
-/**
- * Alterna a visibilidade do Plano de Corte e seu controle.
- * @param {HTMLElement} button O botão clicado, para destacar.
- */
-function toggleSectionPlane(button) {
-    const isVisible = horizontalSectionPlane.active;
-    horizontalSectionPlane.active = !isVisible;
-    horizontalPlaneControl.visible = !isVisible; // Usa 'visible' corretamente
+    if (!gradeAtiva) {
+        const groundY = aabb[1];
+        const geometryArrays = buildGridGeometry({
+            size: 200,
+            divisions: 50
+        });
 
-    button.classList.toggle('active', !isVisible);
+        gradeAtiva = new LineSet(viewer.scene, {
+            positions: geometryArrays.positions,
+            indices: geometryArrays.indices,
+            color: [0.5, 0.5, 0.5],
+            opacity: 0.8,
+            position: [
+                (aabb[0] + aabb[3]) / 2,
+                groundY,
+                (aabb[2] + aabb[5]) / 2
+            ],
+            visible: true
+        });
 
-    if (isVisible) {
-        console.log("Plano de Corte desativado.");
+        console.log("🟩 Grade criada e ativada.");
     } else {
-        // Centraliza o controle no centro do modelo (AABB)
-        const aabb = viewer.scene.aabb;
-        const center = [(aabb[0] + aabb[3]) / 2, (aabb[1] + aabb[4]) / 2, (aabb[2] + aabb[5]) / 2];
-        horizontalSectionPlane.pos = center; 
-        horizontalPlaneControl.resize(); 
-        console.log("Plano de Corte ativado e centralizado.");
+        gradeAtiva.visible = !gradeAtiva.visible;
+        console.log(gradeAtiva.visible ? "🟩 Grade ativada" : "⬜ Grade desativada");
     }
 }
 
-/**
- * Alterna o TransformControl no objeto (Entity) fornecido.
- */
-function toggleObjectManipulation(entity) {
-    // 1. Se o controle já estiver ativo no objeto, desativa
-    if (transformControl.target === entity) {
-        transformControl.setTarget(null);
-        transformControl.visible = false; 
-        viewer.cameraControl.active = true; // Reativa o controle de câmera
-        entity.highlighted = false; // Remove destaque
-        console.log("Manipulação de objeto desativada.");
+// Exportar para escopo global (para o botão no HTML)
+window.toggleGrid = toggleGrid;
+window.togglePavimentos = togglePavimentos;
+
+// -----------------------------------------------------------------------------
+// 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL (MANTIDO)
+// -----------------------------------------------------------------------------
+// ... setupSectionPlane (função que não é mais usada, mas mantida por segurança) ...
+
+function toggleSectionPlane(button) {
+    const scene = viewer.scene;
+
+    // cria o plugin e o plano na primeira vez
+    if (!horizontalSectionPlane) {
+        sectionPlanesPlugin = new SectionPlanesPlugin(viewer);
+
+        const aabb = scene.getAABB();
+        const modelCenterY = (aabb[1] + aabb[4]) / 2;
+
+        horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
+            id: "horizontalPlane",
+            pos: [0, modelCenterY, 0],
+            dir: [0, -1, 0],
+            active: false
+        });
+
+        console.log("Plano de corte criado sob demanda.");
+    }
+
+    // --- DESATIVAR ---
+    if (horizontalSectionPlane.active) {
+        horizontalSectionPlane.active = false;
+        scene.sectionPlanes.active = false;
+
+        // destrói o controle, remove listeners e força redraw
+        if (horizontalSectionPlane.control) {
+            try {
+                viewer.input.removeCanvasElement(horizontalSectionPlane.control.canvas);
+            } catch (e) {}
+            horizontalSectionPlane.control.destroy();
+            horizontalSectionPlane.control = null;
+        }
+
+        // alguns builds deixam o gizmo em viewer.input._activeCanvasElements
+        if (viewer.input && viewer.input._activeCanvasElements) {
+            viewer.input._activeCanvasElements.clear?.();
+        }
+
+        viewer.scene.render(); // força re-render
+        button.classList.remove("active");
+        viewer.cameraFlight.flyTo(scene);
         return;
     }
 
-    // 2. Limpa seleções visuais e desativa medições
-    clearSelection(true); 
-    setMeasurementMode('none');
+    // --- ATIVAR ---
+    const aabb = scene.getAABB();
+    const modelCenterY = (aabb[1] + aabb[4]) / 2;
 
-    // 3. Define o objeto como alvo
-    transformControl.setTarget(entity);
-    transformControl.visible = true; 
-    
-    // 4. Define os manipuladores para atualizar a entidade ao mover/rodar
-    transformControl.setHandlers({
-        onPosition: (position) => {
-            entity.position = position;
-        },
-        onQuaternion: (quaternion) => {
-            // Permite rotação
-            entity.quaternion = quaternion;
-        }
+    horizontalSectionPlane.pos = [0, modelCenterY, 0];
+    horizontalSectionPlane.dir = [0, -1, 0];
+    horizontalSectionPlane.active = true;
+    scene.sectionPlanes.active = true;
+
+    // cria novamente o controle
+    horizontalSectionPlane.control = sectionPlanesPlugin.showControl(horizontalSectionPlane.id);
+
+    button.classList.add("active");
+
+    viewer.cameraFlight.flyTo({
+        aabb: scene.aabb,
+        duration: 0.5
     });
-
-    // 5. Desativa o controle da câmera para que o TransformControl funcione
-    viewer.cameraControl.active = false; 
-
-    // 6. Destaca o objeto sendo manipulado
-    entity.highlighted = true;
-
-    console.log(`Manipulação de objeto ativada para: ${entity.id}`);
 }
 
-
-// -----------------------------------------------------------------------------
-// 4. Carregamento dos Modelos
-// -----------------------------------------------------------------------------
-
-xktLoader.load({
-    id: "meu_modelo",
-    src: "assets/meu_modelo.xkt",
-    edges: true,
-    saoBias: 0.1,
-    saoScale: 1
-}).then(model => {
-    console.log("Modelo 'meu_modelo.xkt' carregado com sucesso!");
-    viewer.cameraFlight.jumpTo(viewer.scene);
-}).catch(error => {
-    console.error("Erro ao carregar 'meu_modelo.xkt':", error);
-});
-
-xktLoader.load({
-    id: "modelo-02",
-    src: "assets/modelo-02.xkt",
-    edges: true,
-    saoBias: 0.1,
-    saoScale: 1,
-    position: [10, 0, 0], 
-}).then(model => {
-    console.log("Modelo 'modelo-02.xkt' carregado com sucesso!");
-}).catch(error => {
-    console.error("Erro ao carregar 'modelo-02.xkt':", error);
-});
-
-
-// -----------------------------------------------------------------------------
-// 5. Configuração da Câmera (Inicial)
-// -----------------------------------------------------------------------------
-
-viewer.camera.eye = [-10, 10, 10];
-viewer.camera.look = [0, 0, 0];
-viewer.camera.up = [0, 1, 0];
-
-// -----------------------------------------------------------------------------
-// 6. Configurações Globais de Exportação para o HTML
-// -----------------------------------------------------------------------------
-
-window.setMeasurementMode = setMeasurementMode;
-window.resetModelVisibility = resetModelVisibility;
-window.clearSelection = clearSelection;
-window.toggleTreeView = toggleTreeView;
-window.toggleGrid = toggleGrid;
 window.toggleSectionPlane = toggleSectionPlane;
 
-
 // -----------------------------------------------------------------------------
-// 7. Manipulação de Eventos do Teclado (Para desativar a manipulação)
+// 8. Destaque de Entidades ao Passar o Mouse (Hover Highlight)
 // -----------------------------------------------------------------------------
 
-document.addEventListener('keydown', (event) => {
-    // Tecla ESC
-    if (event.key === 'Escape') { 
-        clearSelection(); 
-        setMeasurementMode('none');
-        resetModelVisibility();
-        // Desativa explicitamente o TransformControl se estiver ativo
-        if (transformControl.target) {
-            transformControl.setTarget(null);
-            transformControl.visible = false; 
-            viewer.cameraControl.active = true; // Reativa o controle de câmera
+let lastEntity = null;
+
+// Monitora o movimento do mouse sobre o canvas
+viewer.scene.input.on("mousemove", function (coords) {
+
+    const hit = viewer.scene.pick({
+        canvasPos: coords
+    });
+
+    if (hit && hit.entity && hit.entity.isObject) {
+
+        // Se for um novo objeto, troca o destaque
+        if (!lastEntity || hit.entity.id !== lastEntity.id) {
+
+            if (lastEntity) {
+                lastEntity.highlighted = false;
+            }
+
+            lastEntity = hit.entity;
+            hit.entity.highlighted = true;
         }
-    }
-});
 
-// -----------------------------------------------------------------------------
-// 8. Eventos de Mouse (Seleção/Destaque)
-// -----------------------------------------------------------------------------
-
-viewer.cameraControl.on("picked", (e) => {
-    if (e.entity && e.entity.isObject) {
-        if (lastPickedEntity && lastPickedEntity !== e.entity) {
-            lastPickedEntity.highlighted = false;
-        }
-        e.entity.highlighted = true;
-        lastPickedEntity = e.entity;
     } else {
-        if (lastPickedEntity) {
-            lastPickedEntity.highlighted = false;
-            lastPickedEntity = null;
+        // Saiu de qualquer entidade: remove o highlight
+        if (lastEntity) {
+            lastEntity.highlighted = false;
+            lastEntity = null;
         }
     }
 });
 
 // -----------------------------------------------------------------------------
-// 9. Menu de Contexto ao Clicar no Objeto (materialContextMenu)
+// 9. Menu de Contexto (Propriedades + Visibilidade + X-Ray) - VERSÃO FINAL
 // -----------------------------------------------------------------------------
+
+// Desabilita o pan com o botão direito (para permitir o menu)
+viewer.cameraControl.panRightClick = false;
+
+// Cria o menu de contexto
 const materialContextMenu = new ContextMenu({
+    enabled: true,
     items: [
-        [ // Seção 1: Cor/Visibilidade
+        [
             {
-                title: "Ocultar Objeto",
-                getEnabled: (context) => context.entity.visible,
-                doAction: (context) => {
-                    context.entity.visible = false;
-                    materialContextMenu.hide();
-                }
-            },
-            {
-                title: "Alterar Cor (Vermelho)",
-                doAction: (context) => {
-                    context.entity.colorize = [1.0, 0.0, 0.0];
-                    materialContextMenu.hide();
-                }
-            },
-            {
-                title: "Resetar Cor/Visibilidade",
-                doAction: (context) => {
-                    context.entity.visible = true;
-                    context.entity.colorize = null;
-                    materialContextMenu.hide();
+                title: "Propriedades do Material",
+                doAction: function (context) {
+                    const entity = context.entity;
+                    if (!entity || !entity.id) {
+                        alert("Nenhuma entidade selecionada.");
+                        return;
+                    }
+
+                    const metaObject = viewer.metaScene.metaObjects[entity.id];
+                    if (!metaObject) {
+                        alert("Não há informações de metadados disponíveis para este objeto.");
+                        return;
+                    }
+
+                    let propriedades = `<strong style='color:#4CAF50;'>ID:</strong> ${metaObject.id}<br>`;
+                    propriedades += `<strong style='color:#4CAF50;'>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
+                    if (metaObject.name) propriedades += `<strong style='color:#4CAF50;'>Nome:</strong> ${metaObject.name}<br><br>`;
+
+                    // --- Varre todos os conjuntos de propriedades IFC ---
+                    if (metaObject.propertySets && metaObject.propertySets.length > 0) {
+                        for (const pset of metaObject.propertySets) {
+                            propriedades += `<div style="margin-top:10px;border-top:1px solid #444;padding-top:5px;">`;
+                            propriedades += `<strong style='color:#4CAF50;'>${pset.name}</strong><br>`;
+                            if (pset.properties && pset.properties.length > 0) {
+                                propriedades += "<table style='width:100%;font-size:12px;margin-top:5px;'>";
+                                for (const prop of pset.properties) {
+                                    const key = prop.name || prop.id;
+                                    const val = prop.value !== undefined ? prop.value : "(vazio)";
+                                    propriedades += `<tr><td style='width:40%;color:#ccc;'>${key}</td><td style='color:#fff;'>${val}</td></tr>`;
+                                }
+                                propriedades += "</table>";
+                            }
+                            propriedades += `</div>`;
+                        }
+                    } else {
+                        propriedades += `<i style='color:gray;'>Nenhum conjunto de propriedades encontrado.</i>`;
+                    }
+
+                    // --- Cria ou atualiza o painel flutuante ---
+                    let painel = document.getElementById("propertyPanel");
+                    if (!painel) {
+                        painel = document.createElement("div");
+                        painel.id = "propertyPanel";
+                        painel.style.position = "fixed";
+                        painel.style.right = "20px";
+                        painel.style.top = "80px";
+                        painel.style.width = "350px";
+                        painel.style.maxHeight = "65vh";
+                        painel.style.overflowY = "auto";
+                        // Esses estilos podem ser sobrescritos via styles.css
+                        painel.style.background = "rgba(0,0,0,0.9)";
+                        painel.style.color = "white";
+                        painel.style.padding = "15px";
+                        painel.style.borderRadius = "10px";
+                        painel.style.zIndex = 300000;
+                        painel.style.fontFamily = "Arial, sans-serif";
+                        painel.style.fontSize = "13px";
+                        painel.style.boxShadow = "0 4px 10px rgba(0,0,0,0.4)";
+                        document.body.appendChild(painel);
+                    }
+                    
+                    // 🟢 Adiciona botão X para fechar
+                    painel.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <h3 style='margin:0;'>Propriedades IFC</h3>
+                            <button id="closePropertyPanel" 
+                                style="
+                                    background:transparent;
+                                    border:none;
+                                    color:#f44336;
+                                    font-size:18px;
+                                    font-weight:bold;
+                                    cursor:pointer;
+                                    line-height:1;
+                                "
+                                title="Fechar painel">
+                                ✖
+                            </button>
+                        </div>
+                        ${propriedades}
+                    `;
+                    
+                    // 🟢 Evento do botão X
+                    document.getElementById("closePropertyPanel").onclick = () => {
+                        painel.remove();
+                    };
                 }
             }
         ],
-        [ // Seção 2: Isolamento/X-Ray
+        [
             {
-                title: "Isolar Objeto",
+                title: "Ocultar",
+                getEnabled: (context) => context.entity.visible,
+                doAction: (context) => {
+                    context.entity.visible = false;
+                }
+            },
+            {
+                title: "Isolar",
                 doAction: (context) => {
                     const scene = context.viewer.scene;
                     const entity = context.entity;
                     const metaObject = viewer.metaScene.metaObjects[entity.id];
                     if (!metaObject) return;
-                    scene.setObjectsVisible(scene.objectIds, false);
+                    scene.setObjectsVisible(scene.visibleObjectIds, false);
+                    scene.setObjectsXRayed(scene.xrayedObjectIds, false);
+                    scene.setObjectsSelected(scene.selectedObjectIds, false);
                     metaObject.withMetaObjectsInSubtree((mo) => {
                         const e = scene.objects[mo.id];
                         if (e) e.visible = true;
                     });
-                    materialContextMenu.hide();
+                }
+            },
+            {
+                title: "Ocultar Todos",
+                getEnabled: (context) => context.viewer.scene.numVisibleObjects > 0,
+                doAction: (context) => {
+                    context.viewer.scene.setObjectsVisible(context.viewer.scene.visibleObjectIds, false);
+                }
+            },
+            {
+                title: "Mostrar Todos",
+                getEnabled: (context) => {
+                    const scene = context.viewer.scene;
+                    return scene.numVisibleObjects < scene.numObjects;
+                },
+                doAction: (context) => {
+                    const scene = context.viewer.scene;
+                    scene.setObjectsVisible(scene.objectIds, true);
+                    scene.setObjectsXRayed(scene.xrayedObjectIds, false);
+                    scene.setObjectsSelected(scene.selectedObjectIds, false);
+                }
+            }
+        ],
+        [
+            {
+                title: "Aplicar X-Ray",
+                getEnabled: (context) => !context.entity.xrayed,
+                doAction: (context) => {
+                    context.entity.xrayed = true;
+                }
+            },
+            {
+                title: "Remover X-Ray",
+                getEnabled: (context) => context.entity.xrayed,
+                doAction: (context) => {
+                    context.entity.xrayed = false;
                 }
             },
             {
@@ -479,7 +714,6 @@ const materialContextMenu = new ContextMenu({
                         const e = scene.objects[mo.id];
                         if (e) e.xrayed = false;
                     });
-                    materialContextMenu.hide();
                 }
             },
             {
@@ -487,29 +721,6 @@ const materialContextMenu = new ContextMenu({
                 getEnabled: (context) => context.viewer.scene.numXRayedObjects > 0,
                 doAction: (context) => {
                     context.viewer.scene.setObjectsXRayed(context.viewer.scene.xrayedObjectIds, false);
-                    materialContextMenu.hide();
-                }
-            }
-        ],
-        // SEÇÃO DE MANIPULAÇÃO DO OBJETO
-        [
-            {
-                // Título dinâmico: mostra "Parar Manipulação" se ativo, ou "Manipular Objeto" se inativo
-                getTitle: (context) => {
-                    const entity = context.entity;
-                    // Verifica se o TransformControl está ativo e mirando nesta entidade
-                    if (transformControl && transformControl.target === entity) {
-                        return "🛑 Parar Manipulação";
-                    }
-                    return "👆 Manipular Objeto (Mover/Rodar)";
-                },
-                // Habilitado se a entidade existir e for um objeto
-                getEnabled: (context) => context.entity && context.entity.isObject,
-                doAction: (context) => {
-                    // Chama a nova função
-                    toggleObjectManipulation(context.entity);
-                    // Oculta o menu de contexto
-                    materialContextMenu.hide();
                 }
             }
         ]
@@ -518,24 +729,21 @@ const materialContextMenu = new ContextMenu({
 
 // Captura o evento de clique direito no canvas
 viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
-    event.preventDefault(); // Impede o menu de contexto padrão do navegador
-
     const canvasPos = [event.pageX, event.pageY];
     const hit = viewer.scene.pick({ canvasPos });
 
     if (hit && hit.entity && hit.entity.isObject) {
-        // Objeto clicado: mostra o menu personalizado
         materialContextMenu.context = { viewer, entity: hit.entity };
         materialContextMenu.show(event.pageX, event.pageY);
-    } else {
-        // Nada clicado: esconde o menu
-        materialContextMenu.hide();
     }
+
+    event.preventDefault();
 });
 
-// Esconde o menu de contexto ao clicar em qualquer lugar
-document.addEventListener('mousedown', (event) => {
-    if (!materialContextMenu.element.contains(event.target)) {
-        materialContextMenu.hide();
-    }
-});
+
+
+
+
+
+
+
