@@ -15,7 +15,7 @@ import {
     SectionPlanesPlugin,
     LineSet,         
     buildGridGeometry,
-    TransformControl // <--- NOVO: Importa TransformControl
+    TransformControl
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
 let treeView; 
@@ -24,7 +24,7 @@ let sectionPlanesPlugin;
 let horizontalSectionPlane; 
 let horizontalPlaneControl; 
 let lastPickedEntity = null;
-let transformControl; // <--- NOVO: Variável para o controle de transformação
+let transformControl; // Variável para o controle de transformação
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -52,17 +52,17 @@ const viewer = new Viewer({
     })
 });
 
-// NOVO: Inicialização do TransformControl
+// Inicialização do TransformControl
 transformControl = new TransformControl(viewer);
-transformControl.visible = false;
-transformControl.setTranslateEnabled(true); // Habilita mover
-transformControl.setRotateEnabled(true);    // Habilita rodar
-transformControl.setScaleEnabled(false);    // Desabilita escala, se necessário
+transformControl.visible = false; // <--- CORREÇÃO APLICADA AQUI (Linha ~57)
+transformControl.setTranslateEnabled(true);
+transformControl.setRotateEnabled(true);
+transformControl.setScaleEnabled(false);
 
 function onWindowResize() {
     viewer.resize();
     if (horizontalPlaneControl) {
-        horizontalPlaneControl.resize(); // Se a interface do plano de corte estiver ativa
+        horizontalPlaneControl.resize(); 
     }
 }
 
@@ -105,13 +105,13 @@ horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
 horizontalPlaneControl = horizontalSectionPlane.createControl({
     // Cria um UI para o plano de corte (desativado por padrão)
 });
-horizontalPlaneControl.setVisible(false);
+horizontalPlaneControl.visible = false;
 
 
 // Plugin para a Árvore de Estrutura
 treeView = new TreeViewPlugin(viewer, {
     containerElement: document.getElementById("treeViewContainer"),
-    enableContextMenu: false // Desabilita o menu de contexto padrão
+    enableContextMenu: false 
 });
 // Esconde a árvore por padrão
 document.getElementById("treeViewContainer").style.display = 'none';
@@ -135,15 +135,15 @@ function resetModelVisibility() {
         viewer.cameraFlight.jumpTo(viewer.scene);
     }
     
-    // NOVO: Limpa o TransformControl
+    // Limpa o TransformControl
     if (transformControl) { 
         transformControl.setTarget(null);
-        transformControl.setVisible(false);
-        viewer.cameraControl.active = true; // Reativa o controle da câmera
+        transformControl.visible = false; // <--- CORRIGIDO
+        viewer.cameraControl.active = true; 
     }
 
-    lastPickedEntity = null; // Garante que a referência de seleção também seja limpa.
-    clearSelection(false); // Limpa o estado visual do botão "Limpar Seleção"
+    lastPickedEntity = null; 
+    clearSelection(false);
 }
 
 // -----------------------------------------------------------------------------
@@ -162,10 +162,10 @@ function clearSelection(removeButtonHighlight = true) {
         viewer.scene.setObjectsSelected(viewer.scene.selectedObjectIds, false);
         viewer.scene.setObjectsXRayed(viewer.scene.xrayedObjectIds, false);
 
-        // NOVO: Limpa o TransformControl ao limpar a seleção
+        // Limpa o TransformControl ao limpar a seleção
         if (transformControl && transformControl.target) {
             transformControl.setTarget(null);
-            transformControl.setVisible(false);
+            transformControl.visible = false; // <--- CORRIGIDO
             viewer.cameraControl.active = true;
         }
 
@@ -184,7 +184,7 @@ function clearSelection(removeButtonHighlight = true) {
  * @param {HTMLElement} [button=null] O botão clicado, para destacar.
  */
 function setMeasurementMode(mode, button = null) {
-    clearSelection(false); // Não remove o destaque dos botões
+    clearSelection(false); 
 
     // Desativa todos os controles de medição e de câmera (se TransformControl estiver ativo)
     angleMeasurementsMouseControl.deactivate();
@@ -209,7 +209,6 @@ function setMeasurementMode(mode, button = null) {
             break;
         case 'none':
             console.log("Modo: Desativado.");
-            // O botão 'Desativar' já está ativo, então não precisa adicionar classe.
             break;
     }
 }
@@ -250,11 +249,11 @@ function createGrid() {
     gridLineSet = new LineSet(viewer.scene, {
         id: "myGrid",
         geometry: gridGeometry,
-        matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], // Matriz identidade (sem transformação inicial)
-        visible: true // Inicia visível
+        matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 
+        visible: true
     });
 }
-createGrid(); // Chama para criar a grade ao iniciar
+createGrid(); 
 
 /**
  * Alterna a visibilidade da Grade no Solo.
@@ -273,7 +272,7 @@ function toggleGrid() {
 function toggleSectionPlane(button) {
     const isVisible = horizontalSectionPlane.active;
     horizontalSectionPlane.active = !isVisible;
-    horizontalPlaneControl.setVisible(!isVisible);
+    horizontalPlaneControl.visible = !isVisible; // Usa 'visible' em vez de 'setVisible'
 
     button.classList.toggle('active', !isVisible);
 
@@ -283,23 +282,22 @@ function toggleSectionPlane(button) {
         // Centraliza o controle no centro do modelo (AABB)
         const aabb = viewer.scene.aabb;
         const center = [(aabb[0] + aabb[3]) / 2, (aabb[1] + aabb[4]) / 2, (aabb[2] + aabb[5]) / 2];
-        horizontalSectionPlane.pos = center; // Move o plano para o centro
-        horizontalPlaneControl.resize(); // Ajusta o UI do controle
+        horizontalSectionPlane.pos = center; 
+        horizontalPlaneControl.resize(); 
         console.log("Plano de Corte ativado e centralizado.");
     }
 }
 
 /**
  * Alterna o TransformControl no objeto (Entity) fornecido.
- * Se o controle já estiver ativo neste objeto, ele é desativado.
  */
 function toggleObjectManipulation(entity) {
     // 1. Se o controle já estiver ativo no objeto, desativa
     if (transformControl.target === entity) {
         transformControl.setTarget(null);
         transformControl.visible = false; // <--- CORRIGIDO
-        viewer.cameraControl.active = true;
-        entity.highlighted = false;
+        viewer.cameraControl.active = true; // Reativa o controle de câmera
+        entity.highlighted = false; // Remove destaque
         console.log("Manipulação de objeto desativada.");
         return;
     }
@@ -346,8 +344,6 @@ xktLoader.load({
 }).then(model => {
     console.log("Modelo 'meu_modelo.xkt' carregado com sucesso!");
     viewer.cameraFlight.jumpTo(viewer.scene);
-    // treeView.modelId = "meu_modelo"; // Descomentar se quiser que a TreeView exiba apenas este modelo
-
 }).catch(error => {
     console.error("Erro ao carregar 'meu_modelo.xkt':", error);
 });
@@ -358,7 +354,7 @@ xktLoader.load({
     edges: true,
     saoBias: 0.1,
     saoScale: 1,
-    position: [10, 0, 0], // Exemplo de mover o segundo modelo para não sobrepor
+    position: [10, 0, 0], 
 }).then(model => {
     console.log("Modelo 'modelo-02.xkt' carregado com sucesso!");
 }).catch(error => {
@@ -399,8 +395,8 @@ document.addEventListener('keydown', (event) => {
         // Desativa explicitamente o TransformControl se estiver ativo
         if (transformControl.target) {
             transformControl.setTarget(null);
-            transformControl.setVisible(false);
-            viewer.cameraControl.active = true;
+            transformControl.visible = false; // <--- CORRIGIDO
+            viewer.cameraControl.active = true; // Reativa o controle de câmera
         }
     }
 });
@@ -495,7 +491,7 @@ const materialContextMenu = new ContextMenu({
                 }
             }
         ],
-        // NOVO: SEÇÃO DE MANIPULAÇÃO DO OBJETO
+        // SEÇÃO DE MANIPULAÇÃO DO OBJETO
         [
             {
                 // Título dinâmico: mostra "Parar Manipulação" se ativo, ou "Manipular Objeto" se inativo
@@ -543,5 +539,3 @@ document.addEventListener('mousedown', (event) => {
         materialContextMenu.hide();
     }
 });
-
-
