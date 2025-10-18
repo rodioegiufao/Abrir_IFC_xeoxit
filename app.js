@@ -13,6 +13,7 @@ import {
     NavCubePlugin, 
     TreeViewPlugin,
     SectionPlanesPlugin,
+    SectionPlaneControl, // <--- NOVO: Importe esta classe para usar o controle de UI
     LineSet,         
     buildGridGeometry,
     TransformControl
@@ -24,7 +25,7 @@ let sectionPlanesPlugin;
 let horizontalSectionPlane; 
 let horizontalPlaneControl; 
 let lastPickedEntity = null;
-let transformControl; // Variável para o controle de transformação
+let transformControl; 
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -41,7 +42,6 @@ const viewer = new Viewer({
     // CONFIGURAÇÃO DE LOCALIZAÇÃO (NavCube em Português)
     localeService: new LocaleService({
         messages: {
-            // Mensagens para o NavCube
             "navCube.front": "Frente",
             "navCube.back": "Trás",
             "navCube.left": "Esquerda",
@@ -54,11 +54,10 @@ const viewer = new Viewer({
 
 // Inicialização do TransformControl
 transformControl = new TransformControl(viewer);
-transformControl.visible = false; // Corrigido de setVisible
-// CORREÇÃO: Usando atribuição direta de propriedade (propriedade = valor)
-transformControl.translateEnabled = true; // <--- CORRIGIDO AQUI
-transformControl.rotateEnabled = true;    // <--- CORRIGIDO AQUI
-transformControl.scaleEnabled = false;    // <--- CORRIGIDO AQUI
+transformControl.visible = false; 
+transformControl.translateEnabled = true;
+transformControl.rotateEnabled = true;
+transformControl.scaleEnabled = false;
 
 function onWindowResize() {
     viewer.resize();
@@ -103,9 +102,10 @@ horizontalSectionPlane = sectionPlanesPlugin.createSectionPlane({
     dir: [0, -1, 0] // Corte horizontal, olhando para baixo
 });
 
-horizontalPlaneControl = horizontalSectionPlane.createControl({
-    // Cria um UI para o plano de corte (desativado por padrão)
-});
+// CORREÇÃO APLICADA: Instancie SectionPlaneControl
+horizontalPlaneControl = new SectionPlaneControl(horizontalSectionPlane, {
+    // Configurações opcionais
+}); 
 horizontalPlaneControl.visible = false;
 
 
@@ -132,7 +132,6 @@ function resetModelVisibility() {
         viewer.scene.setObjectsVisible(viewer.scene.objectIds, true);
         viewer.scene.setObjectsXRayed(viewer.scene.objectIds, false);
         viewer.scene.setObjectsHighlighted(viewer.scene.objectIds, false);
-        // Centraliza a câmera no modelo inteiro
         viewer.cameraFlight.jumpTo(viewer.scene);
     }
     
@@ -273,7 +272,7 @@ function toggleGrid() {
 function toggleSectionPlane(button) {
     const isVisible = horizontalSectionPlane.active;
     horizontalSectionPlane.active = !isVisible;
-    horizontalPlaneControl.visible = !isVisible; 
+    horizontalPlaneControl.visible = !isVisible; // Usa 'visible' corretamente
 
     button.classList.toggle('active', !isVisible);
 
