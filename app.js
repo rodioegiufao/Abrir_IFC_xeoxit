@@ -543,7 +543,8 @@ viewer.scene.input.on("mousemove", function (coords) {
 // 9. Menu de Contexto (Propriedades + Visibilidade + X-Ray + Manipulação)
 // -----------------------------------------------------------------------------
 
-import { TransformControlPlugin } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
+// Usa o plugin global (já carregado via <script> do xeokit)
+const { TransformControlPlugin } = xeokit;
 
 // Desabilita o pan com o botão direito (para permitir o menu)
 viewer.cameraControl.panRightClick = false;
@@ -579,7 +580,6 @@ const materialContextMenu = new ContextMenu({
                     propriedades += `<strong style='color:#4CAF50;'>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
                     if (metaObject.name) propriedades += `<strong style='color:#4CAF50;'>Nome:</strong> ${metaObject.name}<br><br>`;
 
-                    // --- Varre todos os conjuntos de propriedades IFC ---
                     if (metaObject.propertySets && metaObject.propertySets.length > 0) {
                         for (const pset of metaObject.propertySets) {
                             propriedades += `<div style="margin-top:10px;border-top:1px solid #444;padding-top:5px;">`;
@@ -599,7 +599,6 @@ const materialContextMenu = new ContextMenu({
                         propriedades += `<i style='color:gray;'>Nenhum conjunto de propriedades encontrado.</i>`;
                     }
 
-                    // --- Cria ou atualiza o painel flutuante ---
                     let painel = document.getElementById("propertyPanel");
                     if (!painel) {
                         painel = document.createElement("div");
@@ -646,12 +645,10 @@ const materialContextMenu = new ContextMenu({
                     if (!entity) return;
 
                     if (transformAtivo) {
-                        // Desativa o controle
                         transformPlugin.hideControl();
                         transformAtivo = false;
                         alert("🧩 Manipulação desativada.");
                     } else {
-                        // Ativa o controle no objeto selecionado
                         transformPlugin.showControl(entity.id, {
                             pickable: true,
                             translatable: true,
@@ -659,7 +656,7 @@ const materialContextMenu = new ContextMenu({
                             scalable: true
                         });
                         transformAtivo = true;
-                        alert("🔧 Manipulação ativada. Arraste ou use os eixos para mover e rotacionar.");
+                        alert("🔧 Manipulação ativada. Use os eixos para mover e rotacionar o objeto.");
                     }
                 }
             }
