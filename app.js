@@ -54,10 +54,11 @@ const viewer = new Viewer({
 
 // Inicialização do TransformControl
 transformControl = new TransformControl(viewer);
-transformControl.visible = false; // <--- CORREÇÃO APLICADA AQUI (Linha ~57)
-transformControl.setTranslateEnabled(true);
-transformControl.setRotateEnabled(true);
-transformControl.setScaleEnabled(false);
+transformControl.visible = false; // Corrigido de setVisible
+// CORREÇÃO: Usando atribuição direta de propriedade (propriedade = valor)
+transformControl.translateEnabled = true; // <--- CORRIGIDO AQUI
+transformControl.rotateEnabled = true;    // <--- CORRIGIDO AQUI
+transformControl.scaleEnabled = false;    // <--- CORRIGIDO AQUI
 
 function onWindowResize() {
     viewer.resize();
@@ -138,7 +139,7 @@ function resetModelVisibility() {
     // Limpa o TransformControl
     if (transformControl) { 
         transformControl.setTarget(null);
-        transformControl.visible = false; // <--- CORRIGIDO
+        transformControl.visible = false; 
         viewer.cameraControl.active = true; 
     }
 
@@ -165,7 +166,7 @@ function clearSelection(removeButtonHighlight = true) {
         // Limpa o TransformControl ao limpar a seleção
         if (transformControl && transformControl.target) {
             transformControl.setTarget(null);
-            transformControl.visible = false; // <--- CORRIGIDO
+            transformControl.visible = false; 
             viewer.cameraControl.active = true;
         }
 
@@ -272,7 +273,7 @@ function toggleGrid() {
 function toggleSectionPlane(button) {
     const isVisible = horizontalSectionPlane.active;
     horizontalSectionPlane.active = !isVisible;
-    horizontalPlaneControl.visible = !isVisible; // Usa 'visible' em vez de 'setVisible'
+    horizontalPlaneControl.visible = !isVisible; 
 
     button.classList.toggle('active', !isVisible);
 
@@ -295,7 +296,7 @@ function toggleObjectManipulation(entity) {
     // 1. Se o controle já estiver ativo no objeto, desativa
     if (transformControl.target === entity) {
         transformControl.setTarget(null);
-        transformControl.visible = false; // <--- CORRIGIDO
+        transformControl.visible = false; 
         viewer.cameraControl.active = true; // Reativa o controle de câmera
         entity.highlighted = false; // Remove destaque
         console.log("Manipulação de objeto desativada.");
@@ -308,7 +309,7 @@ function toggleObjectManipulation(entity) {
 
     // 3. Define o objeto como alvo
     transformControl.setTarget(entity);
-    transformControl.visible = true; // <--- CORRIGIDO
+    transformControl.visible = true; 
     
     // 4. Define os manipuladores para atualizar a entidade ao mover/rodar
     transformControl.setHandlers({
@@ -395,7 +396,7 @@ document.addEventListener('keydown', (event) => {
         // Desativa explicitamente o TransformControl se estiver ativo
         if (transformControl.target) {
             transformControl.setTarget(null);
-            transformControl.visible = false; // <--- CORRIGIDO
+            transformControl.visible = false; 
             viewer.cameraControl.active = true; // Reativa o controle de câmera
         }
     }
