@@ -297,9 +297,9 @@ function toggleObjectManipulation(entity) {
     // 1. Se o controle já estiver ativo no objeto, desativa
     if (transformControl.target === entity) {
         transformControl.setTarget(null);
-        transformControl.setVisible(false);
-        viewer.cameraControl.active = true; // Reativa o controle de câmera
-        entity.highlighted = false; // Remove destaque
+        transformControl.visible = false; // <--- CORRIGIDO
+        viewer.cameraControl.active = true;
+        entity.highlighted = false;
         console.log("Manipulação de objeto desativada.");
         return;
     }
@@ -310,7 +310,7 @@ function toggleObjectManipulation(entity) {
 
     // 3. Define o objeto como alvo
     transformControl.setTarget(entity);
-    transformControl.setVisible(true);
+    transformControl.visible = true; // <--- CORRIGIDO
     
     // 4. Define os manipuladores para atualizar a entidade ao mover/rodar
     transformControl.setHandlers({
@@ -543,4 +543,5 @@ document.addEventListener('mousedown', (event) => {
         materialContextMenu.hide();
     }
 });
+
 
