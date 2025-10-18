@@ -1,19 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Visualizador 3D - Rodrigo Damasceno</title>
-
-    <!-- CSS principal -->
-    <link rel="stylesheet" href="styles.css" />
-
-    <!-- Ícone opcional -->
-    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador BIM com Medição de Ângulo e Distância</title>
+    
+    <link rel="stylesheet" href="styles.css"> 
+    
+    <!-- ✅ Xeokit versão global (define window.xeokit) -->
+    <script src="https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@2.6.91/dist/xeokit-sdk.min.js"></script>
 </head>
 <body>
     <canvas id="meuCanvas"></canvas>
-
     <canvas id="myNavCubeCanvas"></canvas>
 
     <div id="toolbar">
@@ -21,8 +19,7 @@
             id="btnAngle" 
             class="tool-button" 
             onclick="setMeasurementMode('angle', this)" 
-            title="Medir Ângulo (Transferidor)" 
-        >
+            title="Medir Ângulo (Transferidor)">
             <span style="font-size: 1.2em;">📐</span>
             Ângulo
         </button>
@@ -31,8 +28,7 @@
             id="btnDistance" 
             class="tool-button" 
             onclick="setMeasurementMode('distance', this)" 
-            title="Medir Distância (Régua)"
-        >
+            title="Medir Distância (Régua)">
             <span style="font-size: 1.2em;">📏</span>
             Distância
         </button>
@@ -41,8 +37,7 @@
             id="btnDeactivate" 
             class="tool-button" 
             onclick="setMeasurementMode('none', this)" 
-            title="Desativar Medição"
-        >
+            title="Desativar Medição">
             <span style="font-size: 1.2em;">🚫</span>
             Desativar
         </button>
@@ -51,8 +46,7 @@
             id="btnToggleTree" 
             class="tool-button" 
             onclick="toggleTreeView()" 
-            title="Mostrar/Esconder Estrutura (Níveis/Pavimentos)"
-        >
+            title="Mostrar/Esconder Estrutura (Níveis/Pavimentos)">
             <span style="font-size: 1.2em;">🏗️</span>
             Estrutura
         </button>
@@ -61,8 +55,7 @@
             id="btnGrid"
             class="tool-button"
             onclick="toggleGrid()"
-            title="Mostrar/Esconder Grade no Solo"
-        >
+            title="Mostrar/Esconder Grade no Solo">
             <span style="font-size: 1.2em;">🟩</span>
             Grade
         </button>
@@ -71,8 +64,7 @@
             id="btnPavimentos"
             class="tool-button"
             onclick="togglePavimentos()"
-            title="Mostrar/Ocultar Pavimentos"
-        >
+            title="Mostrar/Ocultar Pavimentos">
             <span style="font-size: 1.2em;">🏢</span>
             Pavimentos
         </button>
@@ -81,22 +73,15 @@
             id="btnSectionPlane" 
             class="tool-button" 
             onclick="toggleSectionPlane(this)" 
-            title="Plano de Corte (Horizontal)"
-        >
+            title="Plano de Corte (Horizontal)">
             <span style="font-size: 1.2em;">🔪</span>
             Corte
-
+        </button>
     </div>
 
     <div id="treeViewContainer"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@2.6.91/dist/xeokit-sdk.min.js"></script>
-
+    <!-- ✅ Seu app.js agora é script comum, sem módulo -->
     <script src="app.js"></script>
 </body>
 </html>
-
-
-
-
-
