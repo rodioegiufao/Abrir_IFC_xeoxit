@@ -540,13 +540,17 @@ viewer.scene.input.on("mousemove", function (coords) {
 });
 
 // -----------------------------------------------------------------------------
-// 9. Menu de Contexto (Propriedades + Visibilidade + X-Ray) - VERSÃO FINAL
+// 9. Menu de Contexto (Propriedades + Visibilidade + X-Ray + Manipulação)
 // -----------------------------------------------------------------------------
+
+import { TransformControl } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
 
 // Desabilita o pan com o botão direito (para permitir o menu)
 viewer.cameraControl.panRightClick = false;
 
-// Cria o menu de contexto
+let transformControl = null; // Controle de manipulação ativo
+let transformando = false;   // Flag para indicar se está ativo
+
 const materialContextMenu = new ContextMenu({
     enabled: true,
     items: [
@@ -566,15 +570,14 @@ const materialContextMenu = new ContextMenu({
                         return;
                     }
 
-                    let propriedades = `<strong style='color:#4CAF50;'>ID:</strong> ${metaObject.id}<br>`;
-                    propriedades += `<strong style='color:#4CAF50;'>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
-                    if (metaObject.name) propriedades += `<strong style='color:#4CAF50;'>Nome:</strong> ${metaObject.name}<br><br>`;
+                    let propriedades = `<strong>ID:</strong> ${metaObject.id}<br>`;
+                    propriedades += `<strong>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
+                    if (metaObject.name) propriedades += `<strong>Nome:</strong> ${metaObject.name}<br><br>`;
 
-                    // --- Varre todos os conjuntos de propriedades IFC ---
                     if (metaObject.propertySets && metaObject.propertySets.length > 0) {
                         for (const pset of metaObject.propertySets) {
                             propriedades += `<div style="margin-top:10px;border-top:1px solid #444;padding-top:5px;">`;
-                            propriedades += `<strong style='color:#4CAF50;'>${pset.name}</strong><br>`;
+                            propriedades += `<strong>${pset.name}</strong><br>`;
                             if (pset.properties && pset.properties.length > 0) {
                                 propriedades += "<table style='width:100%;font-size:12px;margin-top:5px;'>";
                                 for (const prop of pset.properties) {
@@ -590,7 +593,6 @@ const materialContextMenu = new ContextMenu({
                         propriedades += `<i style='color:gray;'>Nenhum conjunto de propriedades encontrado.</i>`;
                     }
 
-                    // --- Cria ou atualiza o painel flutuante ---
                     let painel = document.getElementById("propertyPanel");
                     if (!painel) {
                         painel = document.createElement("div");
@@ -601,7 +603,6 @@ const materialContextMenu = new ContextMenu({
                         painel.style.width = "350px";
                         painel.style.maxHeight = "65vh";
                         painel.style.overflowY = "auto";
-                        // Esses estilos podem ser sobrescritos via styles.css
                         painel.style.background = "rgba(0,0,0,0.9)";
                         painel.style.color = "white";
                         painel.style.padding = "15px";
@@ -612,32 +613,42 @@ const materialContextMenu = new ContextMenu({
                         painel.style.boxShadow = "0 4px 10px rgba(0,0,0,0.4)";
                         document.body.appendChild(painel);
                     }
-                    
-                    // 🟢 Adiciona botão X para fechar
+
                     painel.innerHTML = `
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                             <h3 style='margin:0;'>Propriedades IFC</h3>
                             <button id="closePropertyPanel" 
-                                style="
-                                    background:transparent;
-                                    border:none;
-                                    color:#f44336;
-                                    font-size:18px;
-                                    font-weight:bold;
-                                    cursor:pointer;
-                                    line-height:1;
-                                "
-                                title="Fechar painel">
-                                ✖
-                            </button>
+                                style="background:transparent;border:none;color:#f44336;font-size:18px;font-weight:bold;cursor:pointer;"
+                                title="Fechar painel">✖</button>
                         </div>
                         ${propriedades}
                     `;
-                    
-                    // 🟢 Evento do botão X
-                    document.getElementById("closePropertyPanel").onclick = () => {
-                        painel.remove();
-                    };
+                    document.getElementById("closePropertyPanel").onclick = () => painel.remove();
+                }
+            }
+        ],
+        [
+            {
+                title: "Mover/Rotacionar Objeto",
+                doAction: (context) => {
+                    const entity = context.entity;
+
+                    if (!transformControl) {
+                        transformControl = new TransformControl(viewer);
+                    }
+
+                    if (transformando) {
+                        // Desativa o modo de transformação
+                        transformControl.detach();
+                        transformando = false;
+                        alert("🔧 Manipulação desativada.");
+                    } else {
+                        // Ativa o modo e liga ao objeto selecionado
+                        transformControl.attach(entity);
+                        transformControl.setSpace("world"); // manipulação no espaço global
+                        transformando = true;
+                        alert("🧩 Modo de manipulação ativado. Arraste para mover ou use os eixos para rotacionar.");
+                    }
                 }
             }
         ],
@@ -645,9 +656,7 @@ const materialContextMenu = new ContextMenu({
             {
                 title: "Ocultar",
                 getEnabled: (context) => context.entity.visible,
-                doAction: (context) => {
-                    context.entity.visible = false;
-                }
+                doAction: (context) => { context.entity.visible = false; }
             },
             {
                 title: "Isolar",
@@ -657,8 +666,6 @@ const materialContextMenu = new ContextMenu({
                     const metaObject = viewer.metaScene.metaObjects[entity.id];
                     if (!metaObject) return;
                     scene.setObjectsVisible(scene.visibleObjectIds, false);
-                    scene.setObjectsXRayed(scene.xrayedObjectIds, false);
-                    scene.setObjectsSelected(scene.selectedObjectIds, false);
                     metaObject.withMetaObjectsInSubtree((mo) => {
                         const e = scene.objects[mo.id];
                         if (e) e.visible = true;
@@ -666,23 +673,10 @@ const materialContextMenu = new ContextMenu({
                 }
             },
             {
-                title: "Ocultar Todos",
-                getEnabled: (context) => context.viewer.scene.numVisibleObjects > 0,
-                doAction: (context) => {
-                    context.viewer.scene.setObjectsVisible(context.viewer.scene.visibleObjectIds, false);
-                }
-            },
-            {
                 title: "Mostrar Todos",
-                getEnabled: (context) => {
-                    const scene = context.viewer.scene;
-                    return scene.numVisibleObjects < scene.numObjects;
-                },
                 doAction: (context) => {
                     const scene = context.viewer.scene;
                     scene.setObjectsVisible(scene.objectIds, true);
-                    scene.setObjectsXRayed(scene.xrayedObjectIds, false);
-                    scene.setObjectsSelected(scene.selectedObjectIds, false);
                 }
             }
         ],
@@ -690,31 +684,12 @@ const materialContextMenu = new ContextMenu({
             {
                 title: "Aplicar X-Ray",
                 getEnabled: (context) => !context.entity.xrayed,
-                doAction: (context) => {
-                    context.entity.xrayed = true;
-                }
+                doAction: (context) => { context.entity.xrayed = true; }
             },
             {
                 title: "Remover X-Ray",
                 getEnabled: (context) => context.entity.xrayed,
-                doAction: (context) => {
-                    context.entity.xrayed = false;
-                }
-            },
-            {
-                title: "X-Ray em Outros",
-                doAction: (context) => {
-                    const scene = context.viewer.scene;
-                    const entity = context.entity;
-                    const metaObject = viewer.metaScene.metaObjects[entity.id];
-                    if (!metaObject) return;
-                    scene.setObjectsVisible(scene.objectIds, true);
-                    scene.setObjectsXRayed(scene.objectIds, true);
-                    metaObject.withMetaObjectsInSubtree((mo) => {
-                        const e = scene.objects[mo.id];
-                        if (e) e.xrayed = false;
-                    });
-                }
+                doAction: (context) => { context.entity.xrayed = false; }
             },
             {
                 title: "Redefinir X-Ray",
@@ -727,8 +702,8 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
-// Captura o evento de clique direito no canvas
-viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
+// Captura clique direito no canvas
+viewer.scene.canvas.canvas.addEventListener("contextmenu", (event) => {
     const canvasPos = [event.pageX, event.pageY];
     const hit = viewer.scene.pick({ canvasPos });
 
@@ -736,9 +711,10 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
         materialContextMenu.context = { viewer, entity: hit.entity };
         materialContextMenu.show(event.pageX, event.pageY);
     }
-
     event.preventDefault();
 });
+
+
 
 
 
