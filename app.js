@@ -543,17 +543,22 @@ viewer.scene.input.on("mousemove", function (coords) {
 // 9. Menu de Contexto (Propriedades + Visibilidade + X-Ray + Manipulação)
 // -----------------------------------------------------------------------------
 
-import { TransformControl } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
+import { TransformControlPlugin } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
 
 // Desabilita o pan com o botão direito (para permitir o menu)
 viewer.cameraControl.panRightClick = false;
 
-let transformControl = null; // Controle de manipulação ativo
-let transformando = false;   // Flag para indicar se está ativo
+// Cria o plugin de manipulação
+const transformPlugin = new TransformControlPlugin(viewer);
+let transformAtivo = false; // Flag para saber se está manipulando
 
+// Cria o menu de contexto
 const materialContextMenu = new ContextMenu({
     enabled: true,
     items: [
+        // --------------------------------------------------
+        // 🟩 PROPRIEDADES DO MATERIAL
+        // --------------------------------------------------
         [
             {
                 title: "Propriedades do Material",
@@ -570,14 +575,15 @@ const materialContextMenu = new ContextMenu({
                         return;
                     }
 
-                    let propriedades = `<strong>ID:</strong> ${metaObject.id}<br>`;
-                    propriedades += `<strong>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
-                    if (metaObject.name) propriedades += `<strong>Nome:</strong> ${metaObject.name}<br><br>`;
+                    let propriedades = `<strong style='color:#4CAF50;'>ID:</strong> ${metaObject.id}<br>`;
+                    propriedades += `<strong style='color:#4CAF50;'>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
+                    if (metaObject.name) propriedades += `<strong style='color:#4CAF50;'>Nome:</strong> ${metaObject.name}<br><br>`;
 
+                    // --- Varre todos os conjuntos de propriedades IFC ---
                     if (metaObject.propertySets && metaObject.propertySets.length > 0) {
                         for (const pset of metaObject.propertySets) {
                             propriedades += `<div style="margin-top:10px;border-top:1px solid #444;padding-top:5px;">`;
-                            propriedades += `<strong>${pset.name}</strong><br>`;
+                            propriedades += `<strong style='color:#4CAF50;'>${pset.name}</strong><br>`;
                             if (pset.properties && pset.properties.length > 0) {
                                 propriedades += "<table style='width:100%;font-size:12px;margin-top:5px;'>";
                                 for (const prop of pset.properties) {
@@ -593,6 +599,7 @@ const materialContextMenu = new ContextMenu({
                         propriedades += `<i style='color:gray;'>Nenhum conjunto de propriedades encontrado.</i>`;
                     }
 
+                    // --- Cria ou atualiza o painel flutuante ---
                     let painel = document.getElementById("propertyPanel");
                     if (!painel) {
                         painel = document.createElement("div");
@@ -627,48 +634,47 @@ const materialContextMenu = new ContextMenu({
                 }
             }
         ],
+
+        // --------------------------------------------------
+        // 🔧 MANIPULAÇÃO (MOVER / ROTACIONAR)
+        // --------------------------------------------------
         [
             {
                 title: "Mover/Rotacionar Objeto",
-                // --- MOVER / ROTACIONAR OBJETO ---
-                import { TransformControlPlugin } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
-                
-                let transformPlugin = new TransformControlPlugin(viewer);
-                let transformAtivo = false;
-                
-                {
-                    title: "Mover/Rotacionar Objeto",
-                    doAction: (context) => {
-                        const entity = context.entity;
-                
-                        if (!entity) return;
-                
-                        if (transformAtivo) {
-                            // Desativa o controle
-                            transformPlugin.hideControl();
-                            transformAtivo = false;
-                            alert("🧩 Manipulação desativada.");
-                        } else {
-                            // Ativa o controle no objeto
-                            transformPlugin.showControl(entity.id, {
-                                pickable: true,
-                                rotatable: true,
-                                translatable: true,
-                                scalable: true
-                            });
-                            transformAtivo = true;
-                            alert("🔧 Modo de manipulação ativado. Use os eixos para mover/rotacionar o objeto.");
-                        }
+                doAction: (context) => {
+                    const entity = context.entity;
+                    if (!entity) return;
+
+                    if (transformAtivo) {
+                        // Desativa o controle
+                        transformPlugin.hideControl();
+                        transformAtivo = false;
+                        alert("🧩 Manipulação desativada.");
+                    } else {
+                        // Ativa o controle no objeto selecionado
+                        transformPlugin.showControl(entity.id, {
+                            pickable: true,
+                            translatable: true,
+                            rotatable: true,
+                            scalable: true
+                        });
+                        transformAtivo = true;
+                        alert("🔧 Manipulação ativada. Arraste ou use os eixos para mover e rotacionar.");
                     }
                 }
-
             }
         ],
+
+        // --------------------------------------------------
+        // 👁️ VISIBILIDADE
+        // --------------------------------------------------
         [
             {
                 title: "Ocultar",
                 getEnabled: (context) => context.entity.visible,
-                doAction: (context) => { context.entity.visible = false; }
+                doAction: (context) => {
+                    context.entity.visible = false;
+                }
             },
             {
                 title: "Isolar",
@@ -678,6 +684,7 @@ const materialContextMenu = new ContextMenu({
                     const metaObject = viewer.metaScene.metaObjects[entity.id];
                     if (!metaObject) return;
                     scene.setObjectsVisible(scene.visibleObjectIds, false);
+                    scene.setObjectsXRayed(scene.xrayedObjectIds, false);
                     metaObject.withMetaObjectsInSubtree((mo) => {
                         const e = scene.objects[mo.id];
                         if (e) e.visible = true;
@@ -692,16 +699,24 @@ const materialContextMenu = new ContextMenu({
                 }
             }
         ],
+
+        // --------------------------------------------------
+        // 💎 X-RAY
+        // --------------------------------------------------
         [
             {
                 title: "Aplicar X-Ray",
                 getEnabled: (context) => !context.entity.xrayed,
-                doAction: (context) => { context.entity.xrayed = true; }
+                doAction: (context) => {
+                    context.entity.xrayed = true;
+                }
             },
             {
                 title: "Remover X-Ray",
                 getEnabled: (context) => context.entity.xrayed,
-                doAction: (context) => { context.entity.xrayed = false; }
+                doAction: (context) => {
+                    context.entity.xrayed = false;
+                }
             },
             {
                 title: "Redefinir X-Ray",
@@ -714,7 +729,9 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
-// Captura clique direito no canvas
+// --------------------------------------------------
+// 🎯 EVENTO DE CLIQUE DIREITO NO CANVAS
+// --------------------------------------------------
 viewer.scene.canvas.canvas.addEventListener("contextmenu", (event) => {
     const canvasPos = [event.pageX, event.pageY];
     const hit = viewer.scene.pick({ canvasPos });
@@ -725,6 +742,8 @@ viewer.scene.canvas.canvas.addEventListener("contextmenu", (event) => {
     }
     event.preventDefault();
 });
+
+
 
 
 
