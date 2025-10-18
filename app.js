@@ -630,26 +630,38 @@ const materialContextMenu = new ContextMenu({
         [
             {
                 title: "Mover/Rotacionar Objeto",
-                doAction: (context) => {
-                    const entity = context.entity;
-
-                    if (!transformControl) {
-                        transformControl = new TransformControl(viewer);
-                    }
-
-                    if (transformando) {
-                        // Desativa o modo de transformação
-                        transformControl.detach();
-                        transformando = false;
-                        alert("🔧 Manipulação desativada.");
-                    } else {
-                        // Ativa o modo e liga ao objeto selecionado
-                        transformControl.attach(entity);
-                        transformControl.setSpace("world"); // manipulação no espaço global
-                        transformando = true;
-                        alert("🧩 Modo de manipulação ativado. Arraste para mover ou use os eixos para rotacionar.");
+                // --- MOVER / ROTACIONAR OBJETO ---
+                import { TransformControlPlugin } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
+                
+                let transformPlugin = new TransformControlPlugin(viewer);
+                let transformAtivo = false;
+                
+                {
+                    title: "Mover/Rotacionar Objeto",
+                    doAction: (context) => {
+                        const entity = context.entity;
+                
+                        if (!entity) return;
+                
+                        if (transformAtivo) {
+                            // Desativa o controle
+                            transformPlugin.hideControl();
+                            transformAtivo = false;
+                            alert("🧩 Manipulação desativada.");
+                        } else {
+                            // Ativa o controle no objeto
+                            transformPlugin.showControl(entity.id, {
+                                pickable: true,
+                                rotatable: true,
+                                translatable: true,
+                                scalable: true
+                            });
+                            transformAtivo = true;
+                            alert("🔧 Modo de manipulação ativado. Use os eixos para mover/rotacionar o objeto.");
+                        }
                     }
                 }
+
             }
         ],
         [
@@ -713,6 +725,7 @@ viewer.scene.canvas.canvas.addEventListener("contextmenu", (event) => {
     }
     event.preventDefault();
 });
+
 
 
 
