@@ -54,7 +54,7 @@ const viewer = new Viewer({
 
 // NOVO: Inicialização do TransformControl
 transformControl = new TransformControl(viewer);
-transformControl.setVisible(false); // Inicia escondido
+transformControl.visible = false;
 transformControl.setTranslateEnabled(true); // Habilita mover
 transformControl.setRotateEnabled(true);    // Habilita rodar
 transformControl.setScaleEnabled(false);    // Desabilita escala, se necessário
@@ -543,3 +543,4 @@ document.addEventListener('mousedown', (event) => {
         materialContextMenu.hide();
     }
 });
+
