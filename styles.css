@@ -34,121 +34,17 @@ html, body {
 
 #treeViewContainer {
     position: fixed;
-    top: 80px; /* Abaixo da toolbar */
-    left: 20px; /* Alinhado com a toolbar */
-    width: 320px; /* Largura padrão um pouco maior */
-    max-width: 90vw; /* Garante que fique bom em telas pequenas */
-    height: calc(100% - 100px); /* Altura do resto da tela */
-    background-color: rgba(0, 0, 0, 0.9); /* Fundo quase preto sólido */
-    color: #f0f0f0; /* Texto claro */
-    padding: 5px;
-    overflow-y: auto; /* Adiciona scroll se o conteúdo for grande */
-    z-index: 100000;
+    top: 80px;
+    left: 20px;
+    width: 300px; /* Largura padrão para desktop */
+    height: calc(100vh - 100px);
+    overflow: auto;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+    padding: 10px;
     border-radius: 5px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    display: none; /* Inicia ESCONDIDO */
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-}
-
-/* 🛑 FORÇA A REMOÇÃO DE TODOS OS MARCADORES DE LISTA (PONTOS) */
-#treeViewContainer ul,
-#treeViewContainer li {
-    list-style: none !important; 
-}
-
-/* Estilo da Lista Principal (xeokit-tree-view) */
-#treeViewContainer .xeokit-tree-view {
-    padding: 0;
-    margin: 0;
-}
-
-/* Esconde as checkboxes no TreeView */
-#treeViewContainer .xeokit-tree-view input[type="checkbox"] {
-    display: none;
-}
-
-/* Estilo de cada Item/Nó da Árvore */
-#treeViewContainer .xeokit-tree-view-item {
-    cursor: pointer;
-    line-height: 1.4;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Linha divisória sutil */
-    user-select: none;
-    display: flex; /* Para alinhar o conteúdo */
-    align-items: center;
-    padding-left: 5px;
-}
-
-/* Efeito de HOVER/Mouse sobre o item */
-#treeViewContainer .xeokit-tree-view-item:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Fundo claro ao passar o mouse */
-    color: #007bff; /* Texto azul para destaque */
-}
-
-/* Estilo para nós com filhos */
-#treeViewContainer .xeokit-tree-view-with-children {
-    font-weight: bold;
-}
-
-/* ESTILOS DOS ÍCONES DE EXPANSÃO */
-#treeViewContainer .xeokit-tree-view-item-toggle {
-    display: inline-block;
-    width: 15px; /* Largura para o ícone */
-    height: 15px;
-    text-align: center;
-    
-    /* Move o texto original (+/-) para fora da área visível */
-    text-indent: -9999px !important; 
-    
-    font-size: 1px;
-    line-height: 1;
-    margin-right: 5px;
-    
-    color: transparent !important;
-    background-color: transparent !important;
-    
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-}
-
-/* Substitui o conteúdo visível por setas Unicode */
-#treeViewContainer .xeokit-tree-view-item-toggle::before {
-    content: '▶'; /* Seta para a direita (colapsado) */
-    
-    /* Reposiciona a seta na área central do 15px x 15px */
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    font-size: 14px !important; /* Tamanho da fonte visível para a seta */
-    color: #4CAF50 !important; /* Cor verde para os toggles */
-    text-indent: 0 !important; /* Garante que a seta NÃO saia da tela */
-}
-
-/* Altera a seta quando o item está expandido */
-#treeViewContainer .xeokit-tree-view-item-expanded > .xeokit-tree-view-item-toggle::before {
-    content: '▼'; /* Seta para baixo (expandido) */
-}
-
-/* Estilo para o texto do item */
-#treeViewContainer .xeokit-tree-view-item-title {
-    flex-grow: 1;
-    margin-right: 5px;
-}
-
-/* Estilo para sub-listas (padding para identação) */
-#treeViewContainer .xeokit-tree-view-children {
-    padding: 0;
-    margin: 0;
-    padding-left: 15px; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 200000;
 }
 
 /* ---------------------------------------------------- */
@@ -194,65 +90,20 @@ html, body {
 }
 
 /* ---------------------------------------------------- */
-/* Estilos do Painel de Propriedades (propertyPanel) */
+/* Estilos do Menu de Contexto (xeokit) */
 /* ---------------------------------------------------- */
 
-#propertyPanel {
-    /* Aparência mais próxima do menu de contexto do navegador */
-    background: #202020 !important; /* Cinza bem escuro (fundo do menu nativo) */
-    color: #f0f0f0 !important; /* Texto claro */
-    border-radius: 4px !important;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.7) !important; /* Sombra mais forte */
-    padding: 15px;
-}
-
-#propertyPanel h3 {
-    font-size: 16px;
-    border-bottom: 1px solid #4CAF50;
-    padding-bottom: 5px;
-    margin-bottom: 10px;
-    color: #f0f0f0; /* Cor do título mais suave */
-}
-
-/* Estilo para as strong tags dentro do painel */
-#propertyPanel strong {
-    color: #4CAF50; /* Cor verde para destacar chaves importantes */
-}
-
-/* Estilo da Tabela de Propriedades */
-#propertyPanel table {
-    border-collapse: collapse; /* Remove espaçamento entre células */
-    width: 100%;
-}
-
-#propertyPanel td {
-    padding: 2px 0;
-    /* Linhas pontilhadas/espaços de valor */
-}
-
-/* Linha divisória dos Psets */
-#propertyPanel > div {
-    border-top: 1px solid #333 !important; /* Divisor mais escuro e sutil */
-    padding-top: 8px !important;
-    margin-top: 12px !important;
-}
-
-/* ---------------------------------------------------- */
-/* MELHORIA: Estilos do Menu de Contexto (ContextMenu) do xeokit */
-/* ---------------------------------------------------- */
-
-/* 1. Container Principal (Visual Nativo Escuro) */
+/* 1. Container do Menu (Fundo escuro/transparente) */
 .xeokit-context-menu {
-    background: #333 !important; 
-    border: 1px solid #444 !important; 
-    border-radius: 4px !important;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6) !important;
-    z-index: 300000 !important; 
-    
-    /* 🛑 REGRAS PRINCIPAIS PARA REMOVER PONTOS DE LISTA */
-    list-style: none !important;
-    padding: 5px 0 !important; /* Padding vertical no container principal */
-    margin: 0 !important;
+    font-family: sans-serif;
+    font-size: 15px;
+    display: none;
+    z-index: 300000;
+    background: rgba(33, 33, 33, 0.95) !important; 
+    border-radius: 5px !important;
+    padding: 5px 0 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid #444 !important;
 }
 
 /* 2. Item Individual do Menu */
@@ -291,18 +142,50 @@ html, body {
     border-top: 1px solid #555 !important;
     
     /* Espaçamento para a barra ficar visível e separada */
-    margin: 5px 0 0 0 !important; /* Margem apenas acima da barra */
-    padding: 5px 0 0 0 !important; /* Padding apenas acima da barra */
+    padding-top: 5px !important; 
 }
 
-/* 6. O primeiro bloco de itens não precisa de barra divisória */
-.xeokit-context-menu-section:first-child {
-    border-top: none !important;
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
 
-#closePropertyPanel:hover {
-    color: #ff6b6b !important;
-    transform: scale(1.1);
+/* ==================================================== */
+/* 🚀 OTIMIZAÇÃO PARA CELULAR (Media Query) */
+/* (Aplica-se apenas em telas com no máximo 768px de largura) */
+/* ==================================================== */
+
+@media (max-width: 768px) {
+    
+    /* 1. Cubo de Navegação: Reduz o tamanho e afasta da borda */
+    #myNavCubeCanvas {
+        width: 100px; /* Menor em celular */
+        height: 100px;
+        bottom: 10px; 
+        right: 10px; 
+    }
+    
+    /* 2. Barra de Ferramentas: Joga para o topo da direita e empilha os botões */
+    #toolbar {
+        top: 10px;
+        left: unset; /* Remove o alinhamento da esquerda */
+        right: 10px; /* Alinha na direita */
+        
+        /* Empilha os botões verticalmente */
+        flex-direction: column;
+        gap: 5px; /* Reduz o espaçamento entre eles */
+        max-width: 100px; /* Limita a largura para garantir que empilhe */
+    }
+    
+    .tool-button {
+        min-width: 90px; /* Garante que os botões sejam legíveis */
+        font-size: 0.75em; /* Fonte ainda menor */
+        padding: 5px 8px; /* Reduz o padding */
+        width: 100%; /* Ocupa a largura máxima da toolbar (100px) */
+    }
+    
+    /* 3. Painel de Estrutura: Mais estreito em telas pequenas */
+    #treeViewContainer {
+        top: 10px; /* Fica no topo (a toolbar foi para a direita) */
+        left: 10px;
+        width: 150px; /* Torna-o bem estreito */
+        padding: 5px;
+        height: 60vh; /* Ocupa menos da altura */
+    }
 }
