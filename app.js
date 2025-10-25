@@ -727,20 +727,20 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
-// === LISTAR ITENS ASSOCIADOS (versão compatível com metaScene) ===
+// === LISTAR ITENS ASSOCIADOS (VERSÃO CORRIGIDA) ===
 document.getElementById("btnListarItens").addEventListener("click", () => {
     const listaDiv = document.getElementById("listaItensAssociados");
     listaDiv.innerHTML = ""; // limpa antes
 
     const listaItens = new Set(); // evita duplicados
 
-    // Percorre todos os metaObjects (estrutura IFC completa)
-    for (const metaObject of Object.values(viewer.metaScene.metaObjects)) {
-        if (metaObject.propertySets) {
-            for (const pset of metaObject.propertySets) {
+    // Percorre todos os metaObjects do modelo
+    for (const [id, metaObj] of Object.entries(viewer.metaScene.metaObjects)) {
+        if (metaObj.propertySets && metaObj.propertySets.length > 0) {
+            for (const pset of metaObj.propertySets) {
                 if (pset.name === "AltoQi_QiBuilder-Itens_Associados") {
                     for (const prop of pset.properties) {
-                        if (prop.value && prop.value.trim() !== "") {
+                        if (prop.value && typeof prop.value === "string") {
                             listaItens.add(prop.value.trim());
                         }
                     }
@@ -768,6 +768,7 @@ document.getElementById("btnListarItens").addEventListener("click", () => {
 });
 
 
+
 // Captura o evento de clique direito no canvas
 viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     const canvasPos = [event.pageX, event.pageY];
@@ -780,6 +781,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
