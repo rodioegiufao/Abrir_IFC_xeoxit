@@ -727,100 +727,87 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
-// === LISTAR ITENS ASSOCIADOS (VERSÃO TOLERANTE + DEBUG) ===
+// === LISTAR ITENS ASSOCIADOS (TABELA ESTILO RELATÓRIO) ===
 document.getElementById("btnListarItens").addEventListener("click", () => {
     const listaDiv = document.getElementById("listaItensAssociados");
     listaDiv.innerHTML = ""; // limpa antes
 
-    const listaItens = new Set(); // evita duplicados
-    let psetsEncontrados = 0;
-    let propsTotalVarridas = 0;
-    let amostras = [];
+    const listaItens = new Set();
 
-    // Percorre todos os metaObjects do modelo
-    for (const [id, metaObj] of Object.entries(viewer.metaScene.metaObjects)) {
-        if (!metaObj.propertySets || metaObj.propertySets.length === 0) continue;
+    // Percorre todos os metaObjects e coleta itens do PSet
+    for (const metaObj of Object.values(viewer.metaScene.metaObjects)) {
+        if (!metaObj.propertySets) continue;
 
         for (const pset of metaObj.propertySets) {
             const psetName = (pset.name || "").toLowerCase();
-            // procura nomes que contenham "itens" e "associados" (tolerante)
             if (psetName.includes("itens") && psetName.includes("associados")) {
-                psetsEncontrados++;
-                if (pset.properties && pset.properties.length > 0) {
-                    for (const prop of pset.properties) {
-                        propsTotalVarridas++;
-                        // coleta tanto prop.value quanto prop.name
-                        const candidates = [];
-
-                        if (prop.value !== undefined && prop.value !== null && String(prop.value).trim() !== "") {
-                            candidates.push(String(prop.value));
-                        }
-                        if (prop.name !== undefined && prop.name !== null && String(prop.name).trim() !== "") {
-                            candidates.push(String(prop.name));
-                        }
-
-                        // para debug: guarda algumas amostras (até 10)
-                        if (amostras.length < 10) {
-                            amostras.push({metaObjId: id, psetName: pset.name, prop});
-                        }
-
-                        // separadores comuns (quebra de linha, ponto e vírgula, " - ", " — ")
-                        for (const text of candidates) {
-                            // divide por novas linhas e por ';'
-                            const parts = String(text).split(/\r?\n|;| — | - /).map(s => s.trim()).filter(Boolean);
-                            for (const part of parts) {
-                                // normaliza múltiplos espaços e remove espaços nas bordas
-                                const finalItem = part.replace(/\s+/g, " ").trim();
-                                if (finalItem) listaItens.add(finalItem);
-                            }
-                        }
+                for (const prop of pset.properties || []) {
+                    const text = String(prop.value || "").trim();
+                    if (text) {
+                        // divide por linhas
+                        const linhas = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                        linhas.forEach(linha => listaItens.add(linha));
                     }
                 }
             }
         }
     }
 
-    // Debug: imprime no console informações para inspecionar estrutura dos PSets/propriedades
-    console.log("DEBUG: psetsEncontrados =", psetsEncontrados);
-    console.log("DEBUG: propsTotalVarridas =", propsTotalVarridas);
-    console.log("DEBUG: amostras (até 10) =>", amostras);
-    // Se nada encontrado, tentamos imprimir alguns nomes de psets para inspecionar
-    if (psetsEncontrados === 0) {
-        const nomesPsets = new Set();
-        for (const metaObj of Object.values(viewer.metaScene.metaObjects)) {
-            if (!metaObj.propertySets) continue;
-            for (const pset of metaObj.propertySets) {
-                nomesPsets.add(pset.name || "(sem nome)");
-            }
-        }
-        console.log("DEBUG: Nenhum PSet com 'itens'+'associados' encontrado. Lista de PSet nomes (amostra):", Array.from(nomesPsets).slice(0,40));
-        // mostra instrução rápida no painel
-        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3><p style='font-size:12px;color:#ccc'>Veja console (F12) para lista de PropertySets e amostras.</p>";
+    if (listaItens.size === 0) {
+        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3>";
         listaDiv.style.display = "block";
         return;
     }
 
-    // Monta a lista
-    if (listaItens.size > 0) {
-        const ul = document.createElement("ul");
-        ul.style.listStyle = "none";
-        ul.style.padding = "0";
-        listaItens.forEach(item => {
-            const li = document.createElement("li");
-            li.textContent = item;
-            li.style.padding = "6px 4px";
-            li.style.borderBottom = "1px solid #444";
-            ul.appendChild(li);
-        });
-        listaDiv.innerHTML = "<h3>Itens Associados (Geral)</h3>";
-        listaDiv.appendChild(ul);
-    } else {
-        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3><p style='font-size:12px;color:#ccc'>Foi identificado(s) PSet(s) apropriado(s), mas nenhuma propriedade textual foi extraída. Veja console para amostras.</p>";
+    // --- Monta tabela com 2 colunas ---
+    const tabela = document.createElement("table");
+    tabela.style.width = "100%";
+    tabela.style.borderCollapse = "collapse";
+    tabela.style.color = "#fff";
+    tabela.style.background = "#000";
+    tabela.style.fontFamily = "Arial, sans-serif";
+    tabela.style.fontSize = "13px";
+
+    // Cabeçalho
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+        <tr style="background:#111;">
+            <th style="text-align:left;padding:6px;border-bottom:1px solid #444;">Item</th>
+            <th style="text-align:right;padding:6px;border-bottom:1px solid #444;">Quantidade</th>
+        </tr>`;
+    tabela.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+
+    // Regex: separa final numérico com unidade (ex: "200 pc", "334.6 m")
+    const regexQtd = /(.+?)\s*([\d.,]+\s*(?:pc|m|kg|mm|un|proj\.|m²|m³)?$)/i;
+
+    for (const item of listaItens) {
+        const match = item.match(regexQtd);
+        let nome = item;
+        let qtd = "";
+
+        if (match) {
+            nome = match[1].trim();
+            qtd = match[2].trim();
+        }
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td style="padding:4px 6px;border-bottom:1px solid #333;">${nome}</td>
+            <td style="padding:4px 6px;border-bottom:1px solid #333;text-align:right;">${qtd}</td>
+        `;
+        tbody.appendChild(tr);
     }
 
-    // Exibe/oculta o painel
+    tabela.appendChild(tbody);
+
+    listaDiv.innerHTML = "<h3 style='margin-bottom:8px;'>Itens Associados (Geral)</h3>";
+    listaDiv.appendChild(tabela);
+
     listaDiv.style.display = (listaDiv.style.display === "none") ? "block" : "none";
 });
+
 
 
 // Captura o evento de clique direito no canvas
@@ -835,6 +822,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
