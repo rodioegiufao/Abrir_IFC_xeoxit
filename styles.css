@@ -345,7 +345,7 @@ html, body {
   position: fixed;
   top: 80px;
   right: 20px;
-  width: 420px;
+  width: 600px;
   max-height: 80vh;
   overflow-y: auto;
   background-color: rgba(0, 0, 0, 0.95);
@@ -360,7 +360,6 @@ html, body {
 
 #listaItensAssociados h3 {
   margin-top: 0;
-  margin-bottom: 10px;
   text-align: center;
   border-bottom: 1px solid #444;
   padding-bottom: 5px;
