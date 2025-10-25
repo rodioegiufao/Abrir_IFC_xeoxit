@@ -727,21 +727,52 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
-// === LISTAR ITENS ASSOCIADOS (VERSÃO CORRIGIDA) ===
+// === LISTAR ITENS ASSOCIADOS (VERSÃO TOLERANTE + DEBUG) ===
 document.getElementById("btnListarItens").addEventListener("click", () => {
     const listaDiv = document.getElementById("listaItensAssociados");
     listaDiv.innerHTML = ""; // limpa antes
 
     const listaItens = new Set(); // evita duplicados
+    let psetsEncontrados = 0;
+    let propsTotalVarridas = 0;
+    let amostras = [];
 
     // Percorre todos os metaObjects do modelo
     for (const [id, metaObj] of Object.entries(viewer.metaScene.metaObjects)) {
-        if (metaObj.propertySets && metaObj.propertySets.length > 0) {
-            for (const pset of metaObj.propertySets) {
-                if (pset.name === "AltoQi_QiBuilder-Itens_Associados") {
+        if (!metaObj.propertySets || metaObj.propertySets.length === 0) continue;
+
+        for (const pset of metaObj.propertySets) {
+            const psetName = (pset.name || "").toLowerCase();
+            // procura nomes que contenham "itens" e "associados" (tolerante)
+            if (psetName.includes("itens") && psetName.includes("associados")) {
+                psetsEncontrados++;
+                if (pset.properties && pset.properties.length > 0) {
                     for (const prop of pset.properties) {
-                        if (prop.value && typeof prop.value === "string") {
-                            listaItens.add(prop.value.trim());
+                        propsTotalVarridas++;
+                        // coleta tanto prop.value quanto prop.name
+                        const candidates = [];
+
+                        if (prop.value !== undefined && prop.value !== null && String(prop.value).trim() !== "") {
+                            candidates.push(String(prop.value));
+                        }
+                        if (prop.name !== undefined && prop.name !== null && String(prop.name).trim() !== "") {
+                            candidates.push(String(prop.name));
+                        }
+
+                        // para debug: guarda algumas amostras (até 10)
+                        if (amostras.length < 10) {
+                            amostras.push({metaObjId: id, psetName: pset.name, prop});
+                        }
+
+                        // separadores comuns (quebra de linha, ponto e vírgula, " - ", " — ")
+                        for (const text of candidates) {
+                            // divide por novas linhas e por ';'
+                            const parts = String(text).split(/\r?\n|;| — | - /).map(s => s.trim()).filter(Boolean);
+                            for (const part of parts) {
+                                // normaliza múltiplos espaços e remove espaços nas bordas
+                                const finalItem = part.replace(/\s+/g, " ").trim();
+                                if (finalItem) listaItens.add(finalItem);
+                            }
                         }
                     }
                 }
@@ -749,24 +780,47 @@ document.getElementById("btnListarItens").addEventListener("click", () => {
         }
     }
 
+    // Debug: imprime no console informações para inspecionar estrutura dos PSets/propriedades
+    console.log("DEBUG: psetsEncontrados =", psetsEncontrados);
+    console.log("DEBUG: propsTotalVarridas =", propsTotalVarridas);
+    console.log("DEBUG: amostras (até 10) =>", amostras);
+    // Se nada encontrado, tentamos imprimir alguns nomes de psets para inspecionar
+    if (psetsEncontrados === 0) {
+        const nomesPsets = new Set();
+        for (const metaObj of Object.values(viewer.metaScene.metaObjects)) {
+            if (!metaObj.propertySets) continue;
+            for (const pset of metaObj.propertySets) {
+                nomesPsets.add(pset.name || "(sem nome)");
+            }
+        }
+        console.log("DEBUG: Nenhum PSet com 'itens'+'associados' encontrado. Lista de PSet nomes (amostra):", Array.from(nomesPsets).slice(0,40));
+        // mostra instrução rápida no painel
+        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3><p style='font-size:12px;color:#ccc'>Veja console (F12) para lista de PropertySets e amostras.</p>";
+        listaDiv.style.display = "block";
+        return;
+    }
+
     // Monta a lista
     if (listaItens.size > 0) {
         const ul = document.createElement("ul");
+        ul.style.listStyle = "none";
+        ul.style.padding = "0";
         listaItens.forEach(item => {
             const li = document.createElement("li");
             li.textContent = item;
+            li.style.padding = "6px 4px";
+            li.style.borderBottom = "1px solid #444";
             ul.appendChild(li);
         });
         listaDiv.innerHTML = "<h3>Itens Associados (Geral)</h3>";
         listaDiv.appendChild(ul);
     } else {
-        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3>";
+        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3><p style='font-size:12px;color:#ccc'>Foi identificado(s) PSet(s) apropriado(s), mas nenhuma propriedade textual foi extraída. Veja console para amostras.</p>";
     }
 
     // Exibe/oculta o painel
     listaDiv.style.display = (listaDiv.style.display === "none") ? "block" : "none";
 });
-
 
 
 // Captura o evento de clique direito no canvas
@@ -781,6 +835,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
