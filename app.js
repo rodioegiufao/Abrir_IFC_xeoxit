@@ -727,124 +727,100 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
-// === LISTAR ITENS ASSOCIADOS (COM DEBUG NO CONSOLE) ===
+// === LISTAR ITENS ASSOCIADOS (VERSÃO TOLERANTE + DEBUG) ===
 document.getElementById("btnListarItens").addEventListener("click", () => {
     const listaDiv = document.getElementById("listaItensAssociados");
     listaDiv.innerHTML = ""; // limpa antes
 
-    try {
-        const linhasBrutas = [];
+    const listaItens = new Set(); // evita duplicados
+    let psetsEncontrados = 0;
+    let propsTotalVarridas = 0;
+    let amostras = [];
 
-        // 1) Coleta os textos dos PSets relacionados a "itens" e "associados"
-        for (const metaObj of Object.values(viewer.metaScene.metaObjects)) {
-            if (!metaObj.propertySets) continue;
-            for (const pset of metaObj.propertySets) {
-                const nomePset = (pset.name || "").toLowerCase();
-                if (nomePset.includes("itens") && nomePset.includes("associados")) {
-                    for (const prop of pset.properties || []) {
-                        const texto = String(prop.value || "").trim();
-                        if (texto) {
-                            const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                            linhasBrutas.push(...linhas);
+    // Percorre todos os metaObjects do modelo
+    for (const [id, metaObj] of Object.entries(viewer.metaScene.metaObjects)) {
+        if (!metaObj.propertySets || metaObj.propertySets.length === 0) continue;
+
+        for (const pset of metaObj.propertySets) {
+            const psetName = (pset.name || "").toLowerCase();
+            // procura nomes que contenham "itens" e "associados" (tolerante)
+            if (psetName.includes("itens") && psetName.includes("associados")) {
+                psetsEncontrados++;
+                if (pset.properties && pset.properties.length > 0) {
+                    for (const prop of pset.properties) {
+                        propsTotalVarridas++;
+                        // coleta tanto prop.value quanto prop.name
+                        const candidates = [];
+
+                        if (prop.value !== undefined && prop.value !== null && String(prop.value).trim() !== "") {
+                            candidates.push(String(prop.value));
+                        }
+                        if (prop.name !== undefined && prop.name !== null && String(prop.name).trim() !== "") {
+                            candidates.push(String(prop.name));
+                        }
+
+                        // para debug: guarda algumas amostras (até 10)
+                        if (amostras.length < 10) {
+                            amostras.push({metaObjId: id, psetName: pset.name, prop});
+                        }
+
+                        // separadores comuns (quebra de linha, ponto e vírgula, " - ", " — ")
+                        for (const text of candidates) {
+                            // divide por novas linhas e por ';'
+                            const parts = String(text).split(/\r?\n|;| — | - /).map(s => s.trim()).filter(Boolean);
+                            for (const part of parts) {
+                                // normaliza múltiplos espaços e remove espaços nas bordas
+                                const finalItem = part.replace(/\s+/g, " ").trim();
+                                if (finalItem) listaItens.add(finalItem);
+                            }
                         }
                     }
                 }
             }
         }
-
-        // LOG: linhas brutas coletadas (envie essas linhas se algo der errado)
-        console.log("DEBUG Lista - linhasBrutas (amostra até 200):", linhasBrutas.slice(0, 200));
-        console.log("DEBUG Lista - total linhasBrutas:", linhasBrutas.length);
-
-        if (linhasBrutas.length === 0) {
-            listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3><p style='font-size:12px;color:#ccc'>Veja console (F12) para debug.</p>";
-            listaDiv.style.display = "block";
-            return;
-        }
-
-        // 2) Parse: tenta separar nome e quantidade no final da linha
-        const itensParsed = [];
-        // regex que tenta pegar o final numérico + unidade (mais tolerante)
-        const regexQtd = /^(.+?)\s+([\d\.,]+\s*(?:pc|pçs|pç|un|u|m²|m³|m|kg|mm|cm|pz|proj\.?)?)$/i;
-
-        for (let linha of linhasBrutas) {
-            // detecta títulos de seção (baseado em letras maiúsculas iniciais ou palavras-chaves)
-            if (/^(acess[oó]rios|cabo|eletrocalha|cab[oô]|filtro|conjunto)/i.test(linha) || /^[A-Z\s0-9\-\._]{5,}$/.test(linha) && linha === linha.toUpperCase()) {
-                itensParsed.push({ item: linha, qtd: "", tipo: "titulo" });
-                continue;
-            }
-
-            const m = linha.match(regexQtd);
-            if (m) {
-                itensParsed.push({ item: m[1].trim(), qtd: m[2].trim(), tipo: "item" });
-            } else {
-                // Se não bateu a regex, ainda tentamos detectar separadores comuns " - " ou "\t" ou várias colunas
-                let splitted = null;
-                if (linha.includes("\t")) splitted = linha.split("\t").map(s => s.trim()).filter(Boolean);
-                else if (linha.includes("  ")) splitted = linha.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
-                else if (linha.includes(" - ")) splitted = linha.split(" - ").map(s => s.trim()).filter(Boolean);
-
-                if (splitted && splitted.length >= 2) {
-                    // Supõe que a última parte é quantidade
-                    const qtdCandidate = splitted[splitted.length - 1];
-                    const nameCandidate = splitted.slice(0, splitted.length - 1).join(" - ");
-                    itensParsed.push({ item: nameCandidate, qtd: qtdCandidate, tipo: "item" });
-                } else {
-                    // fallback: linha inteira como nome
-                    itensParsed.push({ item: linha, qtd: "", tipo: "item" });
-                }
-            }
-        }
-
-        // LOG: itensParsed (envie esse array se tiver problema)
-        console.log("DEBUG Lista - itensParsed (amostra até 300):", itensParsed.slice(0, 300));
-        console.log("DEBUG Lista - total itensParsed:", itensParsed.length);
-
-        // 3) Monta tabela visual (fundo preto)
-        const tabela = document.createElement("table");
-        tabela.style.width = "100%";
-        tabela.style.borderCollapse = "collapse";
-        tabela.style.color = "#fff";
-        tabela.style.background = "#000";
-        tabela.style.fontFamily = "Arial, sans-serif";
-        tabela.style.fontSize = "13px";
-
-        const thead = document.createElement("thead");
-        thead.innerHTML = `
-            <tr style="background:#111;">
-                <th style="text-align:left;padding:6px;border-bottom:1px solid #444;">Item</th>
-                <th style="text-align:right;padding:6px;border-bottom:1px solid #444;">Quantidade</th>
-            </tr>`;
-        tabela.appendChild(thead);
-
-        const tbody = document.createElement("tbody");
-
-        itensParsed.forEach(obj => {
-            const tr = document.createElement("tr");
-            if (obj.tipo === "titulo") {
-                tr.innerHTML = `<td colspan="2" style="padding:6px 4px;border-top:1px solid #666;font-weight:bold;background:#111;text-align:left;">${obj.item}</td>`;
-            } else {
-                tr.innerHTML = `
-                    <td style="padding:4px 6px;border-bottom:1px solid #333;">${obj.item}</td>
-                    <td style="padding:4px 6px;border-bottom:1px solid #333;text-align:right;">${obj.qtd}</td>`;
-            }
-            tbody.appendChild(tr);
-        });
-
-        tabela.appendChild(tbody);
-
-        listaDiv.innerHTML = "<h3 style='margin-bottom:8px;'>Itens Associados (Geral)</h3>";
-        listaDiv.appendChild(tabela);
-
-        listaDiv.style.display = (listaDiv.style.display === "none") ? "block" : "none";
-
-    } catch (err) {
-        console.error("Erro ao gerar lista de itens associados:", err);
-        listaDiv.innerHTML = `<h3>Erro ao gerar lista</h3><p style='font-size:12px;color:#ccc'>Veja console (F12) para detalhes.</p>`;
-        listaDiv.style.display = "block";
     }
-});
 
+    // Debug: imprime no console informações para inspecionar estrutura dos PSets/propriedades
+    console.log("DEBUG: psetsEncontrados =", psetsEncontrados);
+    console.log("DEBUG: propsTotalVarridas =", propsTotalVarridas);
+    console.log("DEBUG: amostras (até 10) =>", amostras);
+    // Se nada encontrado, tentamos imprimir alguns nomes de psets para inspecionar
+    if (psetsEncontrados === 0) {
+        const nomesPsets = new Set();
+        for (const metaObj of Object.values(viewer.metaScene.metaObjects)) {
+            if (!metaObj.propertySets) continue;
+            for (const pset of metaObj.propertySets) {
+                nomesPsets.add(pset.name || "(sem nome)");
+            }
+        }
+        console.log("DEBUG: Nenhum PSet com 'itens'+'associados' encontrado. Lista de PSet nomes (amostra):", Array.from(nomesPsets).slice(0,40));
+        // mostra instrução rápida no painel
+        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3><p style='font-size:12px;color:#ccc'>Veja console (F12) para lista de PropertySets e amostras.</p>";
+        listaDiv.style.display = "block";
+        return;
+    }
+
+    // Monta a lista
+    if (listaItens.size > 0) {
+        const ul = document.createElement("ul");
+        ul.style.listStyle = "none";
+        ul.style.padding = "0";
+        listaItens.forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            li.style.padding = "6px 4px";
+            li.style.borderBottom = "1px solid #444";
+            ul.appendChild(li);
+        });
+        listaDiv.innerHTML = "<h3>Itens Associados (Geral)</h3>";
+        listaDiv.appendChild(ul);
+    } else {
+        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3><p style='font-size:12px;color:#ccc'>Foi identificado(s) PSet(s) apropriado(s), mas nenhuma propriedade textual foi extraída. Veja console para amostras.</p>";
+    }
+
+    // Exibe/oculta o painel
+    listaDiv.style.display = (listaDiv.style.display === "none") ? "block" : "none";
+});
 
 
 
@@ -860,6 +836,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
