@@ -727,6 +727,45 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
+// === LISTAR ITENS ASSOCIADOS ===
+document.getElementById("btnListarItens").addEventListener("click", () => {
+    const listaDiv = document.getElementById("listaItensAssociados");
+    listaDiv.innerHTML = ""; // limpa antes
+
+    // Percorre todos os objetos do modelo
+    const todasEntidades = Object.values(viewer.scene.objects);
+
+    const listaItens = new Set(); // evita duplicados
+
+    for (const entidade of todasEntidades) {
+        if (entidade.ifcProps && entidade.ifcProps["AltoQi_QiBuilder-Itens_Associados"]) {
+            const itens = entidade.ifcProps["AltoQi_QiBuilder-Itens_Associados"];
+            if (Array.isArray(itens)) {
+                itens.forEach(item => listaItens.add(item));
+            } else {
+                listaItens.add(itens);
+            }
+        }
+    }
+
+    // Monta a lista
+    if (listaItens.size > 0) {
+        const ul = document.createElement("ul");
+        listaItens.forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            ul.appendChild(li);
+        });
+        listaDiv.innerHTML = "<h3>Itens Associados (Geral)</h3>";
+        listaDiv.appendChild(ul);
+    } else {
+        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3>";
+    }
+
+    // Exibe/oculta o painel
+    listaDiv.style.display = (listaDiv.style.display === "none") ? "block" : "none";
+});
+
 // Captura o evento de clique direito no canvas
 viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     const canvasPos = [event.pageX, event.pageY];
@@ -739,6 +778,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
