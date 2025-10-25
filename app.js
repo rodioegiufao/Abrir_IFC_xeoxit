@@ -727,39 +727,58 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
-// === LISTAR ITENS ASSOCIADOS (TABELA ESTILO RELATÓRIO) ===
+// === LISTAR ITENS ASSOCIADOS (CORRIGIDO - COM NOME E QUANTIDADE) ===
 document.getElementById("btnListarItens").addEventListener("click", () => {
     const listaDiv = document.getElementById("listaItensAssociados");
     listaDiv.innerHTML = ""; // limpa antes
 
-    const listaItens = new Set();
+    const linhasBrutas = [];
 
-    // Percorre todos os metaObjects e coleta itens do PSet
+    // Percorre todos os metaObjects e coleta os textos do PSet
     for (const metaObj of Object.values(viewer.metaScene.metaObjects)) {
         if (!metaObj.propertySets) continue;
 
         for (const pset of metaObj.propertySets) {
-            const psetName = (pset.name || "").toLowerCase();
-            if (psetName.includes("itens") && psetName.includes("associados")) {
+            const nomePset = (pset.name || "").toLowerCase();
+            if (nomePset.includes("itens") && nomePset.includes("associados")) {
                 for (const prop of pset.properties || []) {
-                    const text = String(prop.value || "").trim();
-                    if (text) {
-                        // divide por linhas
-                        const linhas = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                        linhas.forEach(linha => listaItens.add(linha));
+                    const texto = String(prop.value || "").trim();
+                    if (texto) {
+                        const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                        linhasBrutas.push(...linhas);
                     }
                 }
             }
         }
     }
 
-    if (listaItens.size === 0) {
+    if (linhasBrutas.length === 0) {
         listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3>";
         listaDiv.style.display = "block";
         return;
     }
 
-    // --- Monta tabela com 2 colunas ---
+    // --- Processa as linhas em [item, quantidade] ---
+    const itens = [];
+    const regexQtd = /^(.+?)\s+([\d.,]+\s*(?:pc|m|kg|mm|un|proj\.|m²|m³|m|u|pz|pç|pçs)?$)/i;
+
+    for (let linha of linhasBrutas) {
+        // Ignora títulos de grupos ou divisórias
+        if (/^[-=]+$/.test(linha) || linha.toLowerCase().includes("acessórios") || linha.toLowerCase().includes("cabo") || linha.toLowerCase().includes("eletrocalha")) {
+            itens.push({ item: linha.toUpperCase(), qtd: "", tipo: "titulo" });
+            continue;
+        }
+
+        const match = linha.match(regexQtd);
+        if (match) {
+            itens.push({ item: match[1].trim(), qtd: match[2].trim(), tipo: "item" });
+        } else {
+            // linha sem quantidade → trata como item textual
+            itens.push({ item: linha, qtd: "", tipo: "item" });
+        }
+    }
+
+    // --- Monta tabela ---
     const tabela = document.createElement("table");
     tabela.style.width = "100%";
     tabela.style.borderCollapse = "collapse";
@@ -779,26 +798,21 @@ document.getElementById("btnListarItens").addEventListener("click", () => {
 
     const tbody = document.createElement("tbody");
 
-    // Regex: separa final numérico com unidade (ex: "200 pc", "334.6 m")
-    const regexQtd = /(.+?)\s*([\d.,]+\s*(?:pc|m|kg|mm|un|proj\.|m²|m³)?$)/i;
-
-    for (const item of listaItens) {
-        const match = item.match(regexQtd);
-        let nome = item;
-        let qtd = "";
-
-        if (match) {
-            nome = match[1].trim();
-            qtd = match[2].trim();
-        }
-
+    itens.forEach((obj) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td style="padding:4px 6px;border-bottom:1px solid #333;">${nome}</td>
-            <td style="padding:4px 6px;border-bottom:1px solid #333;text-align:right;">${qtd}</td>
-        `;
+
+        if (obj.tipo === "titulo") {
+            tr.innerHTML = `
+                <td colspan="2" style="padding:6px 4px;border-top:1px solid #666;font-weight:bold;background:#111;text-align:center;">
+                    ${obj.item}
+                </td>`;
+        } else {
+            tr.innerHTML = `
+                <td style="padding:4px 6px;border-bottom:1px solid #333;">${obj.item}</td>
+                <td style="padding:4px 6px;border-bottom:1px solid #333;text-align:right;">${obj.qtd}</td>`;
+        }
         tbody.appendChild(tr);
-    }
+    });
 
     tabela.appendChild(tbody);
 
@@ -807,6 +821,7 @@ document.getElementById("btnListarItens").addEventListener("click", () => {
 
     listaDiv.style.display = (listaDiv.style.display === "none") ? "block" : "none";
 });
+
 
 
 
@@ -822,6 +837,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
