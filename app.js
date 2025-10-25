@@ -727,99 +727,122 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
-// === LISTAR ITENS ASSOCIADOS (CORRIGIDO - COM NOME E QUANTIDADE) ===
+// === LISTAR ITENS ASSOCIADOS (COM DEBUG NO CONSOLE) ===
 document.getElementById("btnListarItens").addEventListener("click", () => {
     const listaDiv = document.getElementById("listaItensAssociados");
     listaDiv.innerHTML = ""; // limpa antes
 
-    const linhasBrutas = [];
+    try {
+        const linhasBrutas = [];
 
-    // Percorre todos os metaObjects e coleta os textos do PSet
-    for (const metaObj of Object.values(viewer.metaScene.metaObjects)) {
-        if (!metaObj.propertySets) continue;
-
-        for (const pset of metaObj.propertySets) {
-            const nomePset = (pset.name || "").toLowerCase();
-            if (nomePset.includes("itens") && nomePset.includes("associados")) {
-                for (const prop of pset.properties || []) {
-                    const texto = String(prop.value || "").trim();
-                    if (texto) {
-                        const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-                        linhasBrutas.push(...linhas);
+        // 1) Coleta os textos dos PSets relacionados a "itens" e "associados"
+        for (const metaObj of Object.values(viewer.metaScene.metaObjects)) {
+            if (!metaObj.propertySets) continue;
+            for (const pset of metaObj.propertySets) {
+                const nomePset = (pset.name || "").toLowerCase();
+                if (nomePset.includes("itens") && nomePset.includes("associados")) {
+                    for (const prop of pset.properties || []) {
+                        const texto = String(prop.value || "").trim();
+                        if (texto) {
+                            const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                            linhasBrutas.push(...linhas);
+                        }
                     }
                 }
             }
         }
-    }
 
-    if (linhasBrutas.length === 0) {
-        listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3>";
+        // LOG: linhas brutas coletadas (envie essas linhas se algo der errado)
+        console.log("DEBUG Lista - linhasBrutas (amostra até 200):", linhasBrutas.slice(0, 200));
+        console.log("DEBUG Lista - total linhasBrutas:", linhasBrutas.length);
+
+        if (linhasBrutas.length === 0) {
+            listaDiv.innerHTML = "<h3>Nenhum item associado encontrado</h3><p style='font-size:12px;color:#ccc'>Veja console (F12) para debug.</p>";
+            listaDiv.style.display = "block";
+            return;
+        }
+
+        // 2) Parse: tenta separar nome e quantidade no final da linha
+        const itensParsed = [];
+        // regex que tenta pegar o final numérico + unidade (mais tolerante)
+        const regexQtd = /^(.+?)\s+([\d\.,]+\s*(?:pc|pçs|pç|un|u|m²|m³|m|kg|mm|cm|pz|proj\.?)?)$/i;
+
+        for (let linha of linhasBrutas) {
+            // detecta títulos de seção (baseado em letras maiúsculas iniciais ou palavras-chaves)
+            if (/^(acess[oó]rios|cabo|eletrocalha|cab[oô]|filtro|conjunto)/i.test(linha) || /^[A-Z\s0-9\-\._]{5,}$/.test(linha) && linha === linha.toUpperCase()) {
+                itensParsed.push({ item: linha, qtd: "", tipo: "titulo" });
+                continue;
+            }
+
+            const m = linha.match(regexQtd);
+            if (m) {
+                itensParsed.push({ item: m[1].trim(), qtd: m[2].trim(), tipo: "item" });
+            } else {
+                // Se não bateu a regex, ainda tentamos detectar separadores comuns " - " ou "\t" ou várias colunas
+                let splitted = null;
+                if (linha.includes("\t")) splitted = linha.split("\t").map(s => s.trim()).filter(Boolean);
+                else if (linha.includes("  ")) splitted = linha.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+                else if (linha.includes(" - ")) splitted = linha.split(" - ").map(s => s.trim()).filter(Boolean);
+
+                if (splitted && splitted.length >= 2) {
+                    // Supõe que a última parte é quantidade
+                    const qtdCandidate = splitted[splitted.length - 1];
+                    const nameCandidate = splitted.slice(0, splitted.length - 1).join(" - ");
+                    itensParsed.push({ item: nameCandidate, qtd: qtdCandidate, tipo: "item" });
+                } else {
+                    // fallback: linha inteira como nome
+                    itensParsed.push({ item: linha, qtd: "", tipo: "item" });
+                }
+            }
+        }
+
+        // LOG: itensParsed (envie esse array se tiver problema)
+        console.log("DEBUG Lista - itensParsed (amostra até 300):", itensParsed.slice(0, 300));
+        console.log("DEBUG Lista - total itensParsed:", itensParsed.length);
+
+        // 3) Monta tabela visual (fundo preto)
+        const tabela = document.createElement("table");
+        tabela.style.width = "100%";
+        tabela.style.borderCollapse = "collapse";
+        tabela.style.color = "#fff";
+        tabela.style.background = "#000";
+        tabela.style.fontFamily = "Arial, sans-serif";
+        tabela.style.fontSize = "13px";
+
+        const thead = document.createElement("thead");
+        thead.innerHTML = `
+            <tr style="background:#111;">
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #444;">Item</th>
+                <th style="text-align:right;padding:6px;border-bottom:1px solid #444;">Quantidade</th>
+            </tr>`;
+        tabela.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+
+        itensParsed.forEach(obj => {
+            const tr = document.createElement("tr");
+            if (obj.tipo === "titulo") {
+                tr.innerHTML = `<td colspan="2" style="padding:6px 4px;border-top:1px solid #666;font-weight:bold;background:#111;text-align:left;">${obj.item}</td>`;
+            } else {
+                tr.innerHTML = `
+                    <td style="padding:4px 6px;border-bottom:1px solid #333;">${obj.item}</td>
+                    <td style="padding:4px 6px;border-bottom:1px solid #333;text-align:right;">${obj.qtd}</td>`;
+            }
+            tbody.appendChild(tr);
+        });
+
+        tabela.appendChild(tbody);
+
+        listaDiv.innerHTML = "<h3 style='margin-bottom:8px;'>Itens Associados (Geral)</h3>";
+        listaDiv.appendChild(tabela);
+
+        listaDiv.style.display = (listaDiv.style.display === "none") ? "block" : "none";
+
+    } catch (err) {
+        console.error("Erro ao gerar lista de itens associados:", err);
+        listaDiv.innerHTML = `<h3>Erro ao gerar lista</h3><p style='font-size:12px;color:#ccc'>Veja console (F12) para detalhes.</p>`;
         listaDiv.style.display = "block";
-        return;
     }
-
-    // --- Processa as linhas em [item, quantidade] ---
-    const itens = [];
-    const regexQtd = /^(.+?)\s+([\d.,]+\s*(?:pc|m|kg|mm|un|proj\.|m²|m³|m|u|pz|pç|pçs)?$)/i;
-
-    for (let linha of linhasBrutas) {
-        // Ignora títulos de grupos ou divisórias
-        if (/^[-=]+$/.test(linha) || linha.toLowerCase().includes("acessórios") || linha.toLowerCase().includes("cabo") || linha.toLowerCase().includes("eletrocalha")) {
-            itens.push({ item: linha.toUpperCase(), qtd: "", tipo: "titulo" });
-            continue;
-        }
-
-        const match = linha.match(regexQtd);
-        if (match) {
-            itens.push({ item: match[1].trim(), qtd: match[2].trim(), tipo: "item" });
-        } else {
-            // linha sem quantidade → trata como item textual
-            itens.push({ item: linha, qtd: "", tipo: "item" });
-        }
-    }
-
-    // --- Monta tabela ---
-    const tabela = document.createElement("table");
-    tabela.style.width = "100%";
-    tabela.style.borderCollapse = "collapse";
-    tabela.style.color = "#fff";
-    tabela.style.background = "#000";
-    tabela.style.fontFamily = "Arial, sans-serif";
-    tabela.style.fontSize = "13px";
-
-    // Cabeçalho
-    const thead = document.createElement("thead");
-    thead.innerHTML = `
-        <tr style="background:#111;">
-            <th style="text-align:left;padding:6px;border-bottom:1px solid #444;">Item</th>
-            <th style="text-align:right;padding:6px;border-bottom:1px solid #444;">Quantidade</th>
-        </tr>`;
-    tabela.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-
-    itens.forEach((obj) => {
-        const tr = document.createElement("tr");
-
-        if (obj.tipo === "titulo") {
-            tr.innerHTML = `
-                <td colspan="2" style="padding:6px 4px;border-top:1px solid #666;font-weight:bold;background:#111;text-align:center;">
-                    ${obj.item}
-                </td>`;
-        } else {
-            tr.innerHTML = `
-                <td style="padding:4px 6px;border-bottom:1px solid #333;">${obj.item}</td>
-                <td style="padding:4px 6px;border-bottom:1px solid #333;text-align:right;">${obj.qtd}</td>`;
-        }
-        tbody.appendChild(tr);
-    });
-
-    tabela.appendChild(tbody);
-
-    listaDiv.innerHTML = "<h3 style='margin-bottom:8px;'>Itens Associados (Geral)</h3>";
-    listaDiv.appendChild(tabela);
-
-    listaDiv.style.display = (listaDiv.style.display === "none") ? "block" : "none";
 });
 
 
@@ -837,6 +860,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
