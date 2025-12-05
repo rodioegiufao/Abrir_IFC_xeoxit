@@ -71,28 +71,48 @@ onWindowResize();
 const xktLoader = new XKTLoaderPlugin(viewer);
 // 🔹 NOVO: handler para upload de IFC
 const ifcInput = document.getElementById("ifcInput");
+const uploadStatus = document.getElementById("uploadStatus");
+const convertApiUrl = document.body?.dataset?.convertApi || window.IFC_CONVERT_API || "/api/convert-ifc";
+
+function updateUploadStatus(message, type = "info") {
+    if (!uploadStatus) return;
+
+    uploadStatus.textContent = message;
+    uploadStatus.dataset.type = type;
+    uploadStatus.style.display = "block";
+}
 
 if (ifcInput) {
     ifcInput.addEventListener("change", async (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
+        if (!convertApiUrl) {
+            updateUploadStatus("Backend de conversão não configurado. Defina window.IFC_CONVERT_API ou data-convert-api.", "error");
+            event.target.value = "";
+            return;
+        }
+
         try {
             // (Opcional) mostrar loading:
             console.log("Enviando IFC para conversão:", file.name);
+            updateUploadStatus(`Enviando ${file.name} para conversão...`, "info");
 
             // Envia para o servidor que converte IFC → XKT
             const formData = new FormData();
             formData.append("ifcFile", file);
 
             // URL do seu backend (ajuste conforme seu servidor)
-            const response = await fetch("/api/convert-ifc", {
+            const response = await fetch(convertApiUrl, {
                 method: "POST",
                 body: formData
             });
 
             if (!response.ok) {
-                throw new Error("Falha na conversão IFC → XKT");
+                const hint = response.status === 404
+                    ? "Endpoint /api/convert-ifc não encontrado. Confirme a URL do conversor ou configure data-convert-api."
+                    : `Servidor respondeu ${response.status} ${response.statusText}`;
+                throw new Error(`Falha na conversão IFC → XKT. ${hint}`);
             }
 
             // Duas possibilidades:
@@ -117,14 +137,18 @@ if (ifcInput) {
             model.on("loaded", () => {
                 console.log("Modelo IFC convertido e carregado:", modelId);
                 viewer.cameraFlight.flyTo(viewer.scene);
+                updateUploadStatus("Conversão concluída e modelo carregado com sucesso!", "success");
             });
 
             model.on("error", (err) => {
                 console.error("Erro ao carregar XKT convertido:", err);
+                updateUploadStatus("Erro ao carregar XKT convertido. Verifique os logs do servidor.", "error");
             });
 
         } catch (err) {
             console.error("Erro no upload/conv. IFC:", err);
+            const detail = err?.message || "Erro desconhecido";
+            updateUploadStatus(`Não foi possível converter o IFC. ${detail}`, "error");
             alert("Não foi possível converter o IFC. Verifique o servidor.");
         } finally {
             // Limpa o input para permitir subir o mesmo arquivo depois, se quiser
@@ -801,6 +825,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
