@@ -9,10 +9,10 @@
     
     <script type="module" src="https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"></script>
 </head>
-<body>
-    <canvas id="meuCanvas"></canvas>
+<body data-convert-api="">
+    <canvas id="meuCanvas"></canvas>␊
 
-    <canvas id="myNavCubeCanvas"></canvas>
+    <canvas id="myNavCubeCanvas"></canvas>␊
 
     <div id="toolbar">
         <button 
@@ -85,21 +85,24 @@
             Corte
         </button>
         <label class="tool-button" title="Carregar arquivo IFC">
-            <span style="font-size: 1.2em;">📁</span>
+           <span style="font-size: 1.2em;">📁</span>
             IFC → XKT
             <input
                 id="ifcInput"
-                type="file" 
-                accept=".ifc" 
+                type="file"
+                accept=".ifc"
                 style="display:none;">
         </label>
     </div>
+
+    <div id="uploadStatus" aria-live="polite"></div>
 
     <div id="treeViewContainer"></div>
 
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
 
 
