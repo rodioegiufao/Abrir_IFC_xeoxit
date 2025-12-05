@@ -69,7 +69,69 @@ onWindowResize();
 // -----------------------------------------------------------------------------
 
 const xktLoader = new XKTLoaderPlugin(viewer);
+// 🔹 NOVO: handler para upload de IFC
+const ifcInput = document.getElementById("ifcInput");
 
+if (ifcInput) {
+    ifcInput.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            // (Opcional) mostrar loading:
+            console.log("Enviando IFC para conversão:", file.name);
+
+            // Envia para o servidor que converte IFC → XKT
+            const formData = new FormData();
+            formData.append("ifcFile", file);
+
+            // URL do seu backend (ajuste conforme seu servidor)
+            const response = await fetch("/api/convert-ifc", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error("Falha na conversão IFC → XKT");
+            }
+
+            // Duas possibilidades:
+            // 1) Servidor devolve a URL de um .xkt salvo
+            //    const { xktUrl } = await response.json();
+            //    carregarXKTdeURL(xktUrl);
+
+            // 2) Servidor devolve o binário XKT direto (exemplo abaixo)
+            const arrayBuffer = await response.arrayBuffer();
+            const xktData = new Uint8Array(arrayBuffer);
+
+            const modelId = "ifc_" + Date.now();
+
+            const model = xktLoader.load({
+                id: modelId,
+                // quando tem os bytes em memória, a propriedade costuma ser "xkt" ou "data"
+                // depende da versão do xeokit; use a que seu conversor indicar.
+                xkt: xktData,
+                edges: true
+            });
+
+            model.on("loaded", () => {
+                console.log("Modelo IFC convertido e carregado:", modelId);
+                viewer.cameraFlight.flyTo(viewer.scene);
+            });
+
+            model.on("error", (err) => {
+                console.error("Erro ao carregar XKT convertido:", err);
+            });
+
+        } catch (err) {
+            console.error("Erro no upload/conv. IFC:", err);
+            alert("Não foi possível converter o IFC. Verifique o servidor.");
+        } finally {
+            // Limpa o input para permitir subir o mesmo arquivo depois, se quiser
+            event.target.value = "";
+        }
+    });
+}
 let modelsLoadedCount = 0;
 const totalModels = 2; 
 
@@ -835,6 +897,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
