@@ -1,7 +1,7 @@
 // app.js
 
 import {
-    Viewer, 
+    Viewer,
     LocaleService, 
     XKTLoaderPlugin, 
     AngleMeasurementsPlugin, 
@@ -15,7 +15,15 @@ import {
     SectionPlanesPlugin,
     LineSet,         // <--- NOVO: Importa LineSet
     buildGridGeometry // <--- NOVO: Importa buildGridGeometry
-} from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
+} from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
+
+// Evita rodar o script duas vezes (o que causava cargas duplicadas e avisos no TreeView)
+if (window.__XEOKIT_APP_INITIALIZED__) {
+    console.warn("Aplicação Xeokit já inicializada; ignorando segunda execução.");
+} else {
+    window.__XEOKIT_APP_INITIALIZED__ = true;
+
+    (function initXeokitApp() {
 
 let treeView; 
 let modelIsolateController; 
@@ -70,6 +78,8 @@ onWindowResize();
 
 const xktLoader = new XKTLoaderPlugin(viewer);
 // 🔹 NOVO: handler para upload de IFC
+// Permite definir uma URL de conversão customizada via variável global (ex: em Vercel)
+const IFC_CONVERTER_URL = window.IFC_CONVERTER_URL || "/api/convert-ifc";
 const ifcInput = document.getElementById("ifcInput");
 
 if (ifcInput) {
@@ -86,13 +96,14 @@ if (ifcInput) {
             formData.append("ifcFile", file);
 
             // URL do seu backend (ajuste conforme seu servidor)
-            const response = await fetch("/api/convert-ifc", {
+            const response = await fetch(IFC_CONVERTER_URL, {
                 method: "POST",
                 body: formData
             });
 
             if (!response.ok) {
-                throw new Error("Falha na conversão IFC → XKT");
+                const serverMsg = await response.text().catch(() => "");
+                throw new Error(`Falha na conversão IFC → XKT (HTTP ${response.status}). ${serverMsg || "Confira se o endpoint está disponível."}`);
             }
 
             // Duas possibilidades:
@@ -125,7 +136,10 @@ if (ifcInput) {
 
         } catch (err) {
             console.error("Erro no upload/conv. IFC:", err);
-            alert("Não foi possível converter o IFC. Verifique o servidor.");
+            alert(
+                "Não foi possível converter o IFC. \n" +
+                "Verifique se o endpoint de conversão (" + IFC_CONVERTER_URL + ") está acessível ou configure 'window.IFC_CONVERTER_URL'."
+            );
         } finally {
             // Limpa o input para permitir subir o mesmo arquivo depois, se quiser
             event.target.value = "";
@@ -916,3 +930,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
 
 
+}
+
+})();
+}
