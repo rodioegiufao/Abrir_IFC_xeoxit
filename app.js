@@ -704,31 +704,80 @@ const materialContextMenu = new ContextMenu({
     ]
 });
 
-// Captura o evento de clique direito no canvas
-viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
-    const canvasPos = [event.pageX, event.pageY];
+function showEntityContextMenu(pageX, pageY) {
+    const canvasPos = [pageX, pageY];
     const hit = viewer.scene.pick({ canvasPos });
 
     if (hit && hit.entity && hit.entity.isObject) {
         materialContextMenu.context = { viewer, entity: hit.entity };
-        materialContextMenu.show(event.pageX, event.pageY);
+        materialContextMenu.show(pageX, pageY);
     }
+}
 
+// Captura o evento de clique direito no canvas
+viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
+    showEntityContextMenu(event.pageX, event.pageY);
     event.preventDefault();
 });
 
+// Suporte a toque: abre o menu ao manter o dedo pressionado sobre o objeto
+(() => {
+    const canvasElement = viewer.scene.canvas.canvas;
+    const longPressDuration = 600;
+    const moveThreshold = 10;
+    let touchTimeout = null;
+    let touchStartPos = null;
+    let menuOpened = false;
 
+    const clearTouch = () => {
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+            touchTimeout = null;
+        }
+        touchStartPos = null;
+        menuOpened = false;
+    };
 
+    canvasElement.addEventListener('touchstart', (event) => {
+        if (event.touches.length !== 1) {
+            clearTouch();
+            return;
+        }
 
+        const touch = event.touches[0];
+        touchStartPos = { x: touch.pageX, y: touch.pageY };
+        menuOpened = false;
 
+        touchTimeout = setTimeout(() => {
+            menuOpened = true;
+            showEntityContextMenu(touchStartPos.x, touchStartPos.y);
+        }, longPressDuration);
+    }, { passive: true });
 
+    canvasElement.addEventListener('touchmove', (event) => {
+        if (!touchStartPos || event.touches.length !== 1) {
+            clearTouch();
+            return;
+        }
 
+        const touch = event.touches[0];
+        const dx = touch.pageX - touchStartPos.x;
+        const dy = touch.pageY - touchStartPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) > moveThreshold) {
+            clearTouch();
+        }
+    }, { passive: true });
 
+    const endTouch = (event) => {
+        if (menuOpened) {
+            event.preventDefault();
+        }
+        clearTouch();
+    };
 
-
-
-
-
+    canvasElement.addEventListener('touchend', endTouch, { passive: false });
+    canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
+})();
 
 
 
