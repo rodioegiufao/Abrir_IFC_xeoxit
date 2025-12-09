@@ -15,11 +15,23 @@
     <canvas id="myNavCubeCanvas"></canvas>␊
 
     <div id="toolbar">
-        <button 
-            id="btnAngle" 
-            class="tool-button" 
-            onclick="setMeasurementMode('angle', this)" 
-            title="Medir Ângulo (Transferidor)" 
+        <button
+            id="btnUpload"
+            class="tool-button"
+            onclick="openXKTFileDialog()"
+            title="Carregar arquivo XKT"
+        >
+            <span style="font-size: 1.2em;">⬆️</span>
+            Upload XKT
+        </button>
+
+        <input type="file" id="xktFileInput" accept=".xkt" style="display: none" />
+
+        <button
+            id="btnAngle"
+            class="tool-button"
+            onclick="setMeasurementMode('angle', this)"
+            title="Medir Ângulo (Transferidor)"
         >
             <span style="font-size: 1.2em;">📐</span>
             Ângulo
@@ -90,6 +102,7 @@
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
 
 
