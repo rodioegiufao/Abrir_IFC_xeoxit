@@ -72,19 +72,44 @@ const xktLoader = new XKTLoaderPlugin(viewer);
 // 🔹 NOVO: handler para upload de IFC
 const ifcInput = document.getElementById("ifcInput");
 const uploadStatus = document.getElementById("uploadStatus");
+const convertApiInput = document.getElementById("convertApiInput");
+const convertApiApplyButton = document.getElementById("convertApiApply");
+
+const CONVERT_API_STORAGE_KEY = "ifcConvertApiUrl";
+
+function resolveConvertApiUrl() {
+    const queryApi = new URLSearchParams(window.location.search).get("convertApi");
+    if (queryApi && queryApi.trim()) {
+        return { url: queryApi.trim(), source: "query string (?convertApi)" };
+    }
+
+    const bodyApi = (document.body?.dataset?.convertApi || "").trim();
+    if (bodyApi) {
+        return { url: bodyApi, source: "data-convert-api no <body>" };
+    }
+
+    const globalApi = (window.IFC_CONVERT_API || "").trim();
+    if (globalApi) {
+        return { url: globalApi, source: "window.IFC_CONVERT_API" };
+    }
+
+    const savedApi = (localStorage.getItem(CONVERT_API_STORAGE_KEY) || "").trim();
+    if (savedApi) {
+        return { url: savedApi, source: "preferência salva" };
+    }
+
+    return { url: "", source: "não configurado" };
+}
+
+let { url: convertApiUrl, source: convertApiSource } = resolveConvertApiUrl();
 
 // Permite configurar o endpoint de conversão via query string (?convertApi=...),
 // data-attribute no <body> ou variável global window.IFC_CONVERT_API.
 // Se nada for definido, bloqueia o envio e exibe instruções em vez de tentar
 // bater em /api/convert-ifc, que não existe no deploy estático da Vercel.
-const urlConvertApi = new URLSearchParams(window.location.search).get("convertApi");
-const convertApiUrl = (urlConvertApi || "").trim()
-    || (document.body?.dataset?.convertApi || "").trim()
-    || (window.IFC_CONVERT_API || "").trim();
 
 function updateUploadStatus(message, type = "info") {
     if (!uploadStatus) return;
-
     uploadStatus.textContent = message;
     uploadStatus.dataset.type = type;
     uploadStatus.style.display = "block";
@@ -92,12 +117,40 @@ function updateUploadStatus(message, type = "info") {
 
 if (ifcInput) {
     if (convertApiUrl) {
-        updateUploadStatus(`Conversor configurado: ${convertApiUrl}`, "info");
+        updateUploadStatus(`Conversor configurado: ${convertApiUrl} (${convertApiSource}).`, "info");
     } else {
         updateUploadStatus(
-            "Para converter IFC → XKT, informe o backend via ?convertApi=URL, window.IFC_CONVERT_API ou data-convert-api no <body>.",
+            "Para converter IFC → XKT, informe o backend usando o campo abaixo ou as opções avançadas.",
             "info"
         );
+    }
+
+    if (convertApiInput) {
+        convertApiInput.value = convertApiUrl;
+    }
+
+    const applyConvertApi = (newUrl, source = "campo manual") => {
+        convertApiUrl = (newUrl || "").trim();
+        convertApiSource = source;
+
+        if (convertApiUrl) {
+            localStorage.setItem(CONVERT_API_STORAGE_KEY, convertApiUrl);
+            updateUploadStatus(`Conversor configurado: ${convertApiUrl} (${convertApiSource}).`, "success");
+        } else {
+            localStorage.removeItem(CONVERT_API_STORAGE_KEY);
+            updateUploadStatus(
+                "Nenhum conversor definido. Cole a URL no campo acima ou use ?convertApi=URL.",
+                "error"
+            );
+        }
+    };
+
+    if (convertApiApplyButton && convertApiInput) {
+        convertApiApplyButton.addEventListener("click", () => {
+            applyConvertApi(convertApiInput.value, "campo manual");
+        });
+    } else {
+        console.warn("Controles de configuração de conversor não encontrados no DOM.");
     }
 
     ifcInput.addEventListener("change", async (event) => {
@@ -106,7 +159,7 @@ if (ifcInput) {
 
         if (!convertApiUrl) {
             updateUploadStatus(
-                "Envio não realizado: configure a URL do conversor IFC → XKT (ex.: ?convertApi=https://seu-servidor.com/api/convert).",
+                "Envio não realizado: configure a URL do conversor IFC → XKT no campo de configuração ou via ?convertApi=https://seu-servidor.com/api/convert.",
                 "error"
             );
             // Limpa para permitir nova seleção após configurar
@@ -846,6 +899,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
