@@ -10,9 +10,9 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"></script>
 </head>
 <body>
-    <canvas id="meuCanvas"></canvas>␊
+    <canvas id="meuCanvas"></canvas>
 
-    <canvas id="myNavCubeCanvas"></canvas>␊
+    <canvas id="myNavCubeCanvas"></canvas>
 
     <div id="toolbar">
         <button
@@ -112,6 +112,8 @@
             toolbar.classList.remove('open');
             mobileToolbarToggle.setAttribute('aria-pressed', 'false');
 
+            document.body.dataset.mode = mode;
+
             localStorage.setItem('preferredMode', mode);
         }
 
@@ -128,6 +130,7 @@
     </script>
 </body>
 </html>
+
 
 
 
