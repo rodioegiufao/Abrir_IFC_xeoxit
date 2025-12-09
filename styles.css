@@ -200,6 +200,44 @@ html, body {
 }
 
 /* ---------------------------------------------------- */
+/* Controle de alternância de modo (Desktop x Mobile) */
+/* ---------------------------------------------------- */
+
+#modeSwitcher {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 100002;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.mode-button {
+    border: none;
+    padding: 10px 12px;
+    background: #2e2e2e;
+    color: #f0f0f0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.mode-button:hover {
+    background: #444;
+}
+
+.mode-button.active {
+    background: #007bff;
+    box-shadow: 0 0 6px rgba(0, 123, 255, 0.6);
+}
+
+/* ---------------------------------------------------- */
 /* Estilos do Painel de Propriedades (propertyPanel) */
 /* ---------------------------------------------------- */
 
@@ -311,3 +349,4 @@ html, body {
     color: #ff6b6b !important;
     transform: scale(1.1);
 }
+
