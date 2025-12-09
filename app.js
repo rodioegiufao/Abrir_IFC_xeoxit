@@ -90,21 +90,29 @@ function updateUploadStatus(message, type = "info") {
     uploadStatus.style.display = "block";
 }
 
-if (!convertApiUrl) {
-    updateUploadStatus(
-        "Backend de conversão não configurado. Use ?convertApi=URL, window.IFC_CONVERT_API ou data-convert-api.",
-        "error"
-    );
-    if (ifcInput) {
-        ifcInput.setAttribute("disabled", "true");
+if (ifcInput) {
+    if (convertApiUrl) {
+        updateUploadStatus(`Conversor configurado: ${convertApiUrl}`, "info");
+    } else {
+        updateUploadStatus(
+            "Para converter IFC → XKT, informe o backend via ?convertApi=URL, window.IFC_CONVERT_API ou data-convert-api no <body>.",
+            "info"
+        );
     }
-}
 
-if (ifcInput && convertApiUrl) {
-    updateUploadStatus(`Conversor configurado: ${convertApiUrl}`, "info");
     ifcInput.addEventListener("change", async (event) => {
         const file = event.target.files[0];
         if (!file) return;
+
+        if (!convertApiUrl) {
+            updateUploadStatus(
+                "Envio não realizado: configure a URL do conversor IFC → XKT (ex.: ?convertApi=https://seu-servidor.com/api/convert).",
+                "error"
+            );
+            // Limpa para permitir nova seleção após configurar
+            event.target.value = "";
+            return;
+        }
 
         try {
             // (Opcional) mostrar loading:
@@ -838,6 +846,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
