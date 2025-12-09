@@ -164,6 +164,10 @@ html, body {
     gap: 10px;
 }
 
+#mobileToolbarToggle {
+    display: none;
+}
+
 .tool-button {
     /* Ajustado para centralizar ícone e texto */
     display: flex;
@@ -349,4 +353,5 @@ html, body {
     color: #ff6b6b !important;
     transform: scale(1.1);
 }
+
 
