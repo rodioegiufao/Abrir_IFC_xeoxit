@@ -179,7 +179,10 @@ async function loadDefaultModel({ id, src }) {
 
 const defaultModels = [
     { id: "meuModeloBIM", src: "assets/meu_modelo.xkt" },
-    { id: "meuModeloBIM_02", src: "assets/modelo-02.xkt" }
+    { id: "meuModeloBIM_02", src: "assets/modelo-02.xkt" },
+    { id: "meuModeloBIM_03", src: "assets/modelo-03.xkt" },
+    { id: "meuModeloBIM_04", src: "assets/modelo-04.xkt" },
+    { id: "meuModeloBIM_05", src: "assets/modelo-05.xkt" }
 ];
 
 defaultModels.forEach(loadDefaultModel);
@@ -713,6 +716,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
