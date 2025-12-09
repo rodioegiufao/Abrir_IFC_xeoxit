@@ -1,48 +1,37 @@
 @import url('./styles.css');
 
-/* Ajustes específicos para a versão mobile/tablet */
+/* Ajustes para tablets em orientação vertical (entre 10" e 12") */
 html, body {
     overflow: hidden;
 }
 
 #toolbar {
-    top: auto;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 40px);
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
+    top: 20px;
+    right: 20px;
+    left: auto;
+    bottom: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
 }
 
 .tool-button {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    flex: 1 1 calc(33% - 10px);
+    min-width: 90px;
     padding: 10px 12px;
-    font-size: 0.9em;
-}
-
-.tool-button span {
-    margin-bottom: 0;
 }
 
 #myNavCubeCanvas {
-    width: 110px;
-    height: 110px;
-    bottom: 160px;
+    bottom: 20px;
     right: 20px;
 }
 
 #treeViewContainer {
     top: 20px;
     left: 20px;
-    width: calc(100% - 40px);
-    max-width: none;
-    height: calc(100% - 220px);
+    right: auto;
+    width: 320px;
+    max-width: 40vw;
+    height: calc(100% - 60px);
 }
 
 #modeSwitcher {
