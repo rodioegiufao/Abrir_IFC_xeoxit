@@ -4,9 +4,9 @@ html, body {
     padding: 0;
     width: 100%;
     height: 100%; /* Garante 100% da altura da viewport */
-    overflow: hidden; /* Remove barras de rolagem desnecessárias */
+    overflow: hidden; /* Remove barras de rolagem desnecessárias (ajustado para mobile mais abaixo) */
     background-color: #000000;
-}
+}␊
 
 #meuCanvas {
     width: 100%;
@@ -311,6 +311,108 @@ html, body {
 #closePropertyPanel:hover {
     color: #ff6b6b !important;
     transform: scale(1.1);
+}
+
+/* ---------------------------------------------------- */
+/* LAYOUT RESPONSIVO PARA COMPUTADOR, TABLET E CELULAR  */
+/* ---------------------------------------------------- */
+
+/* VERSÃO PARA TABLET (entre 641px e 1024px) */
+@media (max-width: 1024px) {
+    html, body {
+        overflow: auto; /* Permite rolagem quando os painéis ocuparem mais espaço */
+    }
+
+    #toolbar {
+        position: fixed;
+        top: auto;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 30px);
+        max-width: 960px;
+        flex-wrap: wrap; /* Botões passam a quebrar linha e expandir */
+        justify-content: center;
+        gap: 8px;
+        padding: 12px;
+        background: rgba(15, 15, 15, 0.8);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(6px);
+    }
+
+    .tool-button {
+        flex: 1 1 45%;
+        min-width: 140px;
+        padding: 12px 10px;
+        font-size: 0.95em;
+    }
+
+    #treeViewContainer {
+        top: 20px;
+        left: 10px;
+        width: calc(100% - 20px);
+        height: 45vh;
+        max-height: 60vh;
+        border-radius: 10px;
+    }
+
+    #myNavCubeCanvas {
+        width: 120px;
+        height: 120px;
+        bottom: 140px;
+        right: 16px;
+    }
+}
+
+/* VERSÃO PARA CELULAR (até 640px) */
+@media (max-width: 640px) {
+    #toolbar {
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        transform: none;
+        border-radius: 18px 18px 0 0;
+        padding: 14px 14px 18px 14px;
+        gap: 10px;
+    }
+
+    .tool-button {
+        flex: 1 1 100%;
+        min-width: 100%;
+        font-size: 1em;
+        padding: 14px 12px;
+    }
+
+    .tool-button .tool-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    #treeViewContainer {
+        height: 55vh;
+        max-height: none;
+        border-radius: 12px;
+    }
+
+    #myNavCubeCanvas {
+        width: 100px;
+        height: 100px;
+        bottom: 200px;
+        right: 12px;
+    }
+}
+
+/* VERSÃO PARA COMPUTADOR (acima de 1024px) */
+@media (min-width: 1025px) {
+    #toolbar {
+        flex-wrap: nowrap; /* Mantém a aparência atual em linha */
+        background: none;
+        padding: 0;
+        box-shadow: none;
+        backdrop-filter: none;
+    }
 }
 
 
