@@ -1,6 +1,6 @@
 @import url('./styles.css');
 
-/* Ajustes para tablets em orientação vertical (entre 10" e 12") */
+/* Ajustes específicos para a versão mobile */
 html, body {
     overflow: hidden;
 }
@@ -12,12 +12,19 @@ html, body {
     bottom: auto;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 8px;
+    display: none;
 }
 
 .tool-button {
-    min-width: 90px;
-    padding: 10px 12px;
+    min-width: 70px;
+    padding: 8px 10px;
+    font-size: 0.75em;
+}
+
+.tool-button span:first-child {
+    font-size: 1em !important;
+    margin-bottom: 4px;
 }
 
 #myNavCubeCanvas {
@@ -44,4 +51,32 @@ html, body {
 .mode-button {
     flex: 1 1 180px;
     text-align: center;
+}
+
+
+#toolbar.open {
+    display: flex;
+}
+
+#mobileToolbarToggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 100002;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 6px;
+    background-color: rgba(51, 51, 51, 0.9);
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+#mobileToolbarToggle:hover,
+#mobileToolbarToggle[aria-pressed="true"] {
+    background-color: rgba(0, 123, 255, 0.9);
 }
