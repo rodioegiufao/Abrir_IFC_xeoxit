@@ -70,7 +70,8 @@ onWindowResize();
 
 const xktLoader = new XKTLoaderPlugin(viewer);
 let modelsLoadedCount = 0;
-const totalModels = 2;
+let expectedModels = 0;
+let defaultModelChecksDone = 0;
 
 const xktFileInput = document.getElementById("xktFileInput");
 
@@ -171,46 +172,64 @@ function createGroundGrid() {
     console.log("Grade do solo criada.");
 }
 
+function finalizeInitialSetup() {
+    setTimeout(() => {
+        viewer.cameraFlight.jumpTo(viewer.scene);
+        console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
+        setMeasurementMode('none', document.getElementById('btnDeactivate'));
+        setupModelIsolateController();
+        createGroundGrid();
+    }, 300);
+}
 
-function adjustCameraOnLoad() {
-    modelsLoadedCount++;
-    
-    if (modelsLoadedCount === totalModels) {
-        setTimeout(() => {
-            viewer.cameraFlight.jumpTo(viewer.scene);
-            console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
-            setMeasurementMode('none', document.getElementById('btnDeactivate')); 
-            setupModelIsolateController();
-            createGroundGrid(); // <-- NOVO: Chama a criação da grade
-        }, 300);
+function maybeFinalizeInitialization() {
+    if (defaultModelChecksDone === defaultModels.length && modelsLoadedCount >= expectedModels) {
+        finalizeInitialSetup();
     }
 }
 
-// CARREGAMENTO DOS MODELOS (MANTIDO)
-const model1 = xktLoader.load({
-    id: "meuModeloBIM",
-    src: "assets/meu_modelo.xkt", 
-    edges: true
-});
+function adjustCameraOnLoad() {
+    modelsLoadedCount++;
+    maybeFinalizeInitialization();
+}
 
-model1.on("loaded", adjustCameraOnLoad);
-model1.on("error", (err) => {
-    console.error("Erro ao carregar meu_modelo.xkt:", err);
-    adjustCameraOnLoad(); 
-});
+async function loadDefaultModel({ id, src }) {
+    try {
+        const response = await fetch(src, { method: "HEAD" });
+        defaultModelChecksDone++;
 
-const model2 = xktLoader.load({
-    id: "meuModeloBIM_02", 
-    src: "assets/modelo-02.xkt", 
-    edges: true
-});
+        if (!response.ok) {
+            console.warn(`⚠️ Modelo padrão ignorado: ${src} não está disponível (status ${response.status}).`);
+            maybeFinalizeInitialization();
+            return;
+        }
 
-model2.on("loaded", adjustCameraOnLoad);
-model2.on("error", (err) => {
-    console.error("Erro ao carregar modelo-02.xkt:", err);
-    adjustCameraOnLoad(); 
-});
+        expectedModels++;
 
+        const model = xktLoader.load({
+            id,
+            src,
+            edges: true
+        });
+
+        model.on("loaded", adjustCameraOnLoad);
+        model.on("error", (err) => {
+            console.error(`Erro ao carregar ${src}:`, err);
+            adjustCameraOnLoad();
+        });
+    } catch (error) {
+        defaultModelChecksDone++;
+        console.warn(`⚠️ Não foi possível verificar o modelo ${src}:`, error);
+        maybeFinalizeInitialization();
+    }
+}
+
+const defaultModels = [
+    { id: "meuModeloBIM", src: "assets/meu_modelo.xkt" },
+    { id: "meuModeloBIM_02", src: "assets/modelo-02.xkt" }
+];
+
+defaultModels.forEach(loadDefaultModel);
 
 // -----------------------------------------------------------------------------
 // 3. Plugins de Medição e Função de Troca (MANTIDO)
@@ -785,6 +804,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
