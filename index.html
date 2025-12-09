@@ -20,7 +20,7 @@
             class="tool-button"
             onclick="setMeasurementMode('angle', this)"
             title="Medir Ângulo (Transferidor)"
-        >
+    >
             <span style="font-size: 1.2em;">📐</span>
             Ângulo
         </button>
@@ -75,24 +75,29 @@
             Corte
         </button>
     </div>
+    <button id="mobileToolbarToggle" type="button" aria-label="Abrir ferramentas" title="Abrir ferramentas" hidden>
+        ☰ Ferramentas
+    </button>
     <div id="treeViewContainer"></div>
     <div id="modeSwitcher" aria-label="Alternar modo de visualização">
         <button type="button" class="mode-button active" data-mode="desktop">Versão Computador</button>
-        <button type="button" class="mode-button" data-mode="tablet">Versão Tablet (Vertical)</button>
         <button type="button" class="mode-button" data-mode="mobile">Versão Celular</button>
     </div>
     <script type="module" src="app.js"></script>
     <script>
         const modeStylesheet = document.getElementById('modeStylesheet');
         const modeButtons = document.querySelectorAll('#modeSwitcher [data-mode]');
+        const toolbar = document.getElementById('toolbar');
+        const mobileToolbarToggle = document.getElementById('mobileToolbarToggle');
 
         function applyMode(mode) {
+            if (mode !== 'mobile' && mode !== 'desktop') {
+                mode = 'desktop';
+            }
             let stylesheet = 'styles.css';
 
             if (mode === 'mobile') {
                 stylesheet = 'styles-mobile.css';
-            } else if (mode === 'tablet') {
-                stylesheet = 'styles-tablet.css';
             }
             if (modeStylesheet.getAttribute('href') !== stylesheet) {
                 modeStylesheet.setAttribute('href', stylesheet);
@@ -102,6 +107,11 @@
                 button.classList.toggle('active', button.dataset.mode === mode);
             });
 
+            const isMobileMode = mode === 'mobile';
+            mobileToolbarToggle.hidden = !isMobileMode;
+            toolbar.classList.remove('open');
+            mobileToolbarToggle.setAttribute('aria-pressed', 'false');
+
             localStorage.setItem('preferredMode', mode);
         }
 
@@ -109,13 +119,15 @@
             button.addEventListener('click', () => applyMode(button.dataset.mode));
         });
 
+        mobileToolbarToggle.addEventListener('click', () => {
+            const isOpen = toolbar.classList.toggle('open');
+            mobileToolbarToggle.setAttribute('aria-pressed', isOpen ? 'true' : 'false');
+        });
+
         applyMode(localStorage.getItem('preferredMode') || 'desktop');
     </script>
 </body>
 </html>
-
-
-
 
 
 
