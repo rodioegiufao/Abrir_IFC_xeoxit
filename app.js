@@ -73,53 +73,6 @@ let modelsLoadedCount = 0;
 let expectedModels = 0;
 let defaultModelChecksDone = 0;
 
-const xktFileInput = document.getElementById("xktFileInput");
-
-function openXKTFileDialog() {
-    if (xktFileInput) {
-        xktFileInput.click();
-    }
-}
-
-function loadXKTFromFile(file) {
-    const objectURL = URL.createObjectURL(file);
-    const uploadedModelId = `uploaded_${Date.now()}_${file.name}`;
-
-    const uploadedModel = xktLoader.load({
-        id: uploadedModelId,
-        src: objectURL,
-        edges: true
-    });
-
-    uploadedModel.on("loaded", () => {
-        viewer.cameraFlight.flyTo(viewer.scene);
-        detectarPavimentos();
-        console.log(`✅ Arquivo ${file.name} carregado com sucesso.`);
-        URL.revokeObjectURL(objectURL);
-    });
-
-    uploadedModel.on("error", (err) => {
-        console.error(`Erro ao carregar ${file.name}:`, err);
-        alert(`Não foi possível abrir o arquivo ${file.name}. Verifique se ele é um XKT válido.`);
-        URL.revokeObjectURL(objectURL);
-    });
-}
-
-if (xktFileInput) {
-    xktFileInput.addEventListener("change", (event) => {
-        const target = event.target;
-        const file = target.files?.[0];
-
-        if (file) {
-            loadXKTFromFile(file);
-        }
-
-        target.value = ""; // Permite reenviar o mesmo arquivo, se necessário
-    });
-}
-
-window.openXKTFileDialog = openXKTFileDialog;
-
 /**
  * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
  */
@@ -410,54 +363,11 @@ function toggleTreeView() {
 
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.toggleTreeView = toggleTreeView;
-window.resetModelVisibility = resetModelVisibility; 
-// -----------------------------------------------------------------------------
-// 6.1 Função de Pavimentos (Mostrar/Ocultar Níveis)
-// -----------------------------------------------------------------------------
-
-let pavimentos = [];
-let pavimentosVisiveis = true;
-
-/**
- * Detecta automaticamente pavimentos (níveis) com base nos nomes de entidades IFC.
- * Armazena uma lista simples de IDs para alternar visibilidade.
- */
-function detectarPavimentos() {
-    pavimentos = []; // limpa lista
-
-    for (const [id, metaObj] of Object.entries(viewer.metaScene.metaObjects)) {
-        const nome = metaObj.name?.toLowerCase() || "";
-        if (nome.includes("pavimento") || nome.includes("nivel") || nome.includes("andar")) {
-            pavimentos.push({
-                id,
-                nome: metaObj.name
-            });
-        }
-    }
-
-    console.log(`🧱 Pavimentos detectados: ${pavimentos.length}`);
-}
-
-/**
- * Alterna a visibilidade dos pavimentos (mostra/oculta todos).
- */
-function togglePavimentos() {
-    if (pavimentos.length === 0) detectarPavimentos();
-
-    pavimentosVisiveis = !pavimentosVisiveis;
-
-    pavimentos.forEach(p => {
-        const entidade = viewer.scene.objects[p.id];
-        if (entidade) entidade.visible = pavimentosVisiveis;
-    });
-
-    console.log(pavimentosVisiveis ? "✅ Pavimentos exibidos" : "🚫 Pavimentos ocultos");
-}
+window.resetModelVisibility = resetModelVisibility;
 
 // -----------------------------------------------------------------------------
 // 6.2 Função de Grade (Grid do Solo com Ligar/Desligar)
 // -----------------------------------------------------------------------------
-
 let gradeAtiva = null;
 
 /**
@@ -495,7 +405,6 @@ function toggleGrid() {
 
 // Exportar para escopo global (para o botão no HTML)
 window.toggleGrid = toggleGrid;
-window.togglePavimentos = togglePavimentos;
 
 // -----------------------------------------------------------------------------
 // 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL (MANTIDO)
@@ -804,6 +713,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
