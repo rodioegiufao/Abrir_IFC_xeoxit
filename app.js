@@ -506,7 +506,7 @@ let lastEntity = null;
 viewer.scene.input.on("mousemove", function (coords) {
     
     const hit = viewer.scene.pick({
-        canvasPos: coords␊
+        canvasPos: coords
     });
 
     if (hit && hit.entity && hit.entity.isObject) {
@@ -809,6 +809,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
