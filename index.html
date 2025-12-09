@@ -97,11 +97,29 @@
 
     <div id="uploadStatus" aria-live="polite"></div>
 
+    <div id="convertApiConfig">
+        <label for="convertApiInput">URL do conversor IFC → XKT</label>
+        <input
+            id="convertApiInput"
+            type="url"
+            placeholder="https://seu-servidor.com/api/convert"
+            inputmode="url"
+            autocomplete="url"
+        >
+        <button id="convertApiApply" class="tool-button" type="button">
+            Definir conversor
+        </button>
+        <p class="hint">
+            Dica: você também pode usar ?convertApi=URL, window.IFC_CONVERT_API ou data-convert-api no &lt;body&gt;.
+        </p>
+    </div>
+
     <div id="treeViewContainer"></div>
 
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
 
 
