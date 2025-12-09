@@ -78,7 +78,8 @@
     <div id="treeViewContainer"></div>
     <div id="modeSwitcher" aria-label="Alternar modo de visualização">
         <button type="button" class="mode-button active" data-mode="desktop">Versão Computador</button>
-        <button type="button" class="mode-button" data-mode="mobile">Versão Celular/Tablet</button>
+        <button type="button" class="mode-button" data-mode="tablet">Versão Tablet (Vertical)</button>
+        <button type="button" class="mode-button" data-mode="mobile">Versão Celular</button>
     </div>
     <script type="module" src="app.js"></script>
     <script>
@@ -86,7 +87,13 @@
         const modeButtons = document.querySelectorAll('#modeSwitcher [data-mode]');
 
         function applyMode(mode) {
-            const stylesheet = mode === 'mobile' ? 'styles-mobile.css' : 'styles.css';
+            let stylesheet = 'styles.css';
+
+            if (mode === 'mobile') {
+                stylesheet = 'styles-mobile.css';
+            } else if (mode === 'tablet') {
+                stylesheet = 'styles-tablet.css';
+            }
             if (modeStylesheet.getAttribute('href') !== stylesheet) {
                 modeStylesheet.setAttribute('href', stylesheet);
             }
@@ -106,6 +113,7 @@
     </script>
 </body>
 </html>
+
 
 
 
