@@ -19,6 +19,7 @@ html, body {
     background-color: rgba(33, 33, 33, 0.9);
     border-radius: 8px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
 }
 
 #toolbar .tool-button {
@@ -59,6 +60,9 @@ html, body {
     text-align: center;
 }
 
+[data-mode="mobile"] #toolbar.open {
+    cursor: auto;
+}
 
 [data-mode="mobile"] #toolbar {
     display: flex;
@@ -70,6 +74,16 @@ html, body {
 
 [data-mode="mobile"] #toolbar:not(.open) .tool-button.active {
     display: flex;
+}
+
+[data-mode="mobile"] #toolbar:not(.open)::before {
+    content: "☰ Mostrar ferramentas";
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-weight: 600;
+    color: #f1f1f1;
+    margin-bottom: 2px;
 }
 
 #mobileToolbarToggle {
