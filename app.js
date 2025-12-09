@@ -72,7 +72,15 @@ const xktLoader = new XKTLoaderPlugin(viewer);
 // 🔹 NOVO: handler para upload de IFC
 const ifcInput = document.getElementById("ifcInput");
 const uploadStatus = document.getElementById("uploadStatus");
-const convertApiUrl = document.body?.dataset?.convertApi || window.IFC_CONVERT_API || "/api/convert-ifc";
+
+// Permite configurar o endpoint de conversão via query string (?convertApi=...),
+// data-attribute no <body> ou variável global window.IFC_CONVERT_API.
+// Se nada for definido, bloqueia o envio e exibe instruções em vez de tentar
+// bater em /api/convert-ifc, que não existe no deploy estático da Vercel.
+const urlConvertApi = new URLSearchParams(window.location.search).get("convertApi");
+const convertApiUrl = (urlConvertApi || "").trim()
+    || (document.body?.dataset?.convertApi || "").trim()
+    || (window.IFC_CONVERT_API || "").trim();
 
 function updateUploadStatus(message, type = "info") {
     if (!uploadStatus) return;
@@ -82,16 +90,21 @@ function updateUploadStatus(message, type = "info") {
     uploadStatus.style.display = "block";
 }
 
-if (ifcInput) {
+if (!convertApiUrl) {
+    updateUploadStatus(
+        "Backend de conversão não configurado. Use ?convertApi=URL, window.IFC_CONVERT_API ou data-convert-api.",
+        "error"
+    );
+    if (ifcInput) {
+        ifcInput.setAttribute("disabled", "true");
+    }
+}
+
+if (ifcInput && convertApiUrl) {
+    updateUploadStatus(`Conversor configurado: ${convertApiUrl}`, "info");
     ifcInput.addEventListener("change", async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-
-        if (!convertApiUrl) {
-            updateUploadStatus("Backend de conversão não configurado. Defina window.IFC_CONVERT_API ou data-convert-api.", "error");
-            event.target.value = "";
-            return;
-        }
 
         try {
             // (Opcional) mostrar loading:
@@ -825,6 +838,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
 
     event.preventDefault();
 });
+
 
 
 
