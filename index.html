@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualizador BIM com Medição de Ângulo e Distância</title>
     
-    <link rel="stylesheet" href="styles.css"> 
+    <link id="modeStylesheet" rel="stylesheet" href="styles.css">
     
     <script type="module" src="https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"></script>
 </head>
@@ -75,9 +75,35 @@
             Corte
         </button>
     </div>
-
     <div id="treeViewContainer"></div>
+    <div id="modeSwitcher" aria-label="Alternar modo de visualização">
+        <button type="button" class="mode-button active" data-mode="desktop">Versão Computador</button>
+        <button type="button" class="mode-button" data-mode="mobile">Versão Celular/Tablet</button>
+    </div>
     <script type="module" src="app.js"></script>
+    <script>
+        const modeStylesheet = document.getElementById('modeStylesheet');
+        const modeButtons = document.querySelectorAll('#modeSwitcher [data-mode]');
+
+        function applyMode(mode) {
+            const stylesheet = mode === 'mobile' ? 'styles-mobile.css' : 'styles.css';
+            if (modeStylesheet.getAttribute('href') !== stylesheet) {
+                modeStylesheet.setAttribute('href', stylesheet);
+            }
+
+            modeButtons.forEach((button) => {
+                button.classList.toggle('active', button.dataset.mode === mode);
+            });
+
+            localStorage.setItem('preferredMode', mode);
+        }
+
+        modeButtons.forEach((button) => {
+            button.addEventListener('click', () => applyMode(button.dataset.mode));
+        });
+
+        applyMode(localStorage.getItem('preferredMode') || 'desktop');
+    </script>
 </body>
 </html>
 
