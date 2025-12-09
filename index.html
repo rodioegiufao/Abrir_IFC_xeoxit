@@ -16,18 +16,6 @@
 
     <div id="toolbar">
         <button
-            id="btnUpload"
-            class="tool-button"
-            onclick="openXKTFileDialog()"
-            title="Carregar arquivo XKT"
-        >
-            <span style="font-size: 1.2em;">⬆️</span>
-            Upload XKT
-        </button>
-
-        <input type="file" id="xktFileInput" accept=".xkt" style="display: none" />
-
-        <button
             id="btnAngle"
             class="tool-button"
             onclick="setMeasurementMode('angle', this)"
@@ -58,16 +46,16 @@
         </button>
         
         <button 
-            id="btnToggleTree" 
-            class="tool-button" 
-            onclick="toggleTreeView()" 
-            title="Mostrar/Esconder Estrutura (Níveis/Pavimentos)"
+             id="btnToggleTree"
+            class="tool-button"
+            onclick="toggleTreeView()"
+            title="Mostrar/Esconder Pavimentos"
         >
-            <span style="font-size: 1.2em;">🏗️</span>
-            Estrutura
+            <img src="assets/pavimentos-icon.svg" alt="Pavimentos" class="tool-icon" />
+            Pavimentos
         </button>
-        
-        <button 
+
+        <button
             id="btnGrid"
             class="tool-button"
             onclick="toggleGrid()"
@@ -75,16 +63,6 @@
         >
             <span style="font-size: 1.2em;">🟩</span>
             Grade
-        </button>
-        
-        <button 
-            id="btnPavimentos"
-            class="tool-button"
-            onclick="togglePavimentos()"
-            title="Mostrar/Ocultar Pavimentos"
-        >
-            <span style="font-size: 1.2em;">🏢</span>
-            Pavimentos
         </button>
 
         <button
@@ -102,6 +80,7 @@
     <script type="module" src="app.js"></script>
 </body>
 </html>
+
 
 
 
