@@ -14,7 +14,7 @@
 
     <canvas id="myNavCubeCanvas"></canvas>
 
-    <div id="toolbar">
+    <div id="toolbar" aria-expanded="false">
         <button
             id="btnAngle"
             class="tool-button"
@@ -90,11 +90,17 @@
         const toolbar = document.getElementById('toolbar');
         const mobileToolbarToggle = document.getElementById('mobileToolbarToggle');
 
+        function toggleMobileToolbar(forceOpen) {
+            const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !toolbar.classList.contains('open');
+            toolbar.classList.toggle('open', shouldOpen);
+            toolbar.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+            mobileToolbarToggle.setAttribute('aria-pressed', shouldOpen ? 'true' : 'false');
+        }
+
         function applyMode(mode) {
             if (mode !== 'mobile' && mode !== 'desktop') {
                 mode = 'desktop';
-            }
-            let stylesheet = 'styles.css';
+            }            let stylesheet = 'styles.css';
 
             if (mode === 'mobile') {
                 stylesheet = 'styles-mobile.css';
@@ -102,17 +108,16 @@
             if (modeStylesheet.getAttribute('href') !== stylesheet) {
                 modeStylesheet.setAttribute('href', stylesheet);
             }
-
             modeButtons.forEach((button) => {
                 button.classList.toggle('active', button.dataset.mode === mode);
             });
 
+            document.body.dataset.mode = mode;
+
             const isMobileMode = mode === 'mobile';
             mobileToolbarToggle.hidden = !isMobileMode;
-            toolbar.classList.remove('open');
-            mobileToolbarToggle.setAttribute('aria-pressed', 'false');
+            toggleMobileToolbar(false);
 
-            document.body.dataset.mode = mode;
 
             localStorage.setItem('preferredMode', mode);
         }
@@ -121,15 +126,33 @@
             button.addEventListener('click', () => applyMode(button.dataset.mode));
         });
 
-        mobileToolbarToggle.addEventListener('click', () => {
-            const isOpen = toolbar.classList.toggle('open');
-            mobileToolbarToggle.setAttribute('aria-pressed', isOpen ? 'true' : 'false');
+        mobileToolbarToggle.addEventListener('click', () => toggleMobileToolbar());
+
+        toolbar.addEventListener('click', (event) => {
+            if (document.body.dataset.mode !== 'mobile') {
+                return;
+            }
+
+            const clickedButton = event.target.closest('.tool-button');
+            const isOpen = toolbar.classList.contains('open');
+
+            if (!isOpen && !clickedButton) {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleMobileToolbar(true);
+                return;
+            }
+
+            if (!isOpen && clickedButton) {
+                toggleMobileToolbar(true);
+            }
         });
 
         applyMode(localStorage.getItem('preferredMode') || 'desktop');
     </script>
 </body>
 </html>
+
 
 
 
