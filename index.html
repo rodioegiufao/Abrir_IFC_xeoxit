@@ -142,9 +142,21 @@
                 toggleMobileToolbar(true);
                 return;
             }
-
             if (!isOpen && clickedButton) {
                 toggleMobileToolbar(true);
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (document.body.dataset.mode !== 'mobile') {
+                return;
+            }
+
+            const isToolbarClick = toolbar.contains(event.target);
+            const isToggleClick = mobileToolbarToggle.contains(event.target);
+
+            if (toolbar.classList.contains('open') && !isToolbarClick && !isToggleClick) {
+                toggleMobileToolbar(false);
             }
         });
 
@@ -152,6 +164,7 @@
     </script>
 </body>
 </html>
+
 
 
 
