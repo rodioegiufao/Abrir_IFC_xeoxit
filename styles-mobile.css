@@ -13,16 +13,22 @@ html, body {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
-    display: none;
+    padding: 10px;
+    width: 260px;
+    max-width: calc(100% - 40px);
+    background-color: rgba(33, 33, 33, 0.9);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
-.tool-button {
-    min-width: 70px;
+#toolbar .tool-button {
+    min-width: unset;
+    width: 100%;
     padding: 8px 10px;
-    font-size: 0.75em;
+    font-size: 0.78em;
 }
 
-.tool-button span:first-child {
+#toolbar .tool-button span:first-child {
     font-size: 1em !important;
     margin-bottom: 4px;
 }
@@ -54,7 +60,15 @@ html, body {
 }
 
 
-#toolbar.open {
+[data-mode="mobile"] #toolbar {
+    display: flex;
+}
+
+[data-mode="mobile"] #toolbar:not(.open) .tool-button {
+    display: none;
+}
+
+[data-mode="mobile"] #toolbar:not(.open) .tool-button.active {
     display: flex;
 }
 
