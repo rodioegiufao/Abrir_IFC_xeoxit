@@ -184,6 +184,12 @@ html, body {
     line-height: 1.2;
 }
 
+.tool-button .tool-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 6px;
+}
+
 .tool-button:hover {
     background-color: rgba(80, 80, 80, 0.9);
 }
@@ -306,6 +312,7 @@ html, body {
     color: #ff6b6b !important;
     transform: scale(1.1);
 }
+
 
 
 
