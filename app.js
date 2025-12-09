@@ -17,12 +17,13 @@ import {
     buildGridGeometry // <--- NOVO: Importa buildGridGeometry
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
 
-let treeView; 
-let modelIsolateController; 
-let sectionPlanesPlugin; 
-let horizontalSectionPlane; 
-let horizontalPlaneControl; 
+let treeView;
+let modelIsolateController;
+let sectionPlanesPlugin;
+let horizontalSectionPlane;
+let horizontalPlaneControl;
 let lastPickedEntity = null; // NOVO: Variável para rastrear a entidade selecionada
+let lastSelectedEntity = null; // NOVO: Guarda a entidade selecionada pelo duplo clique
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -215,6 +216,9 @@ function clearSelection(removeButtonHighlight = true) {
             viewer.scene.setObjectsSelected(viewer.scene.selectedObjectIds, false);
         }
 
+        // Limpa a referência da última seleção
+        lastSelectedEntity = null;
+
         // Remove destaque visual (highlight)
         if (viewer.scene && viewer.scene.highlightedObjectIds) {
             viewer.scene.setObjectsHighlighted(viewer.scene.highlightedObjectIds, false);
@@ -227,6 +231,17 @@ function clearSelection(removeButtonHighlight = true) {
     } catch (e) {
         console.warn("⚠️ clearSelection(): falhou ao limpar seleção:", e);
     }
+}
+
+function selectEntity(entity) {
+    if (!entity || !entity.isObject) {
+        return;
+    }
+
+    // Remove seleções anteriores e marca a nova entidade
+    clearSelection(false);
+    entity.selected = true;
+    lastSelectedEntity = entity;
 }
 function setMeasurementMode(mode, clickedButton) {
     angleMeasurementsMouseControl.deactivate();
@@ -489,9 +504,9 @@ let lastEntity = null;
 
 // Monitora o movimento do mouse sobre o canvas
 viewer.scene.input.on("mousemove", function (coords) {
-
+    
     const hit = viewer.scene.pick({
-        canvasPos: coords
+        canvasPos: coords␊
     });
 
     if (hit && hit.entity && hit.entity.isObject) {
@@ -514,6 +529,22 @@ viewer.scene.input.on("mousemove", function (coords) {
             lastEntity = null;
         }
     }
+});
+
+// -----------------------------------------------------------------------------
+// 8.1 Seleção por Duplo Clique
+// -----------------------------------------------------------------------------
+
+viewer.cameraControl.on("doublePicked", (pickResult) => {
+    const entity = pickResult?.entity;
+
+    if (entity && entity.isObject) {
+        selectEntity(entity);
+    }
+});
+
+viewer.cameraControl.on("doublePickedNothing", () => {
+    clearSelection();
 });
 
 // -----------------------------------------------------------------------------
@@ -778,6 +809,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
