@@ -164,79 +164,6 @@ html, body {
     gap: 10px;
 }
 
-#uploadStatus {
-    position: fixed;
-    top: 90px;
-    left: 20px;
-    z-index: 100002;
-    min-width: 240px;
-    max-width: 400px;
-    padding: 10px 12px;
-    border-radius: 6px;
-    font-family: Arial, sans-serif;
-    font-size: 13px;
-    background: rgba(0, 0, 0, 0.75);
-    color: #f0f0f0;
-    display: none;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-#convertApiConfig {
-    position: fixed;
-    top: 160px;
-    left: 20px;
-    z-index: 100002;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 320px;
-    max-width: 90vw;
-    padding: 10px 12px;
-    border-radius: 6px;
-    font-family: Arial, sans-serif;
-    font-size: 13px;
-    background: rgba(0, 0, 0, 0.75);
-    color: #f0f0f0;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-#convertApiConfig label {
-    font-weight: bold;
-}
-
-#convertApiConfig input {
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
-    color: #f0f0f0;
-}
-
-#convertApiConfig input:focus {
-    outline: 2px solid #007bff;
-    border-color: #007bff;
-}
-
-#convertApiConfig .hint {
-    margin: 0;
-    font-size: 12px;
-    color: #d6ecff;
-}
-
-#uploadStatus[data-type="success"] {
-    border-color: #2ecc71;
-    color: #b7ffd5;
-}
-
-#uploadStatus[data-type="error"] {
-    border-color: #e74c3c;
-    color: #ffd5d5;
-}
-
-#uploadStatus[data-type="info"] {
-    border-color: #3498db;
-    color: #d6ecff;
-}
 .tool-button {
     /* Ajustado para centralizar ícone e texto */
     display: flex;
@@ -379,5 +306,6 @@ html, body {
     color: #ff6b6b !important;
     transform: scale(1.1);
 }
+
 
 
