@@ -193,6 +193,39 @@ function setupSAOControls() {
     window.toggleSAOSettings = togglePanel;
 }
 
+function setupTransformPanelControls() {
+    if (!transformPanel || !transformPanelToggleButton || !closeTransformPanelButton) {
+        return;
+    }
+
+    const togglePanel = (forceState) => {
+        const shouldOpen = typeof forceState === "boolean" ? forceState : transformPanel.hidden;
+        transformPanel.hidden = !shouldOpen;
+        transformPanelToggleButton.classList.toggle("active", shouldOpen);
+        transformPanelToggleButton.setAttribute("aria-pressed", shouldOpen ? "true" : "false");
+
+        if (shouldOpen && transformModelSelect) {
+            const currentModelId = transformModelSelect.value || transformModelSelect.options[0]?.value;
+            if (currentModelId) {
+                syncTransformInputs(currentModelId);
+            }
+        }
+    };
+
+    transformPanelToggleButton.addEventListener("click", () => togglePanel());
+    closeTransformPanelButton.addEventListener("click", () => togglePanel(false));
+
+    document.addEventListener("click", (event) => {
+        const isClickInsidePanel = transformPanel.contains(event.target);
+        const isToggle = transformPanelToggleButton.contains(event.target);
+        if (!transformPanel.hidden && !isClickInsidePanel && !isToggle) {
+            togglePanel(false);
+        }
+    });
+
+    togglePanel(false);
+}
+
 
 function onWindowResize() {
     const canvas = viewer.scene.canvas;
@@ -202,7 +235,6 @@ function onWindowResize() {
 
 window.addEventListener('resize', onWindowResize);
 onWindowResize();
-setupSAOControls();
 
 // -----------------------------------------------------------------------------
 // 2. Carregamento dos Modelos e Ajuste da Câmera
@@ -215,6 +247,9 @@ let defaultModelChecksDone = 0;
 const loadedModels = new Map();
 const originalTransforms = new Map();
 
+const transformPanel = document.getElementById("transformPanel");
+const transformPanelToggleButton = document.getElementById("btnTransformPanel");
+const closeTransformPanelButton = document.getElementById("closeTransformPanel");
 const transformModelSelect = document.getElementById("transformModelSelect");
 const offsetXInput = document.getElementById("offsetX");
 const offsetYInput = document.getElementById("offsetY");
@@ -222,6 +257,9 @@ const offsetZInput = document.getElementById("offsetZ");
 const rotationYInput = document.getElementById("rotationY");
 const applyTransformButton = document.getElementById("applyTransformButton");
 const resetTransformButton = document.getElementById("resetTransformButton");
+
+setupSAOControls();
+setupTransformPanelControls();
 /**
  * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
  */
@@ -445,11 +483,11 @@ async function loadDefaultModel({ id, src }) {
 }
 
 const defaultModels = [
-    { id: "meuModeloBIM", src: "assets/meu_modelo.xkt" },
-    { id: "meuModeloBIM_02", src: "assets/modelo-02.xkt" },
-    { id: "meuModeloBIM_03", src: "assets/modelo-03.xkt" },
-    { id: "meuModeloBIM_04", src: "assets/modelo-04.xkt" },
-    { id: "meuModeloBIM_05", src: "assets/modelo-05.xkt" }
+    { id: "IFC_LOG_TEF", src: "assets/meu_modelo.xkt" },
+    { id: "IFC_ELE", src: "assets/modelo-02.xkt" },
+    { id: "IFC_SPDA", src: "assets/modelo-03.xkt" },
+    { id: "IFC_ECX", src: "assets/modelo-04.xkt" },
+    { id: "IFC_ILUX", src: "assets/modelo-05.xkt" }
 ];
 
 defaultModels.forEach(loadDefaultModel);
@@ -1151,6 +1189,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
