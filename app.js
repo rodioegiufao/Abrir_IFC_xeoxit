@@ -199,13 +199,77 @@ const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMea
 });
 angleMeasurementsMouseControl.deactivate(); 
 
-
-const distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer, { zIndex: 100000 });
+onst distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer, { zIndex: 100000 });
 const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(distanceMeasurementsPlugin, {
-    pointerLens: new PointerLens(viewer), 
-    snapping: true 
+    pointerLens: new PointerLens(viewer),
+    snapping: true
 });
-distanceMeasurementsMouseControl.deactivate(); 
+distanceMeasurementsMouseControl.deactivate();
+
+// -----------------------------------------------------------------------------
+// Suporte a toque para medições (ângulo e distância)
+// -----------------------------------------------------------------------------
+// Os controles de medição originais funcionam apenas com eventos de mouse.
+// Para tablets e celulares, convertemos eventos de toque em eventos de mouse
+// equivalentes, garantindo que as ferramentas de medir funcionem via toque.
+(function enableTouchForMeasurements() {
+    const canvasElement = viewer.scene.canvas.canvas;
+    let touchActive = false;
+
+    const dispatchMouseEvent = (type, touch) => {
+        const eventInit = {
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            screenX: touch.screenX,
+            screenY: touch.screenY,
+            bubbles: true,
+            cancelable: true
+        };
+        canvasElement.dispatchEvent(new MouseEvent(type, eventInit));
+    };
+
+    canvasElement.addEventListener('touchstart', (event) => {
+        if (event.touches.length !== 1) {
+            return;
+        }
+
+        touchActive = true;
+        const touch = event.touches[0];
+        dispatchMouseEvent('mousemove', touch);
+        dispatchMouseEvent('mousedown', touch);
+        event.preventDefault();
+    }, { passive: false });
+
+    canvasElement.addEventListener('touchmove', (event) => {
+        if (!touchActive || event.touches.length !== 1) {
+            return;
+        }
+
+        dispatchMouseEvent('mousemove', event.touches[0]);
+        event.preventDefault();
+    }, { passive: false });
+
+    canvasElement.addEventListener('touchend', (event) => {
+        if (!touchActive) {
+            return;
+        }
+
+        const touch = event.changedTouches[0];
+        dispatchMouseEvent('mouseup', touch);
+        dispatchMouseEvent('click', touch);
+        touchActive = false;
+        event.preventDefault();
+    }, { passive: false });
+
+    canvasElement.addEventListener('touchcancel', () => {
+        if (!touchActive) {
+            return;
+        }
+
+        dispatchMouseEvent('mouseup', { clientX: 0, clientY: 0, screenX: 0, screenY: 0 });
+        touchActive = false;
+    });
+})();
 // -----------------------------------------------------------------------------
 // Função utilitária: Limpa qualquer seleção, destaque ou estado de botão ativo
 // -----------------------------------------------------------------------------
@@ -809,6 +873,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
