@@ -147,6 +147,44 @@
             <input type="range" id="saoBlendFactor" min="0" max="2" step="0.01" />
         </div>
     </div>
+    <div id="transformPanel">
+        <div class="transform-panel-header">
+            <div class="transform-panel-title">Origem & Rotação</div>
+            <div class="transform-panel-subtitle">Reposicione um modelo XKT fora da origem</div>
+        </div>
+
+        <label class="transform-label" for="transformModelSelect">Modelo</label>
+        <select id="transformModelSelect" aria-label="Escolha o modelo para ajustar"></select>
+
+        <div class="transform-grid">
+            <label class="transform-field">
+                Deslocamento X (m)
+                <input type="number" id="offsetX" step="0.1" value="0" />
+            </label>
+            <label class="transform-field">
+                Deslocamento Y (m)
+                <input type="number" id="offsetY" step="0.1" value="0" />
+            </label>
+            <label class="transform-field">
+                Deslocamento Z (m)
+                <input type="number" id="offsetZ" step="0.1" value="0" />
+            </label>
+        </div>
+
+        <div class="transform-grid">
+            <label class="transform-field">
+                Rotação Y (°)
+                <input type="number" id="rotationY" step="1" value="0" />
+            </label>
+        </div>
+
+        <div class="transform-actions">
+            <button type="button" id="applyTransformButton">Aplicar</button>
+            <button type="button" id="resetTransformButton">Restaurar origem</button>
+        </div>
+
+        <p class="transform-hint">A translação muda a origem do modelo; a rotação é aplicada em torno dessa origem.</p>
+    </div>
     <div id="modeSwitcher" aria-label="Alternar modo de visualização">
         <button type="button" class="mode-button active" data-mode="desktop">Versão Computador</button>
         <button type="button" class="mode-button" data-mode="mobile">Versão Celular</button>
@@ -252,24 +290,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
