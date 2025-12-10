@@ -454,8 +454,9 @@ html, body {
 
 .transform-panel-header {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     margin-bottom: 10px;
 }
 
@@ -467,6 +468,26 @@ html, body {
 .transform-panel-subtitle {
     color: #cfd8dc;
     font-size: 12px;
+}
+
+#transformPanel[hidden] {
+    display: none;
+}
+
+#closeTransformPanel {
+    background: transparent;
+    border: none;
+    color: #f0f0f0;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+#closeTransformPanel:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ff6b6b;
 }
 
 .transform-label {
@@ -545,4 +566,5 @@ html, body {
     color: #cfd8dc;
     line-height: 1.4;
 }
+
 
