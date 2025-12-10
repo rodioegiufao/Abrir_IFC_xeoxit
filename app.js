@@ -246,6 +246,12 @@ let expectedModels = 0;
 let defaultModelChecksDone = 0;
 const loadedModels = new Map();
 const originalTransforms = new Map();
+const DEFAULT_MODEL_TRANSFORMS = {
+    IFC_ILUX: { position: [-14.05, 0, 0] },
+    IFC_EST: { position: [-62.3, 0.4, 35.2] },
+    IFC_LOG_TEF: { position: [-14.05, 0, 0] },
+    IFC_ECX: { position: [-14.05, 0, 0] }
+};
 
 const transformPanel = document.getElementById("transformPanel");
 const transformPanelToggleButton = document.getElementById("btnTransformPanel");
@@ -468,6 +474,16 @@ async function loadDefaultModel({ id, src }) {
         });
 
         model.on("loaded", () => {
+            const transform = DEFAULT_MODEL_TRANSFORMS[id];
+
+            if (transform?.position) {
+                model.position = [...transform.position];
+            }
+
+            if (transform?.rotation) {
+                model.rotation = [...transform.rotation];
+            }
+
             adjustCameraOnLoad();
             registerModelTransform(model);
         });
@@ -1261,6 +1277,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
