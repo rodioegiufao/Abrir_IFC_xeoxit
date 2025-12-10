@@ -786,12 +786,25 @@ function setupTreeViewFilter() {
         return;
     }
 
+    const getRootTitle = (item) => {
+        let current = item;
+        let parent = current.parentElement?.closest(".xeokit-tree-view-item");
+
+        while (parent) {
+            current = parent;
+            parent = current.parentElement?.closest(".xeokit-tree-view-item");
+        }
+
+        return current
+            ?.querySelector(".xeokit-tree-view-item-title")
+            ?.textContent?.trim();
+    };
+
     const applyFilter = () => {
         const items = Array.from(container.querySelectorAll(".xeokit-tree-view-item"));
         if (items.length === 0) {
             return;
         }
-
         const buildingItems = items.filter((item) => {
             const titleEl = item.querySelector(".xeokit-tree-view-item-title");
             return titleEl?.textContent?.trim() === "IfcBuilding";
@@ -819,17 +832,7 @@ function setupTreeViewFilter() {
             allowWithAncestorsAndDescendants(item);
 
             const buildingTitleEl = item.querySelector(".xeokit-tree-view-item-title");
-            const rootAncestor = (() => {
-                let current = item;
-                let parent = current.parentElement?.closest(".xeokit-tree-view-item");
-                while (parent) {
-                    current = parent;
-                    parent = current.parentElement?.closest(".xeokit-tree-view-item");
-                }
-                return current;
-            })();
-
-            const rootTitle = rootAncestor?.querySelector(".xeokit-tree-view-item-title")?.textContent?.trim();
+            const rootTitle = getRootTitle(item);
 
             if (buildingTitleEl && rootTitle) {
                 buildingTitleEl.textContent = rootTitle;
@@ -837,10 +840,18 @@ function setupTreeViewFilter() {
         });
 
         items.forEach((item) => {
-            item.style.display = allowedItems.has(item) ? "" : "none";
+            const shouldShow = allowedItems.has(item);
+            const titleText = item
+                .querySelector(".xeokit-tree-view-item-title")
+                ?.textContent?.trim();
+            const rootTitle = getRootTitle(item);
+
+            const hideIFCARQStorey =
+                rootTitle === "IFC_ARQ" && titleText === "IfcBuildingStorey";
+
+            item.style.display = shouldShow && !hideIFCARQStorey ? "" : "none";
         });
     };
-
     const observer = new MutationObserver(applyFilter);
     observer.observe(container, { childList: true, subtree: true });
 
@@ -1293,6 +1304,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
