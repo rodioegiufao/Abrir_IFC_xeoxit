@@ -487,7 +487,8 @@ const defaultModels = [
     { id: "IFC_ELE", src: "assets/modelo-02.xkt" },
     { id: "IFC_SPDA", src: "assets/modelo-03.xkt" },
     { id: "IFC_ECX", src: "assets/modelo-04.xkt" },
-    { id: "IFC_ILUX", src: "assets/modelo-05.xkt" }
+    { id: "IFC_ILUX", src: "assets/modelo-05.xkt" },
+    { id: "IFC_EST", src: "assets/modelo-06.xkt" },
 ];
 
 defaultModels.forEach(loadDefaultModel);
@@ -1260,6 +1261,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
