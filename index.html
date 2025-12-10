@@ -64,7 +64,7 @@
             <span style="font-size: 1.2em;">🟩</span>
             Grade
         </button>
-
+        
         <button
             id="btnSectionPlane"
             class="tool-button"
@@ -74,11 +74,80 @@
             <span style="font-size: 1.2em;">🔪</span>
             Corte
         </button>
+
+        <button
+            id="btnSAO"
+            class="tool-button"
+            onclick="toggleSAOSettings()"
+            title="Ajustar Scalable Ambient Obscurance"
+        >
+            <span style="font-size: 1.2em;">❔</span>
+            SAO
+        </button>
     </div>
     <button id="mobileToolbarToggle" type="button" aria-label="Mostrar todas as ferramentas" title="Mostrar todas as ferramentas" hidden>
         ☰ Mais ferramentas
     </button>
     <div id="treeViewContainer"></div>
+    <div id="saoPanel" hidden>
+        <div class="sao-panel-header">
+            <div>
+                <div class="sao-panel-title">Scalable Ambient Obscurance</div>
+                <div class="sao-panel-subtitle">Ajuste o efeito de sombras suaves</div>
+            </div>
+            <button id="closeSaoPanel" type="button" aria-label="Fechar painel">✕</button>
+        </div>
+
+        <div class="sao-control">
+            <label for="saoEnabled">Ativar SAO</label>
+            <input type="checkbox" id="saoEnabled" />
+        </div>
+
+        <div class="sao-control">
+            <label for="saoBlur">Aplicar desfoque</label>
+            <input type="checkbox" id="saoBlur" />
+        </div>
+
+        <div class="sao-control">
+            <label for="saoIntensity">Intensidade <span class="sao-value" id="saoIntensityValue"></span></label>
+            <input type="range" id="saoIntensity" min="0" max="2" step="0.01" />
+        </div>
+
+        <div class="sao-control">
+            <label for="saoKernelRadius">Raio (kernel) <span class="sao-value" id="saoKernelRadiusValue"></span></label>
+            <input type="range" id="saoKernelRadius" min="1" max="200" step="1" />
+        </div>
+
+        <div class="sao-control">
+            <label for="saoBias">Bias <span class="sao-value" id="saoBiasValue"></span></label>
+            <input type="range" id="saoBias" min="0" max="1" step="0.01" />
+        </div>
+
+        <div class="sao-control">
+            <label for="saoScale">Escala <span class="sao-value" id="saoScaleValue"></span></label>
+            <input type="range" id="saoScale" min="0" max="3" step="0.01" />
+        </div>
+
+        <div class="sao-control">
+            <label for="saoMinResolution">Resolução mínima <span class="sao-value" id="saoMinResolutionValue"></span></label>
+            <input type="range" id="saoMinResolution" min="0" max="2" step="0.01" />
+        </div>
+
+        <div class="sao-control">
+            <label for="saoNumSamples">Amostras <span class="sao-value" id="saoNumSamplesValue"></span></label>
+            <input type="range" id="saoNumSamples" min="1" max="32" step="1" />
+        </div>
+
+        <div class="sao-control">
+            <label for="saoBlendCutoff">Blend cutoff <span class="sao-value" id="saoBlendCutoffValue"></span></label>
+            <input type="range" id="saoBlendCutoff" min="0" max="1" step="0.01" />
+        </div>
+
+        <div class="sao-control">
+            <label for="saoBlendFactor">Blend factor <span class="sao-value" id="saoBlendFactorValue"></span></label>
+            <input type="range" id="saoBlendFactor" min="0" max="2" step="0.01" />
+        </div>
+    </div>
     <div id="modeSwitcher" aria-label="Alternar modo de visualização">
         <button type="button" class="mode-button active" data-mode="desktop">Versão Computador</button>
         <button type="button" class="mode-button" data-mode="mobile">Versão Celular</button>
@@ -184,6 +253,7 @@
     </script>
 </body>
 </html>
+
 
 
 
