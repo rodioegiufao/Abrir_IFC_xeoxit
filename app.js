@@ -705,12 +705,14 @@ new NavCubePlugin(viewer, {
 // -----------------------------------------------------------------------------
 
 function setupModelIsolateController() {
-    
+
     treeView = new TreeViewPlugin(viewer, {
         containerElement: document.getElementById("treeViewContainer"),
-        hierarchy: "containment", 
-        autoExpandDepth: 2 
+        hierarchy: "containment",
+        autoExpandDepth: 2
     });
+
+    setupTreeViewFilter();
 
     modelIsolateController = viewer.scene.objects;
 
@@ -744,6 +746,75 @@ function setupModelIsolateController() {
     });
 }
 
+function setupTreeViewFilter() {
+    const container = document.getElementById("treeViewContainer");
+
+    if (!container) {
+        return;
+    }
+
+    const applyFilter = () => {
+        const items = Array.from(container.querySelectorAll(".xeokit-tree-view-item"));
+        if (items.length === 0) {
+            return;
+        }
+
+        const buildingItems = items.filter((item) => {
+            const titleEl = item.querySelector(".xeokit-tree-view-item-title");
+            return titleEl?.textContent?.trim() === "IfcBuilding";
+        });
+
+        if (buildingItems.length === 0) {
+            return;
+        }
+
+        const allowedItems = new Set();
+
+        const allowWithAncestorsAndDescendants = (item) => {
+            let current = item;
+            while (current && current.classList?.contains("xeokit-tree-view-item")) {
+                allowedItems.add(current);
+                current = current.parentElement?.closest(".xeokit-tree-view-item");
+            }
+
+            item.querySelectorAll(".xeokit-tree-view-item").forEach((child) => {
+                allowedItems.add(child);
+            });
+        };
+
+        buildingItems.forEach((item) => {
+            allowWithAncestorsAndDescendants(item);
+
+            const buildingTitleEl = item.querySelector(".xeokit-tree-view-item-title");
+            const rootAncestor = (() => {
+                let current = item;
+                let parent = current.parentElement?.closest(".xeokit-tree-view-item");
+                while (parent) {
+                    current = parent;
+                    parent = current.parentElement?.closest(".xeokit-tree-view-item");
+                }
+                return current;
+            })();
+
+            const rootTitle = rootAncestor?.querySelector(".xeokit-tree-view-item-title")?.textContent?.trim();
+
+            if (buildingTitleEl && rootTitle) {
+                buildingTitleEl.textContent = rootTitle;
+            }
+        });
+
+        items.forEach((item) => {
+            item.style.display = allowedItems.has(item) ? "" : "none";
+        });
+    };
+
+    const observer = new MutationObserver(applyFilter);
+    observer.observe(container, { childList: true, subtree: true });
+
+    applyFilter();
+
+    container.dataset.treeFilterAttached = "true";
+}
 /**
  * Alterna a visibilidade do contêiner do TreeView e reseta a visibilidade do modelo se estiver fechando.
  */
@@ -1189,6 +1260,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
