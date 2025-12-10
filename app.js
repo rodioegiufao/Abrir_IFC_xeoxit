@@ -73,6 +73,13 @@ function setupSAOControls() {
         return;
     }
 
+    const requestSaoRender = () => {
+        if (viewer.scene.requestRender) {
+            viewer.scene.requestRender();
+        } else if (viewer.scene.setDirty) {
+            viewer.scene.setDirty();
+        }
+    };
     const controls = {
         enabled: document.getElementById("saoEnabled"),
         blur: document.getElementById("saoBlur"),
@@ -135,21 +142,24 @@ function setupSAOControls() {
             sao[prop] = value;
             const label = valueLabels[prop];
             setLabel(label, value, round ? null : decimals);
+            requestSaoRender();
         });
     };
 
     if (controls.enabled) {
         controls.enabled.addEventListener("change", () => {
             sao.enabled = controls.enabled.checked;
+            requestSaoRender();
         });
     }
 
     if (controls.blur) {
         controls.blur.addEventListener("change", () => {
             sao.blur = controls.blur.checked;
+            requestSaoRender();
         });
     }
-
+    
     bindRange(controls.intensity, "intensity");
     bindRange(controls.kernelRadius, "kernelRadius", 0, true);
     bindRange(controls.bias, "bias");
@@ -1002,6 +1012,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
