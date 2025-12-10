@@ -354,4 +354,80 @@ html, body {
     transform: scale(1.1);
 }
 
+/* ---------------------------------------------------- */
+/* Painel de ajustes de Scalable Ambient Obscurance */
+/* ---------------------------------------------------- */
 
+#saoPanel {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 320px;
+    max-width: calc(100% - 40px);
+    background: rgba(0, 0, 0, 0.9);
+    color: #f7f7f7;
+    padding: 16px;
+    border-radius: 10px;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+    z-index: 300000;
+    font-family: Arial, sans-serif;
+    backdrop-filter: blur(2px);
+}
+
+.sao-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.sao-panel-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.sao-panel-subtitle {
+    color: #cfd8dc;
+    font-size: 12px;
+}
+
+#closeSaoPanel {
+    background: transparent;
+    border: none;
+    color: #f0f0f0;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+#closeSaoPanel:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ff6b6b;
+}
+
+.sao-control {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+.sao-control input[type="range"] {
+    width: 100%;
+    accent-color: #4caf50;
+}
+
+.sao-control input[type="checkbox"] {
+    transform: scale(1.1);
+    accent-color: #4caf50;
+}
+
+.sao-value {
+    color: #4caf50;
+    font-weight: 700;
+    margin-left: 6px;
+}
