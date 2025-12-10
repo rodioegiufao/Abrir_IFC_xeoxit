@@ -254,8 +254,9 @@ const DEFAULT_MODEL_TRANSFORMS = {
     IFC_SAN: { position: [-1, 0, -14.1] },
     IFC_INC: { position: [-1, 0, -14.1] },
     IFC_HID: { position: [-1, 0, -14.1] },
-    IFC_PLU: { position: [13.2, 0, -14] },
-    IFC_GLP: { position: [13.2, 0, -14.1] }
+    IFC_PLU: { position: [13.03, 0, -14.05] },
+    IFC_GLP: { position: [13.03, 0, -14.05] },
+    IFC_ARQ: { position: [13.03, 0, -14.05] },
 };
 
 const transformPanel = document.getElementById("transformPanel");
@@ -1288,6 +1289,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
