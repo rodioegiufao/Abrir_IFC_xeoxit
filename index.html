@@ -76,7 +76,7 @@
         </button>
     </div>
     <button id="mobileToolbarToggle" type="button" aria-label="Mostrar todas as ferramentas" title="Mostrar todas as ferramentas" hidden>
-        ☰ Todas as ferramentas
+        ☰ Mais ferramentas
     </button>
     <div id="treeViewContainer"></div>
     <div id="modeSwitcher" aria-label="Alternar modo de visualização">
@@ -90,13 +90,26 @@
         const toolbar = document.getElementById('toolbar');
         const mobileToolbarToggle = document.getElementById('mobileToolbarToggle');
 
+        const MOBILE_LABELS = {
+            open: '⬆ Minimizar ferramentas',
+            closed: '☰ Mais ferramentas'
+        };
+
+        function updateMobileLabels(isOpen) {
+            const label = isOpen ? MOBILE_LABELS.open : MOBILE_LABELS.closed;
+            toolbar.dataset.label = label;
+            mobileToolbarToggle.textContent = label;
+            mobileToolbarToggle.setAttribute('aria-label', label);
+            mobileToolbarToggle.setAttribute('title', label);
+        }
+
         function toggleMobileToolbar(forceOpen) {
             const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !toolbar.classList.contains('open');
             toolbar.classList.toggle('open', shouldOpen);
             toolbar.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
             mobileToolbarToggle.setAttribute('aria-pressed', shouldOpen ? 'true' : 'false');
+            updateMobileLabels(shouldOpen);
         }
-
         function applyMode(mode) {
             if (mode !== 'mobile' && mode !== 'desktop') {
                 mode = 'desktop';
@@ -135,6 +148,7 @@
 
             const clickedButton = event.target.closest('.tool-button');
             const isOpen = toolbar.classList.contains('open');
+            const isHeaderClick = !clickedButton && event.target === toolbar;
 
             if (!isOpen && !clickedButton) {
                 event.preventDefault();
@@ -144,14 +158,19 @@
             }
             if (!isOpen && clickedButton) {
                 toggleMobileToolbar(true);
+                return;
+            }
+
+            if (isOpen && isHeaderClick) {
+                event.preventDefault();
+                toggleMobileToolbar(false);
             }
         });
-
+        
         document.addEventListener('click', (event) => {
             if (document.body.dataset.mode !== 'mobile') {
                 return;
             }
-
             const isToolbarClick = toolbar.contains(event.target);
             const isToggleClick = mobileToolbarToggle.contains(event.target);
 
@@ -160,10 +179,12 @@
             }
         });
 
+        updateMobileLabels(false);
         applyMode(localStorage.getItem('preferredMode') || 'desktop');
     </script>
 </body>
 </html>
+
 
 
 
