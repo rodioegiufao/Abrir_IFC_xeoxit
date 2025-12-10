@@ -112,3 +112,11 @@ html, body {
 #mobileToolbarToggle[aria-pressed="true"] {
     background-color: rgba(0, 123, 255, 0.9);
 }
+
+#saoPanel {
+    top: 20px;
+    right: 20px;
+    left: 20px;
+    width: auto;
+    max-width: none;
+}
