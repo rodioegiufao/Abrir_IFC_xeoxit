@@ -431,3 +431,118 @@ html, body {
     font-weight: 700;
     margin-left: 6px;
 }
+
+/* ---------------------------------------------------- */
+/* Painel de ajuste de origem/rotação dos modelos XKT */
+/* ---------------------------------------------------- */
+
+#transformPanel {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 340px;
+    max-width: calc(100% - 40px);
+    background: rgba(0, 0, 0, 0.9);
+    color: #f7f7f7;
+    padding: 14px;
+    border-radius: 10px;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+    z-index: 300000;
+    font-family: Arial, sans-serif;
+    backdrop-filter: blur(2px);
+}
+
+.transform-panel-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 10px;
+}
+
+.transform-panel-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.transform-panel-subtitle {
+    color: #cfd8dc;
+    font-size: 12px;
+}
+
+.transform-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+#transformModelSelect {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #1d1d1d;
+    color: #f7f7f7;
+    margin-bottom: 10px;
+}
+
+.transform-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.transform-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.transform-field input {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #1d1d1d;
+    color: #f7f7f7;
+}
+
+.transform-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+
+.transform-actions button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+    background-color: #007bff;
+    color: #fff;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.transform-actions button:last-child {
+    background-color: #444;
+}
+
+.transform-actions button:hover {
+    transform: translateY(-1px);
+    background-color: #0a84ff;
+}
+
+.transform-actions button:last-child:hover {
+    background-color: #5a5a5a;
+}
+
+.transform-hint {
+    margin: 0;
+    font-size: 12px;
+    color: #cfd8dc;
+    line-height: 1.4;
+}
+
