@@ -256,7 +256,7 @@ const DEFAULT_MODEL_TRANSFORMS = {
     IFC_HID: { position: [-1, 0, -14.1] },
     IFC_PLU: { position: [13.03, 0, -14.05] },
     IFC_GLP: { position: [13.03, 0, -14.05] },
-    IFC_ARQ: { position: [13.03, 0, -14.05] },
+    IFC_ARQ: { position: [13.03, 0, -14.05], rotation: [0, 90, 0]  },
 };
 
 const transformPanel = document.getElementById("transformPanel");
@@ -488,6 +488,10 @@ async function loadDefaultModel({ id, src }) {
 
             if (transform?.rotation) {
                 model.rotation = [...transform.rotation];
+            }
+
+            if (id === "IFC_ARQ") {
+                model.xrayed = true;
             }
 
             adjustCameraOnLoad();
@@ -1289,6 +1293,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
