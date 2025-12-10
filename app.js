@@ -212,7 +212,16 @@ const xktLoader = new XKTLoaderPlugin(viewer);
 let modelsLoadedCount = 0;
 let expectedModels = 0;
 let defaultModelChecksDone = 0;
+const loadedModels = new Map();
+const originalTransforms = new Map();
 
+const transformModelSelect = document.getElementById("transformModelSelect");
+const offsetXInput = document.getElementById("offsetX");
+const offsetYInput = document.getElementById("offsetY");
+const offsetZInput = document.getElementById("offsetZ");
+const rotationYInput = document.getElementById("rotationY");
+const applyTransformButton = document.getElementById("applyTransformButton");
+const resetTransformButton = document.getElementById("resetTransformButton");
 /**
  * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
  */
@@ -229,6 +238,121 @@ function resetModelVisibility() {
     }
     lastPickedEntity = null; // Garante que a referência de seleção também seja limpa.
     clearSelection(false); // Limpa o estado visual do botão "Limpar Seleção"
+}
+
+function requestRenderFrame() {
+    if (viewer.scene.requestRender) {
+        viewer.scene.requestRender();
+    } else if (viewer.scene.setDirty) {
+        viewer.scene.setDirty();
+    }
+}
+
+function parseNumber(value, fallback = 0) {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function ensureModelOption(modelId) {
+    if (!transformModelSelect) {
+        return;
+    }
+
+    const alreadyExists = Array.from(transformModelSelect.options).some((option) => option.value === modelId);
+    if (!alreadyExists) {
+        const option = document.createElement("option");
+        option.value = modelId;
+        option.textContent = modelId;
+        transformModelSelect.appendChild(option);
+    }
+}
+
+function syncTransformInputs(modelId) {
+    if (!transformModelSelect) {
+        return;
+    }
+
+    const model = loadedModels.get(modelId);
+    if (!model) {
+        return;
+    }
+
+    const position = model.position || [0, 0, 0];
+    const rotation = model.rotation || [0, 0, 0];
+
+    if (offsetXInput) offsetXInput.value = position[0];
+    if (offsetYInput) offsetYInput.value = position[1];
+    if (offsetZInput) offsetZInput.value = position[2];
+    if (rotationYInput) rotationYInput.value = rotation[1];
+}
+
+function registerModelTransform(model) {
+    loadedModels.set(model.id, model);
+
+    if (!originalTransforms.has(model.id)) {
+        originalTransforms.set(model.id, {
+            position: model.position ? [...model.position] : [0, 0, 0],
+            rotation: model.rotation ? [...model.rotation] : [0, 0, 0]
+        });
+    }
+
+    ensureModelOption(model.id);
+
+    if (transformModelSelect && !transformModelSelect.value) {
+        transformModelSelect.value = model.id;
+    }
+
+    if (transformModelSelect) {
+        syncTransformInputs(transformModelSelect.value);
+    }
+}
+
+function applyTransformFromUI() {
+    if (!transformModelSelect) {
+        return;
+    }
+
+    const modelId = transformModelSelect.value;
+    const model = loadedModels.get(modelId);
+
+    if (!model) {
+        alert("Nenhum modelo carregado para ajustar.");
+        return;
+    }
+
+    const newPosition = [
+        parseNumber(offsetXInput?.value),
+        parseNumber(offsetYInput?.value),
+        parseNumber(offsetZInput?.value)
+    ];
+
+    const newRotation = model.rotation ? [...model.rotation] : [0, 0, 0];
+    newRotation[1] = parseNumber(rotationYInput?.value);
+
+    model.position = newPosition;
+    model.rotation = newRotation;
+
+    requestRenderFrame();
+}
+
+function resetTransformFromUI() {
+    if (!transformModelSelect) {
+        return;
+    }
+
+    const modelId = transformModelSelect.value;
+    const model = loadedModels.get(modelId);
+    const original = originalTransforms.get(modelId);
+
+    if (!model || !original) {
+        return;
+    }
+
+    model.position = [...original.position];
+    model.rotation = [...original.rotation];
+
+    syncTransformInputs(modelId);
+    requestRenderFrame();
 }
 
 /**
@@ -305,7 +429,10 @@ async function loadDefaultModel({ id, src }) {
             edges: true
         });
 
-        model.on("loaded", adjustCameraOnLoad);
+        model.on("loaded", () => {
+            adjustCameraOnLoad();
+            registerModelTransform(model);
+        });
         model.on("error", (err) => {
             console.error(`Erro ao carregar ${src}:`, err);
             adjustCameraOnLoad();
@@ -326,6 +453,18 @@ const defaultModels = [
 ];
 
 defaultModels.forEach(loadDefaultModel);
+
+if (transformModelSelect) {
+    transformModelSelect.addEventListener("change", (event) => syncTransformInputs(event.target.value));
+}
+
+if (applyTransformButton) {
+    applyTransformButton.addEventListener("click", applyTransformFromUI);
+}
+
+if (resetTransformButton) {
+    resetTransformButton.addEventListener("click", resetTransformFromUI);
+}
 
 // -----------------------------------------------------------------------------
 // 3. Plugins de Medição e Função de Troca (MANTIDO)
