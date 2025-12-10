@@ -199,7 +199,7 @@ const angleMeasurementsMouseControl = new AngleMeasurementsMouseControl(angleMea
 });
 angleMeasurementsMouseControl.deactivate(); 
 
-onst distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer, { zIndex: 100000 });
+const distanceMeasurementsPlugin = new DistanceMeasurementsPlugin(viewer, { zIndex: 100000 });
 const distanceMeasurementsMouseControl = new DistanceMeasurementsMouseControl(distanceMeasurementsPlugin, {
     pointerLens: new PointerLens(viewer),
     snapping: true
@@ -873,6 +873,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
