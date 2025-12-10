@@ -255,7 +255,7 @@ const DEFAULT_MODEL_TRANSFORMS = {
     IFC_INC: { position: [-1, 0, -14.1] },
     IFC_HID: { position: [-1, 0, -14.1] },
     IFC_PLU: { position: [13.2, 0, -14] },
-    IFC_GLP: { position: [-1, 0, -14.1] }
+    IFC_GLP: { position: [13.2, 0, -14.1] }
 };
 
 const transformPanel = document.getElementById("transformPanel");
@@ -514,7 +514,8 @@ const defaultModels = [
     { id: "IFC_INC", src: "assets/modelo-08.xkt" },
     { id: "IFC_HID", src: "assets/modelo-09.xkt" },
     { id: "IFC_PLU", src: "assets/modelo-10.xkt" },
-    { id: "IFC_GLP", src: "assets/modelo-11.xkt" }
+    { id: "IFC_GLP", src: "assets/modelo-11.xkt" },
+    { id: "IFC_ARQ", src: "assets/modelo-12.xkt" },
 ];
 
 defaultModels.forEach(loadDefaultModel);
@@ -1287,6 +1288,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
