@@ -76,14 +76,18 @@ html, body {
     display: flex;
 }
 
-[data-mode="mobile"] #toolbar:not(.open)::before {
-    content: "☰ Mostrar ferramentas";
+[data-mode="mobile"] #toolbar::before {
+    content: attr(data-label);
     display: block;
     width: 100%;
     text-align: center;
     font-weight: 600;
     color: #f1f1f1;
-    margin-bottom: 2px;
+    margin-bottom: 6px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.08);
+    pointer-events: none;
 }
 
 #mobileToolbarToggle {
