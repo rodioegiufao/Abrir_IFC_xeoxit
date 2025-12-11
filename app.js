@@ -257,6 +257,7 @@ const DEFAULT_MODEL_TRANSFORMS = {
     IFC_PLU: { position: [13.03, 0, -14.05] },
     IFC_GLP: { position: [13.03, 0, -14.05] },
     //IFC_ARQ: { position: [13.03, 0, -14.05], rotation: [0, 90, 0]  },
+    IFC_EST_SUB: { position: [-50, 0, -1], rotation: [0, -90, 0]  },
 };
 
 const transformPanel = document.getElementById("transformPanel");
@@ -1305,6 +1306,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
