@@ -256,8 +256,9 @@ const DEFAULT_MODEL_TRANSFORMS = {
     IFC_HID: { position: [-1, 0, -14.1] },
     IFC_PLU: { position: [13.03, 0, -14.05] },
     IFC_GLP: { position: [13.03, 0, -14.05] },
-    //IFC_ARQ: { position: [13.03, 0, -14.05], rotation: [0, 90, 0]  },
+    IFC_ARQ: { position: [13.03, 0, -14.05], rotation: [0, 90, 0]  },
     IFC_EST_SUB: { position: [-41.57, 0.4, 15.5], rotation: [0, 90, 0]  },
+    IFC_CLI_DUT: { position: [13, 0, 0], rotation: [0, 90, 0]  },
 };
 
 const transformPanel = document.getElementById("transformPanel");
@@ -521,7 +522,7 @@ const defaultModels = [
     { id: "IFC_HID", src: "assets/modelo-09.xkt" },
     { id: "IFC_PLU", src: "assets/modelo-10.xkt" },
     { id: "IFC_GLP", src: "assets/modelo-11.xkt" },
-    //{ id: "IFC_ARQ", src: "assets/modelo-12.xkt" },
+    { id: "IFC_ARQ", src: "assets/modelo-12.xkt" },
     { id: "IFC_EST_SUB", src: "assets/modelo-13.xkt" },
     { id: "IFC_CLI_DUT", src: "assets/modelo-14.xkt" },
 ];
@@ -1307,6 +1308,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
