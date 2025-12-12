@@ -688,11 +688,25 @@ function setMeasurementMode(mode, clickedButton) {
     angleMeasurementsMouseControl.reset(); 
     distanceMeasurementsMouseControl.reset(); 
     
+
     // Garante que o modo de seleção seja desativado ao iniciar uma medição
-    clearSelection(); 
+    clearSelection();
 }
 
 window.setMeasurementMode = setMeasurementMode;
+
+function desativarMedicao() {
+    const deactivateButton = document.getElementById("btnDeactivate");
+    setMeasurementMode("none", deactivateButton);
+}
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        desativarMedicao();
+    }
+});
+
+window.desativar = desativarMedicao;
 
 // -----------------------------------------------------------------------------
 // 4. Menu de Contexto (Deletar Medição) (MANTIDO)
@@ -1318,6 +1332,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
