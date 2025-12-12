@@ -35,7 +35,7 @@ html, body {
 }
 
 #myNavCubeCanvas {
-    bottom: 20px;
+    bottom: 120px;
     right: 20px;
 }
 
@@ -132,7 +132,7 @@ html, body {
 
 #creditNote {
     position: fixed;
-    bottom: 20px;
+    bottom: 90px;
     left: 20px;
     padding: 8px 12px;
     background: rgba(0, 0, 0, 0.7);
