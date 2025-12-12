@@ -576,7 +576,7 @@ html, body {
 
 #creditNote {
     position: fixed;
-    bottom: 20px;
+    bottom: 90px;
     left: 20px;
     padding: 8px 12px;
     background: rgba(0, 0, 0, 0.7);
@@ -588,4 +588,5 @@ html, body {
     z-index: 100002;
     backdrop-filter: blur(2px);
 }
+
 
