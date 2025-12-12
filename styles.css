@@ -22,7 +22,7 @@ html, body {
     position: fixed; /* Fixa o elemento na tela, independente da rolagem */
     width: 150px; /* Define um tamanho para o cubo */
     height: 150px;
-    bottom: 70px; /* 20px de distância da borda inferior */
+    bottom: 50px; /* 20px de distância da borda inferior */
     right: 20px; /* 20px de distância da borda direita */
     /* Z-index alto para ficar acima de todos os elementos, incluindo a toolbar */
     z-index: 200000; 
@@ -588,6 +588,7 @@ html, body {
     z-index: 100002;
     backdrop-filter: blur(2px);
 }
+
 
 
 
