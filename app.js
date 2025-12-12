@@ -531,6 +531,8 @@ const defaultModels = [
     { id: "IFC_EXA", src: "assets/modelo-15.xkt" },
     { id: "IFC_CLI", src: "assets/modelo-16.xkt" },
     { id: "IFC_EST_CT", src: "assets/modelo-17.xkt" },
+    { id: "IFC_ALI_220", src: "assets/modelo-18.xkt" },
+    { id: "IFC_ALI_380", src: "assets/modelo-19.xkt" },
 ];
 
 defaultModels.forEach(loadDefaultModel);
@@ -1314,6 +1316,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
