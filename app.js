@@ -55,6 +55,11 @@ const viewer = new Viewer({
     })
 });
 
+// Ajusta a cor do destaque (highlight) para azul
+const { highlightMaterial } = viewer.scene;
+highlightMaterial.color = [0, 0.55, 1];
+highlightMaterial.edgeColor = [0, 0.55, 1];
+
 /**
  * Configura o painel de ajustes do Scalable Ambient Obscurance (SAO).
  */
@@ -1602,6 +1607,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
