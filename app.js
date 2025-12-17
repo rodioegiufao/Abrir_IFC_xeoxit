@@ -795,8 +795,14 @@ function getModelObjectIds(modelId) {
             ids.push(objectId);
         }
     }
-
     return ids;
+}
+
+function getObjectMetaModelId(objectId) {
+    const metaObjects = viewer.metaScene?.metaObjects || {};
+    const metaObject = metaObjects[objectId];
+
+    return metaObject?.metaModel?.id || null;
 }
 
 function intersectsAABB(aabbA, aabbB) {
@@ -884,7 +890,7 @@ function renderCollisionResults(collisions) {
 
         const list = document.createElement("div");
         list.classList.add("collision-result-list");
-        list.textContent = `Colide com: ${collidingWith.join(", ")}`;
+        list.textContent = "Colisão detectada com outro modelo.";
 
         const actions = document.createElement("div");
         actions.classList.add("collision-result-actions");
@@ -909,9 +915,17 @@ function findAndRenderCollisions(modelId) {
     }
 
     const objects = getModelObjectIds(modelId);
+    const targetIds = new Set(objects);
+    const externalObjects = getAllObjectIds().filter((id) => !targetIds.has(id) && getObjectMetaModelId(id) !== modelId);
 
     if (!objects.length) {
         collisionSummary.textContent = "Nenhum objeto encontrado no modelo selecionado.";
+        collisionResultsList.innerHTML = "";
+        return;
+    }
+
+    if (!externalObjects.length) {
+        collisionSummary.textContent = "Nenhum outro modelo carregado para comparar colisões.";
         collisionResultsList.innerHTML = "";
         return;
     }
@@ -924,8 +938,8 @@ function findAndRenderCollisions(modelId) {
         }
         collisionsMap.get(base).add(target);
     };
-
-    for (let i = 0; i < objects.length - 1; i++) {
+    
+    for (let i = 0; i < objects.length; i++) {
         const objectA = objects[i];
         const aabbA = viewer.scene.getAABB(objectA);
 
@@ -933,13 +947,12 @@ function findAndRenderCollisions(modelId) {
             continue;
         }
 
-        for (let j = i + 1; j < objects.length; j++) {
-            const objectB = objects[j];
+        for (let j = 0; j < externalObjects.length; j++) {
+            const objectB = externalObjects[j];
             const aabbB = viewer.scene.getAABB(objectB);
 
             if (aabbB && intersectsAABB(aabbA, aabbB)) {
                 addCollision(objectA, objectB);
-                addCollision(objectB, objectA);
             }
         }
     }
@@ -949,7 +962,7 @@ function findAndRenderCollisions(modelId) {
         collidingWith: Array.from(set)
     }));
 
-    collisionSummary.textContent = `${collisions.length} objeto(s) com colisão no modelo ${modelId}.`;
+    collisionSummary.textContent = `${collisions.length} objeto(s) do modelo ${modelId} com colisão em outros modelos.`;
     renderCollisionResults(collisions);
 }
 function desativarMedicao() {
@@ -1589,6 +1602,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
