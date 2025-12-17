@@ -666,7 +666,9 @@ html, body {
 
 .collision-actions {
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
     margin-bottom: 10px;
 }
 
@@ -739,3 +741,4 @@ html, body {
     background: #1b95ff;
     transform: translateY(-1px);
 }
+
