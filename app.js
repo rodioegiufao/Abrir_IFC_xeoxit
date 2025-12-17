@@ -849,11 +849,21 @@ function isolateCollisionPair(objectAId, objectBId) {
 
     const idsToFocus = [objectAId, objectBId];
     const allIds = getAllObjectIds();
+    const otherIds = allIds.filter((id) => !idsToFocus.includes(id));
 
+    // Limpa estados anteriores
     modelIsolateController.setObjectsVisible(allIds, true);
-    modelIsolateController.setObjectsXRayed(allIds, true);
+    modelIsolateController.setObjectsXRayed(allIds, false);
+    modelIsolateController.setObjectsHighlighted(allIds, false);
+
+    // Oculta tudo que não faz parte da colisão
+    if (otherIds.length) {
+        modelIsolateController.setObjectsVisible(otherIds, false);
+    }
+
+    // Garante que os IDs em colisão permaneçam visíveis e sem X-ray
+    modelIsolateController.setObjectsVisible(idsToFocus, true);
     modelIsolateController.setObjectsXRayed(idsToFocus, false);
-    modelIsolateController.isolate(idsToFocus);
     viewer.scene.setObjectsHighlighted(idsToFocus, true);
 
     const combinedAABB = mergeAABBs(idsToFocus.map((id) => viewer.scene.getAABB(id)));
@@ -1577,4 +1587,5 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
