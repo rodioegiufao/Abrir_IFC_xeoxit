@@ -505,8 +505,17 @@ function setupCollisionPanelControls() {
         findAndRenderCollisions(modelId);
     });
 
-    downloadCollisionPdfButton?.addEventListener("click", () => {
-        downloadCollisionsAsPdf();
+    downloadCollisionPdfButton?.addEventListener("click", async () => {
+        const originalLabel = downloadCollisionPdfButton.textContent;
+        downloadCollisionPdfButton.disabled = true;
+        downloadCollisionPdfButton.textContent = "Gerando relatório...";
+
+        try {
+            await downloadCollisionsAsPdf();
+        } finally {
+            downloadCollisionPdfButton.textContent = originalLabel;
+            updateCollisionDownloadButton();
+        }
     });
 
     updateCollisionDownloadButton();
@@ -848,8 +857,78 @@ function mergeAABBs(aabbs) {
     const maxX = Math.max(...valid.map((aabb) => aabb[3]));
     const maxY = Math.max(...valid.map((aabb) => aabb[4]));
     const maxZ = Math.max(...valid.map((aabb) => aabb[5]));
-
+    
     return [minX, minY, minZ, maxX, maxY, maxZ];
+}
+
+function getCameraPose() {
+    const { eye, look, up } = viewer.camera || {};
+
+    if (!eye || !look || !up) {
+        return null;
+    }
+
+    return {
+        eye: [...eye],
+        look: [...look],
+        up: [...up]
+    };
+}
+
+function restoreCameraPose(pose) {
+    if (!pose) {
+        return;
+    }
+
+    viewer.cameraFlight.jumpTo({
+        eye: pose.eye,
+        look: pose.look,
+        up: pose.up
+    });
+}
+
+function waitForRender(ms = 150) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getCanvasSnapshot() {
+    const canvas = document.getElementById("meuCanvas");
+
+    if (!canvas) {
+        return null;
+    }
+
+    return canvas.toDataURL("image/png");
+}
+
+async function captureSnapshotsForCollisions(collisions) {
+    const originalPose = getCameraPose();
+    const canvas = document.getElementById("meuCanvas");
+    const canvasAspect = canvas?.width && canvas?.height ? canvas.width / canvas.height : 1.6;
+    const snapshots = [];
+
+    for (const { objectId, collidingWith } of collisions) {
+        const idsToFocus = [objectId, ...collidingWith];
+        const combinedAABB = mergeAABBs(idsToFocus.map((id) => viewer.scene.getAABB(id)));
+
+        if (!combinedAABB) {
+            snapshots.push({ dataUrl: null, aspect: canvasAspect });
+            continue;
+        }
+
+        viewer.cameraFlight.jumpTo({ aabb: combinedAABB });
+        requestRenderFrame();
+        await waitForRender();
+
+        snapshots.push({ dataUrl: getCanvasSnapshot(), aspect: canvasAspect });
+    }
+
+    if (originalPose) {
+        restoreCameraPose(originalPose);
+        requestRenderFrame();
+    }
+
+    return snapshots;
 }
 
 function isolateCollisionGroup(objectAId, collidingIds) {
@@ -902,12 +981,13 @@ function setCollisionState(collisions, modelId) {
     updateCollisionDownloadButton();
 }
 
-function downloadCollisionsAsPdf() {
+async function downloadCollisionsAsPdf() {
     if (!lastCollisionResults.length) {
         return;
     }
 
     const doc = new jsPDF();
+    const snapshots = await captureSnapshotsForCollisions(lastCollisionResults);
 
     doc.setFontSize(16);
     doc.text("Relatório de colisões", 14, 20);
@@ -924,14 +1004,22 @@ function downloadCollisionsAsPdf() {
     const lineHeight = 5;
     const spacingAfterItem = 6;
     const pageHeightLimit = 280; // Aproximadamente o limite útil em uma página A4
+    const defaultImageWidth = 70;
 
     lastCollisionResults.forEach(({ objectId, collidingWith }, index) => {
         const titleText = `${index + 1}. Objeto ${objectId}`;
         const description = `Colide com: ${collidingWith.join(", ")}`;
+        const snapshot = snapshots[index];
+        const imageAspect = snapshot?.aspect || 1.6;
+        const imageHeight = snapshot?.dataUrl ? defaultImageWidth / imageAspect : 0;
 
         // Divide a descrição em múltiplas linhas respeitando a largura máxima
         const descriptionLines = doc.splitTextToSize(description, maxWidth);
-        const itemHeight = lineHeight + (descriptionLines.length * lineHeight) + spacingAfterItem;
+        const itemHeight =
+            lineHeight +
+            descriptionLines.length * lineHeight +
+            spacingAfterItem +
+            (snapshot?.dataUrl ? imageHeight + spacingAfterItem : 0);
 
         // Quebra de página antes de desenhar o item, se necessário
         if (cursorY + itemHeight > pageHeightLimit) {
@@ -947,7 +1035,12 @@ function downloadCollisionsAsPdf() {
         doc.text(descriptionLines, leftMargin, cursorY, { maxWidth });
         cursorY += descriptionLines.length * lineHeight;
 
-        cursorY += spacingAfterItem;
+        if (snapshot?.dataUrl) {
+            doc.addImage(snapshot.dataUrl, "PNG", leftMargin, cursorY, defaultImageWidth, imageHeight);
+            cursorY += imageHeight + spacingAfterItem;
+        } else {
+            cursorY += spacingAfterItem;
+        }
     });
 
     doc.save("colisoes.pdf");
@@ -1766,6 +1859,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
