@@ -280,7 +280,6 @@ const collisionPanel = document.getElementById("collisionPanel");
 const collisionPanelToggleButton = document.getElementById("btnCollisionPanel");
 const closeCollisionPanelButton = document.getElementById("closeCollisionPanel");
 const collisionModelASelect = document.getElementById("collisionModelA");
-const collisionModelBSelect = document.getElementById("collisionModelB");
 const runCollisionCheckButton = document.getElementById("runCollisionCheck");
 const collisionSummary = document.getElementById("collisionSummary");
 const collisionResultsList = document.getElementById("collisionResults");
@@ -448,35 +447,26 @@ function resetTransformFromUI() {
 }
 
 function ensureCollisionOptions(modelId) {
-    if (!collisionModelASelect || !collisionModelBSelect) {
+    if (!collisionModelASelect) {
         return;
     }
 
-    const addOptionIfMissing = (select) => {
-        const exists = Array.from(select.options).some((option) => option.value === modelId);
-        if (!exists) {
-            const option = document.createElement("option");
-            option.value = modelId;
-            option.textContent = modelId;
-            select.appendChild(option);
-        }
-    };
-
-    addOptionIfMissing(collisionModelASelect);
-    addOptionIfMissing(collisionModelBSelect);
+    const exists = Array.from(collisionModelASelect.options).some((option) => option.value === modelId);
+    if (!exists) {
+        const option = document.createElement("option");
+        option.value = modelId;
+        option.textContent = modelId;
+        collisionModelASelect.appendChild(option);
+    }
 }
 
 function setDefaultCollisionSelection() {
-    if (!collisionModelASelect || !collisionModelBSelect) {
+    if (!collisionModelASelect) {
         return;
     }
 
     if (!collisionModelASelect.value && collisionModelASelect.options.length > 0) {
         collisionModelASelect.value = collisionModelASelect.options[0].value;
-    }
-
-    if (!collisionModelBSelect.value && collisionModelBSelect.options.length > 1) {
-        collisionModelBSelect.value = collisionModelBSelect.options[1].value;
     }
 }
 
@@ -501,9 +491,8 @@ function setupCollisionPanelControls() {
     });
 
     runCollisionCheckButton?.addEventListener("click", () => {
-        const modelAId = collisionModelASelect?.value;
-        const modelBId = collisionModelBSelect?.value;
-        findAndRenderCollisions(modelAId, modelBId);
+        const modelId = collisionModelASelect?.value;
+        findAndRenderCollisions(modelId);
     });
 }
 
@@ -842,12 +831,12 @@ function mergeAABBs(aabbs) {
     return [minX, minY, minZ, maxX, maxY, maxZ];
 }
 
-function isolateCollisionPair(objectAId, objectBId) {
+function isolateCollisionGroup(objectAId, collidingIds) {
     if (!modelIsolateController) {
         return;
     }
 
-    const idsToFocus = [objectAId, objectBId];
+    const idsToFocus = [objectAId, ...collidingIds];
     const allIds = getAllObjectIds();
     const otherIds = allIds.filter((id) => !idsToFocus.includes(id));
 
@@ -885,13 +874,17 @@ function renderCollisionResults(collisions) {
         return;
     }
 
-    collisions.forEach(({ objectA, objectB }, index) => {
+    collisions.forEach(({ objectId, collidingWith }, index) => {
         const item = document.createElement("li");
         item.classList.add("collision-result-item");
 
         const title = document.createElement("div");
         title.classList.add("collision-result-title");
-        title.textContent = `#${index + 1}: ${objectA} × ${objectB}`;
+        title.textContent = `#${index + 1}: Objeto ${objectId}`;
+
+        const list = document.createElement("div");
+        list.classList.add("collision-result-list");
+        list.textContent = `Colide com: ${collidingWith.join(", ")}`;
 
         const actions = document.createElement("div");
         actions.classList.add("collision-result-actions");
@@ -900,55 +893,63 @@ function renderCollisionResults(collisions) {
         focusBtn.type = "button";
         focusBtn.textContent = "Isolar colisão";
         focusBtn.classList.add("collision-focus-btn");
-        focusBtn.addEventListener("click", () => isolateCollisionPair(objectA, objectB));
+        focusBtn.addEventListener("click", () => isolateCollisionGroup(objectId, collidingWith));
 
         actions.appendChild(focusBtn);
-        item.append(title, actions);
+        item.append(title, list, actions);
         collisionResultsList.appendChild(item);
     });
 }
 
-function findAndRenderCollisions(modelAId, modelBId) {
-    if (!modelAId || !modelBId) {
-        collisionSummary.textContent = "Selecione dois modelos para iniciar a análise.";
+function findAndRenderCollisions(modelId) {
+    if (!modelId) {
+        collisionSummary.textContent = "Selecione um modelo para iniciar a análise.";
         collisionResultsList.innerHTML = "";
         return;
     }
 
-    if (modelAId === modelBId) {
-        collisionSummary.textContent = "Escolha dois modelos diferentes.";
+    const objects = getModelObjectIds(modelId);
+
+    if (!objects.length) {
+        collisionSummary.textContent = "Nenhum objeto encontrado no modelo selecionado.";
         collisionResultsList.innerHTML = "";
         return;
     }
 
-    const objectsA = getModelObjectIds(modelAId);
-    const objectsB = getModelObjectIds(modelBId);
+    const collisionsMap = new Map();
 
-    if (!objectsA.length || !objectsB.length) {
-        collisionSummary.textContent = "Nenhum objeto encontrado nos modelos selecionados.";
-        collisionResultsList.innerHTML = "";
-        return;
-    }
+    const addCollision = (base, target) => {
+        if (!collisionsMap.has(base)) {
+            collisionsMap.set(base, new Set());
+        }
+        collisionsMap.get(base).add(target);
+    };
 
-    const collisions = [];
-
-    objectsA.forEach((objectA) => {
+    for (let i = 0; i < objects.length - 1; i++) {
+        const objectA = objects[i];
         const aabbA = viewer.scene.getAABB(objectA);
 
         if (!aabbA) {
-            return;
+            continue;
         }
 
-        objectsB.forEach((objectB) => {
+        for (let j = i + 1; j < objects.length; j++) {
+            const objectB = objects[j];
             const aabbB = viewer.scene.getAABB(objectB);
 
             if (aabbB && intersectsAABB(aabbA, aabbB)) {
-                collisions.push({ objectA, objectB });
+                addCollision(objectA, objectB);
+                addCollision(objectB, objectA);
             }
-        });
-    });
+        }
+    }
 
-    collisionSummary.textContent = `${collisions.length} colisão(ões) encontrada(s) entre ${modelAId} e ${modelBId}.`;
+    const collisions = Array.from(collisionsMap.entries()).map(([objectId, set]) => ({
+        objectId,
+        collidingWith: Array.from(set)
+    }));
+
+    collisionSummary.textContent = `${collisions.length} objeto(s) com colisão no modelo ${modelId}.`;
     renderCollisionResults(collisions);
 }
 function desativarMedicao() {
@@ -1588,6 +1589,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
