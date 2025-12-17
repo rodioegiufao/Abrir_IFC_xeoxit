@@ -294,11 +294,11 @@ setupCollisionPanelControls();
 function resetModelVisibility() {
     if (modelIsolateController) {
         // Volta a exibir todos os objetos
-        modelIsolateController.setObjectsVisible(modelIsolateController.getObjectsIds(), true);
+        modelIsolateController.setObjectsVisible(getAllObjectIds(), true);
         // Remove X-ray
-        modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), false);
+        modelIsolateController.setObjectsXRayed(getAllObjectIds(), false);
         // Remove destaque
-        modelIsolateController.setObjectsHighlighted(modelIsolateController.getObjectsIds(), false);
+        modelIsolateController.setObjectsHighlighted(getAllObjectIds(), false);
         // Centraliza a câmera no modelo inteiro
         viewer.cameraFlight.jumpTo(viewer.scene);
     }
@@ -317,6 +317,30 @@ function requestRenderFrame() {
 function parseNumber(value, fallback = 0) {
     const parsed = parseFloat(value);
     return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getAllObjectIds() {
+    if (!modelIsolateController) {
+        return [];
+    }
+
+    if (typeof modelIsolateController.getObjectsIds === "function") {
+        return modelIsolateController.getObjectsIds();
+    }
+
+    if (typeof modelIsolateController.getObjectIds === "function") {
+        return modelIsolateController.getObjectIds();
+    }
+
+    if (Array.isArray(modelIsolateController.objectIds)) {
+        return modelIsolateController.objectIds;
+    }
+
+    if (modelIsolateController.objects && typeof modelIsolateController.objects === "object") {
+        return Object.keys(modelIsolateController.objects);
+    }
+
+    return [];
 }
 
 function ensureModelOption(modelId) {
@@ -824,7 +848,7 @@ function isolateCollisionPair(objectAId, objectBId) {
     }
 
     const idsToFocus = [objectAId, objectBId];
-    const allIds = modelIsolateController.getObjectsIds();
+    const allIds = getAllObjectIds();
 
     modelIsolateController.setObjectsVisible(allIds, true);
     modelIsolateController.setObjectsXRayed(allIds, true);
@@ -996,7 +1020,7 @@ function setupModelIsolateController() {
 
     setupTreeViewFilter();
 
-    modelIsolateController = viewer.scene.objects;
+    modelIsolateController = viewer.scene;
 
     // Ouve o evento de "seleção" no TreeView
     treeView.on("nodeClicked", (event) => {
@@ -1006,9 +1030,9 @@ function setupModelIsolateController() {
         if (entityId && viewer.scene.getObjectsInSubtree(entityId).length > 0) {
             
             const subtreeIds = viewer.scene.getObjectsInSubtree(entityId);
-            
+
             // Isola (mostra apenas) a parte do modelo (pavimento, por exemplo) clicada
-            modelIsolateController.setObjectsXRayed(modelIsolateController.getObjectsIds(), true); // X-ray em TUDO
+            modelIsolateController.setObjectsXRayed(getAllObjectIds(), true); // X-ray em TUDO
             modelIsolateController.setObjectsXRayed(subtreeIds, false); // Tira o X-ray do subconjunto isolado
 
             modelIsolateController.isolate(subtreeIds); // Isola o subconjunto
@@ -1553,3 +1577,4 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
