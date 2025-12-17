@@ -16,7 +16,8 @@ import {
     LineSet,         // <--- NOVO: Importa LineSet
     buildGridGeometry // <--- NOVO: Importa buildGridGeometry
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
-import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.es.min.js";
+
+const { jsPDF } = window.jspdf;
 
 let treeView;
 let modelIsolateController;
@@ -1749,6 +1750,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
