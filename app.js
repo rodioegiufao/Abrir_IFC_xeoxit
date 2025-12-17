@@ -851,26 +851,27 @@ function isolateCollisionPair(objectAId, objectBId) {
     const allIds = getAllObjectIds();
     const otherIds = allIds.filter((id) => !idsToFocus.includes(id));
 
-    // Limpa estados anteriores
+    // Limpa estados anteriores e mostra tudo em X-ray para manter o contexto
     modelIsolateController.setObjectsVisible(allIds, true);
-    modelIsolateController.setObjectsXRayed(allIds, false);
+    modelIsolateController.setObjectsXRayed(allIds, true);
     modelIsolateController.setObjectsHighlighted(allIds, false);
 
-    // Oculta tudo que não faz parte da colisão
-    if (otherIds.length) {
-        modelIsolateController.setObjectsVisible(otherIds, false);
-    }
-
-    // Garante que os IDs em colisão permaneçam visíveis e sem X-ray
+    // Realça a colisão e remove o X-ray apenas dos elementos em conflito
     modelIsolateController.setObjectsVisible(idsToFocus, true);
     modelIsolateController.setObjectsXRayed(idsToFocus, false);
     viewer.scene.setObjectsHighlighted(idsToFocus, true);
+
+    if (otherIds.length) {
+        modelIsolateController.setObjectsHighlighted(otherIds, false);
+    }
 
     const combinedAABB = mergeAABBs(idsToFocus.map((id) => viewer.scene.getAABB(id)));
 
     if (combinedAABB) {
         viewer.cameraFlight.flyTo({ aabb: combinedAABB, duration: 0.6 });
     }
+
+    requestRenderFrame();
 }
 
 function renderCollisionResults(collisions) {
@@ -1587,5 +1588,6 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
