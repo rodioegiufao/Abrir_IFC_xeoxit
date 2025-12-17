@@ -167,22 +167,19 @@
         <div class="collision-panel-header">
             <div>
                 <div class="collision-panel-title">Verificar colisões</div>
-                <div class="collision-panel-subtitle">Compare dois modelos XKT e isole os objetos que se cruzam</div>
+                <div class="collision-panel-subtitle">Encontre objetos em conflito dentro de um único modelo XKT</div>
             </div>
             <button id="closeCollisionPanel" type="button" aria-label="Fechar painel">✕</button>
         </div>
 
-        <label class="collision-label" for="collisionModelA">Modelo A</label>
-        <select id="collisionModelA" aria-label="Modelo de referência"></select>
-
-        <label class="collision-label" for="collisionModelB">Modelo B</label>
-        <select id="collisionModelB" aria-label="Modelo para comparar"></select>
+        <label class="collision-label" for="collisionModelA">Modelo</label>
+        <select id="collisionModelA" aria-label="Modelo para analisar"></select>
 
         <div class="collision-actions">
             <button type="button" id="runCollisionCheck">Procurar colisões</button>
         </div>
 
-        <p id="collisionSummary" class="collision-summary">Carregue dois modelos para iniciar a análise.</p>
+        <p id="collisionSummary" class="collision-summary">Carregue um modelo para iniciar a análise.</p>
         <ul id="collisionResults" class="collision-results" aria-live="polite"></ul>
     </div>
     <div id="transformPanel" hidden>
@@ -334,6 +331,7 @@
     </script>
 </body>
 </html>
+
 
 
 
