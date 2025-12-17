@@ -1022,7 +1022,8 @@ function setCollisionState(collisions, modelId) {
     lastCollisionModelId = collisions.length ? modelId : null;
     updateCollisionDownloadButton();
 }
-
+async function downloadCollisionsAsPdf() {
+    
     if (!lastCollisionResults.length) {
         return;
     }
@@ -1921,6 +1922,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
