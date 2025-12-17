@@ -1,21 +1,22 @@
 // app.js
 
 import {
-    Viewer, 
-    LocaleService, 
-    XKTLoaderPlugin, 
-    AngleMeasurementsPlugin, 
-    AngleMeasurementsMouseControl, 
+    Viewer,
+    LocaleService,
+    XKTLoaderPlugin,
+    AngleMeasurementsPlugin,
+    AngleMeasurementsMouseControl,
     DistanceMeasurementsPlugin,
     DistanceMeasurementsMouseControl,
-    ContextMenu, 
+    ContextMenu,
     PointerLens,
-    NavCubePlugin, 
+    NavCubePlugin,
     TreeViewPlugin,
     SectionPlanesPlugin,
     LineSet,         // <--- NOVO: Importa LineSet
     buildGridGeometry // <--- NOVO: Importa buildGridGeometry
-} from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js"; 
+} from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
+import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.es.min.js";
 
 let treeView;
 let modelIsolateController;
@@ -24,6 +25,8 @@ let horizontalSectionPlane;
 let horizontalPlaneControl;
 let lastPickedEntity = null; // NOVO: Variável para rastrear a entidade selecionada
 let lastSelectedEntity = null; // NOVO: Guarda a entidade selecionada pelo duplo clique
+let lastCollisionResults = [];
+let lastCollisionModelId = null;
 
 // -----------------------------------------------------------------------------
 // 1. Configuração do Viewer e Redimensionamento (100% da tela)
@@ -286,6 +289,7 @@ const collisionPanelToggleButton = document.getElementById("btnCollisionPanel");
 const closeCollisionPanelButton = document.getElementById("closeCollisionPanel");
 const collisionModelASelect = document.getElementById("collisionModelA");
 const runCollisionCheckButton = document.getElementById("runCollisionCheck");
+const downloadCollisionPdfButton = document.getElementById("downloadCollisionPdf");
 const collisionSummary = document.getElementById("collisionSummary");
 const collisionResultsList = document.getElementById("collisionResults");
 
@@ -499,8 +503,13 @@ function setupCollisionPanelControls() {
         const modelId = collisionModelASelect?.value;
         findAndRenderCollisions(modelId);
     });
-}
 
+    downloadCollisionPdfButton?.addEventListener("click", () => {
+        downloadCollisionsAsPdf();
+    });
+
+    updateCollisionDownloadButton();
+}
 /**
  * Função NOVO: Cria uma grade no plano do solo (elevação mínima Y).
  */
@@ -874,6 +883,59 @@ function isolateCollisionGroup(objectAId, collidingIds) {
     requestRenderFrame();
 }
 
+function updateCollisionDownloadButton() {
+    if (!downloadCollisionPdfButton) {
+        return;
+    }
+
+    const hasCollisions = lastCollisionResults.length > 0;
+    downloadCollisionPdfButton.disabled = !hasCollisions;
+    downloadCollisionPdfButton.title = hasCollisions
+        ? "Baixar relatório em PDF"
+        : "Nenhuma colisão encontrada para exportar";
+}
+
+function setCollisionState(collisions, modelId) {
+    lastCollisionResults = collisions;
+    lastCollisionModelId = collisions.length ? modelId : null;
+    updateCollisionDownloadButton();
+}
+
+function downloadCollisionsAsPdf() {
+    if (!lastCollisionResults.length) {
+        return;
+    }
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text("Relatório de colisões", 14, 20);
+
+    doc.setFontSize(12);
+    doc.text(`Modelo analisado: ${lastCollisionModelId ?? "-"}`, 14, 30);
+    doc.text(`Total de colisões: ${lastCollisionResults.length}`, 14, 38);
+
+    let cursorY = 50;
+
+    lastCollisionResults.forEach(({ objectId, collidingWith }, index) => {
+        if (cursorY > 270) {
+            doc.addPage();
+            cursorY = 20;
+        }
+
+        doc.setFontSize(12);
+        doc.text(`${index + 1}. Objeto ${objectId}`, 14, cursorY);
+        cursorY += 6;
+
+        doc.setFontSize(10);
+        const description = `Colide com: ${collidingWith.join(", ")}`;
+        doc.text(description, 14, cursorY, { maxWidth: 180 });
+        cursorY += 10;
+    });
+
+    doc.save("colisoes.pdf");
+}
+
 function renderCollisionResults(collisions) {
     collisionResultsList.innerHTML = "";
 
@@ -916,6 +978,7 @@ function findAndRenderCollisions(modelId) {
     if (!modelId) {
         collisionSummary.textContent = "Selecione um modelo para iniciar a análise.";
         collisionResultsList.innerHTML = "";
+        setCollisionState([], null);
         return;
     }
 
@@ -926,12 +989,14 @@ function findAndRenderCollisions(modelId) {
     if (!objects.length) {
         collisionSummary.textContent = "Nenhum objeto encontrado no modelo selecionado.";
         collisionResultsList.innerHTML = "";
+        setCollisionState([], null);
         return;
     }
 
     if (!externalObjects.length) {
         collisionSummary.textContent = "Nenhum outro modelo carregado para comparar colisões.";
         collisionResultsList.innerHTML = "";
+        setCollisionState([], null);
         return;
     }
 
@@ -968,8 +1033,10 @@ function findAndRenderCollisions(modelId) {
     }));
 
     collisionSummary.textContent = `${collisions.length} objeto(s) do modelo ${modelId} com colisão em outros modelos.`;
+    setCollisionState(collisions, modelId);
     renderCollisionResults(collisions);
 }
+
 function desativarMedicao() {
     const deactivateButton = document.getElementById("btnDeactivate");
     setMeasurementMode("none", deactivateButton);
@@ -1682,6 +1749,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
