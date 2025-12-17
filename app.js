@@ -791,12 +791,6 @@ function setMeasurementMode(mode, clickedButton) {
 window.setMeasurementMode = setMeasurementMode;
 
 function getModelObjectIds(modelId) {
-    // Prioriza metaModel para obter somente objetos do modelo selecionado
-    const metaModel = viewer.metaScene?.metaModels?.[modelId];
-    if (metaModel?.metaObjects) {
-        return Object.keys(metaModel.metaObjects);
-    }
-
     const ids = [];
 
     // Tenta usar a lista de objetos do modelo (quando disponível)
@@ -857,14 +851,19 @@ function isolateCollisionPair(objectAId, objectBId) {
     const allIds = getAllObjectIds();
     const otherIds = allIds.filter((id) => !idsToFocus.includes(id));
 
-    // Esconde tudo antes de isolar o par em colisão
-    modelIsolateController.setObjectsVisible(allIds, false);
-    modelIsolateController.setObjectsXRayed(allIds, false);
+    // Limpa estados anteriores e mostra tudo em X-ray para manter o contexto
+    modelIsolateController.setObjectsVisible(allIds, true);
+    modelIsolateController.setObjectsXRayed(allIds, true);
     modelIsolateController.setObjectsHighlighted(allIds, false);
 
-    // Realça somente a colisão escolhida
+    // Realça a colisão e remove o X-ray apenas dos elementos em conflito
     modelIsolateController.setObjectsVisible(idsToFocus, true);
+    modelIsolateController.setObjectsXRayed(idsToFocus, false);
     viewer.scene.setObjectsHighlighted(idsToFocus, true);
+
+    if (otherIds.length) {
+        modelIsolateController.setObjectsHighlighted(otherIds, false);
+    }
 
     const combinedAABB = mergeAABBs(idsToFocus.map((id) => viewer.scene.getAABB(id)));
 
@@ -1589,6 +1588,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
