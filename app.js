@@ -887,24 +887,58 @@ function restoreCameraPose(pose) {
     });
 }
 
-function waitForRender(ms = 150) {
+function waitForRender(ms = 180) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function getCanvasSnapshot() {
+/**
+ * Snapshot LEVE:
+ * - Faz downscale para reduzir pixels
+ * - Exporta como JPEG com qualidade ajustável
+ * - Mantém a imagem grande no PDF (em mm), mas leve (em px)
+ */
+function getCanvasSnapshot({
+    maxWidthPx = 900,          // ↓ quanto menor, mais leve (700~1200 bom)
+    mimeType = "image/jpeg",   // JPEG é muito mais leve que PNG
+    quality = 0.55             // 0.35~0.70 (quanto menor, mais leve)
+} = {}) {
     const canvas = document.getElementById("meuCanvas");
+    if (!canvas) return null;
 
-    if (!canvas) {
-        return null;
-    }
+    const srcCanvas = canvas;
+    const srcW = srcCanvas.width;
+    const srcH = srcCanvas.height;
 
-    return canvas.toDataURL("image/png");
+    if (!srcW || !srcH) return null;
+
+    // Escala para reduzir resolução
+    const scale = Math.min(1, maxWidthPx / srcW);
+    const dstW = Math.max(1, Math.round(srcW * scale));
+    const dstH = Math.max(1, Math.round(srcH * scale));
+
+    // Canvas temporário reduzido
+    const tmp = document.createElement("canvas");
+    tmp.width = dstW;
+    tmp.height = dstH;
+
+    const ctx = tmp.getContext("2d", { alpha: false });
+
+    // Melhora a aparência ao reduzir
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    ctx.drawImage(srcCanvas, 0, 0, dstW, dstH);
+
+    // Exporta como JPEG comprimido
+    return tmp.toDataURL(mimeType, quality);
 }
 
 async function captureSnapshotsForCollisions(collisions) {
     const originalPose = getCameraPose();
     const canvas = document.getElementById("meuCanvas");
-    const canvasAspect = canvas?.width && canvas?.height ? canvas.width / canvas.height : 1.6;
+    const canvasAspect =
+        canvas?.width && canvas?.height ? canvas.width / canvas.height : 1.6;
+
     const snapshots = [];
 
     for (const { objectId, collidingWith } of collisions) {
@@ -917,10 +951,18 @@ async function captureSnapshotsForCollisions(collisions) {
         }
 
         viewer.cameraFlight.jumpTo({ aabb: combinedAABB });
-        requestRenderFrame();
-        await waitForRender();
 
-        snapshots.push({ dataUrl: getCanvasSnapshot(), aspect: canvasAspect });
+        requestRenderFrame();
+        await waitForRender(220); // um pouco maior pra garantir render antes do print
+
+        snapshots.push({
+            dataUrl: getCanvasSnapshot({
+                maxWidthPx: 900,          // ajuste aqui (700 = mais leve, 1200 = mais qualidade)
+                mimeType: "image/jpeg",
+                quality: 0.55             // ajuste aqui (0.45 = mais leve, 0.65 = melhor)
+            }),
+            aspect: canvasAspect
+        });
     }
 
     if (originalPose) {
@@ -981,12 +1023,13 @@ function setCollisionState(collisions, modelId) {
     updateCollisionDownloadButton();
 }
 
-async function downloadCollisionsAsPdf() {
     if (!lastCollisionResults.length) {
         return;
     }
 
-    const doc = new jsPDF();
+    // ✅ compressão do PDF
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+
     const snapshots = await captureSnapshotsForCollisions(lastCollisionResults);
 
     doc.setFontSize(16);
@@ -1003,28 +1046,37 @@ async function downloadCollisionsAsPdf() {
     const maxWidth = 180;
     const lineHeight = 5;
     const spacingAfterItem = 6;
-    const pageHeightLimit = 280; // Aproximadamente o limite útil em uma página A4
-    const defaultImageWidth = 70;
+
+    // Altura útil aproximada no A4 (em mm)
+    const pageHeightLimit = 280;
+
+    // ✅ imagem MAIOR no PDF (mm) sem aumentar o peso (px)
+    const defaultImageWidth = 140; // 120~160 fica ótimo
 
     lastCollisionResults.forEach(({ objectId, collidingWith }, index) => {
         const titleText = `${index + 1}. Objeto ${objectId}`;
         const description = `Colide com: ${collidingWith.join(", ")}`;
         const snapshot = snapshots[index];
+
         const imageAspect = snapshot?.aspect || 1.6;
         const imageHeight = snapshot?.dataUrl ? defaultImageWidth / imageAspect : 0;
 
-        // Divide a descrição em múltiplas linhas respeitando a largura máxima
         const descriptionLines = doc.splitTextToSize(description, maxWidth);
+
         const itemHeight =
             lineHeight +
             descriptionLines.length * lineHeight +
             spacingAfterItem +
             (snapshot?.dataUrl ? imageHeight + spacingAfterItem : 0);
 
-        // Quebra de página antes de desenhar o item, se necessário
+        // Quebra de página
         if (cursorY + itemHeight > pageHeightLimit) {
             doc.addPage();
             cursorY = topMargin;
+
+            // opcional: repetir cabeçalho (se quiser, descomente)
+            // doc.setFontSize(10);
+            // doc.text(`Relatório de colisões - Modelo: ${lastCollisionModelId ?? "-"}`, leftMargin, 12);
         }
 
         doc.setFontSize(12);
@@ -1036,7 +1088,17 @@ async function downloadCollisionsAsPdf() {
         cursorY += descriptionLines.length * lineHeight;
 
         if (snapshot?.dataUrl) {
-            doc.addImage(snapshot.dataUrl, "PNG", leftMargin, cursorY, defaultImageWidth, imageHeight);
+            // ✅ JPEG + FAST (mais leve e rápido)
+            doc.addImage(
+                snapshot.dataUrl,
+                "JPEG",
+                leftMargin,
+                cursorY,
+                defaultImageWidth,
+                imageHeight,
+                undefined,
+                "FAST"
+            );
             cursorY += imageHeight + spacingAfterItem;
         } else {
             cursorY += spacingAfterItem;
@@ -1859,6 +1921,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
