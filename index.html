@@ -91,6 +91,14 @@
             <span style="font-size: 1.2em;">🧭</span>
             Origem/Rotação
         </button>
+        <button
+            id="btnCollisionPanel"
+            class="tool-button"
+            title="Detectar colisões entre modelos"
+        >
+            <span style="font-size: 1.2em;">🧊</span>
+            Colisões
+        </button>
     </div>
     <button id="mobileToolbarToggle" type="button" aria-label="Mostrar todas as ferramentas" title="Mostrar todas as ferramentas" hidden>
         ☰ Mais ferramentas
@@ -154,6 +162,28 @@
             <label for="saoBlendFactor">Blend factor <span class="sao-value" id="saoBlendFactorValue"></span></label>
             <input type="range" id="saoBlendFactor" min="0" max="2" step="0.01" />
         </div>
+    </div>
+    <div id="collisionPanel" hidden>
+        <div class="collision-panel-header">
+            <div>
+                <div class="collision-panel-title">Verificar colisões</div>
+                <div class="collision-panel-subtitle">Compare dois modelos XKT e isole os objetos que se cruzam</div>
+            </div>
+            <button id="closeCollisionPanel" type="button" aria-label="Fechar painel">✕</button>
+        </div>
+
+        <label class="collision-label" for="collisionModelA">Modelo A</label>
+        <select id="collisionModelA" aria-label="Modelo de referência"></select>
+
+        <label class="collision-label" for="collisionModelB">Modelo B</label>
+        <select id="collisionModelB" aria-label="Modelo para comparar"></select>
+
+        <div class="collision-actions">
+            <button type="button" id="runCollisionCheck">Procurar colisões</button>
+        </div>
+
+        <p id="collisionSummary" class="collision-summary">Carregue dois modelos para iniciar a análise.</p>
+        <ul id="collisionResults" class="collision-results" aria-live="polite"></ul>
     </div>
     <div id="transformPanel" hidden>
         <div class="transform-panel-header">
@@ -304,6 +334,7 @@
     </script>
 </body>
 </html>
+
 
 
 
