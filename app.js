@@ -276,9 +276,18 @@ const offsetZInput = document.getElementById("offsetZ");
 const rotationYInput = document.getElementById("rotationY");
 const applyTransformButton = document.getElementById("applyTransformButton");
 const resetTransformButton = document.getElementById("resetTransformButton");
+const collisionPanel = document.getElementById("collisionPanel");
+const collisionPanelToggleButton = document.getElementById("btnCollisionPanel");
+const closeCollisionPanelButton = document.getElementById("closeCollisionPanel");
+const collisionModelASelect = document.getElementById("collisionModelA");
+const collisionModelBSelect = document.getElementById("collisionModelB");
+const runCollisionCheckButton = document.getElementById("runCollisionCheck");
+const collisionSummary = document.getElementById("collisionSummary");
+const collisionResultsList = document.getElementById("collisionResults");
 
 setupSAOControls();
 setupTransformPanelControls();
+setupCollisionPanelControls();
 /**
  * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
  */
@@ -354,16 +363,18 @@ function registerModelTransform(model) {
     }
 
     ensureModelOption(model.id);
+    ensureCollisionOptions(model.id);
 
     if (transformModelSelect && !transformModelSelect.value) {
         transformModelSelect.value = model.id;
     }
 
+    setDefaultCollisionSelection();
+
     if (transformModelSelect) {
         syncTransformInputs(transformModelSelect.value);
     }
 }
-
 function applyTransformFromUI() {
     if (!transformModelSelect) {
         return;
@@ -410,6 +421,66 @@ function resetTransformFromUI() {
 
     syncTransformInputs(modelId);
     requestRenderFrame();
+}
+
+function ensureCollisionOptions(modelId) {
+    if (!collisionModelASelect || !collisionModelBSelect) {
+        return;
+    }
+
+    const addOptionIfMissing = (select) => {
+        const exists = Array.from(select.options).some((option) => option.value === modelId);
+        if (!exists) {
+            const option = document.createElement("option");
+            option.value = modelId;
+            option.textContent = modelId;
+            select.appendChild(option);
+        }
+    };
+
+    addOptionIfMissing(collisionModelASelect);
+    addOptionIfMissing(collisionModelBSelect);
+}
+
+function setDefaultCollisionSelection() {
+    if (!collisionModelASelect || !collisionModelBSelect) {
+        return;
+    }
+
+    if (!collisionModelASelect.value && collisionModelASelect.options.length > 0) {
+        collisionModelASelect.value = collisionModelASelect.options[0].value;
+    }
+
+    if (!collisionModelBSelect.value && collisionModelBSelect.options.length > 1) {
+        collisionModelBSelect.value = collisionModelBSelect.options[1].value;
+    }
+}
+
+function setupCollisionPanelControls() {
+    if (!collisionPanel || !collisionSummary || !collisionResultsList) {
+        return;
+    }
+
+    const togglePanel = (forceState) => {
+        const shouldOpen = typeof forceState === "boolean" ? forceState : collisionPanel.hidden;
+        collisionPanel.hidden = !shouldOpen;
+        collisionPanelToggleButton?.classList.toggle("active", shouldOpen);
+    };
+
+    collisionPanelToggleButton?.addEventListener("click", () => togglePanel());
+    closeCollisionPanelButton?.addEventListener("click", () => togglePanel(false));
+
+    document.addEventListener("click", (event) => {
+        if (!collisionPanel.hidden && !collisionPanel.contains(event.target) && !collisionPanelToggleButton?.contains(event.target)) {
+            togglePanel(false);
+        }
+    });
+
+    runCollisionCheckButton?.addEventListener("click", () => {
+        const modelAId = collisionModelASelect?.value;
+        const modelBId = collisionModelBSelect?.value;
+        findAndRenderCollisions(modelAId, modelBId);
+    });
 }
 
 /**
@@ -695,6 +766,156 @@ function setMeasurementMode(mode, clickedButton) {
 
 window.setMeasurementMode = setMeasurementMode;
 
+function getModelObjectIds(modelId) {
+    const ids = [];
+
+    // Tenta usar a lista de objetos do modelo (quando disponível)
+    const model = loadedModels.get(modelId);
+    if (model?.objectIds?.length) {
+        return [...model.objectIds];
+    }
+
+    // Fallback: filtra metaObjects pelo metaModel associado
+    const metaObjects = viewer.metaScene?.metaObjects || {};
+    for (const [objectId, metaObject] of Object.entries(metaObjects)) {
+        if (metaObject?.metaModel?.id === modelId) {
+            ids.push(objectId);
+        }
+    }
+
+    return ids;
+}
+
+function intersectsAABB(aabbA, aabbB) {
+    if (!aabbA || !aabbB) {
+        return false;
+    }
+
+    return !(
+        aabbA[0] > aabbB[3] ||
+        aabbA[3] < aabbB[0] ||
+        aabbA[1] > aabbB[4] ||
+        aabbA[4] < aabbB[1] ||
+        aabbA[2] > aabbB[5] ||
+        aabbA[5] < aabbB[2]
+    );
+}
+
+function mergeAABBs(aabbs) {
+    const valid = aabbs.filter(Boolean);
+
+    if (!valid.length) {
+        return null;
+    }
+
+    const minX = Math.min(...valid.map((aabb) => aabb[0]));
+    const minY = Math.min(...valid.map((aabb) => aabb[1]));
+    const minZ = Math.min(...valid.map((aabb) => aabb[2]));
+    const maxX = Math.max(...valid.map((aabb) => aabb[3]));
+    const maxY = Math.max(...valid.map((aabb) => aabb[4]));
+    const maxZ = Math.max(...valid.map((aabb) => aabb[5]));
+
+    return [minX, minY, minZ, maxX, maxY, maxZ];
+}
+
+function isolateCollisionPair(objectAId, objectBId) {
+    if (!modelIsolateController) {
+        return;
+    }
+
+    const idsToFocus = [objectAId, objectBId];
+    const allIds = modelIsolateController.getObjectsIds();
+
+    modelIsolateController.setObjectsVisible(allIds, true);
+    modelIsolateController.setObjectsXRayed(allIds, true);
+    modelIsolateController.setObjectsXRayed(idsToFocus, false);
+    modelIsolateController.isolate(idsToFocus);
+    viewer.scene.setObjectsHighlighted(idsToFocus, true);
+
+    const combinedAABB = mergeAABBs(idsToFocus.map((id) => viewer.scene.getAABB(id)));
+
+    if (combinedAABB) {
+        viewer.cameraFlight.flyTo({ aabb: combinedAABB, duration: 0.6 });
+    }
+}
+
+function renderCollisionResults(collisions) {
+    collisionResultsList.innerHTML = "";
+
+    if (!collisions.length) {
+        const emptyItem = document.createElement("li");
+        emptyItem.textContent = "Nenhuma colisão encontrada.";
+        emptyItem.classList.add("collision-summary");
+        collisionResultsList.appendChild(emptyItem);
+        return;
+    }
+
+    collisions.forEach(({ objectA, objectB }, index) => {
+        const item = document.createElement("li");
+        item.classList.add("collision-result-item");
+
+        const title = document.createElement("div");
+        title.classList.add("collision-result-title");
+        title.textContent = `#${index + 1}: ${objectA} × ${objectB}`;
+
+        const actions = document.createElement("div");
+        actions.classList.add("collision-result-actions");
+
+        const focusBtn = document.createElement("button");
+        focusBtn.type = "button";
+        focusBtn.textContent = "Isolar colisão";
+        focusBtn.classList.add("collision-focus-btn");
+        focusBtn.addEventListener("click", () => isolateCollisionPair(objectA, objectB));
+
+        actions.appendChild(focusBtn);
+        item.append(title, actions);
+        collisionResultsList.appendChild(item);
+    });
+}
+
+function findAndRenderCollisions(modelAId, modelBId) {
+    if (!modelAId || !modelBId) {
+        collisionSummary.textContent = "Selecione dois modelos para iniciar a análise.";
+        collisionResultsList.innerHTML = "";
+        return;
+    }
+
+    if (modelAId === modelBId) {
+        collisionSummary.textContent = "Escolha dois modelos diferentes.";
+        collisionResultsList.innerHTML = "";
+        return;
+    }
+
+    const objectsA = getModelObjectIds(modelAId);
+    const objectsB = getModelObjectIds(modelBId);
+
+    if (!objectsA.length || !objectsB.length) {
+        collisionSummary.textContent = "Nenhum objeto encontrado nos modelos selecionados.";
+        collisionResultsList.innerHTML = "";
+        return;
+    }
+
+    const collisions = [];
+
+    objectsA.forEach((objectA) => {
+        const aabbA = viewer.scene.getAABB(objectA);
+
+        if (!aabbA) {
+            return;
+        }
+
+        objectsB.forEach((objectB) => {
+            const aabbB = viewer.scene.getAABB(objectB);
+
+            if (aabbB && intersectsAABB(aabbA, aabbB)) {
+                collisions.push({ objectA, objectB });
+            }
+        });
+    });
+
+    collisionSummary.textContent = `${collisions.length} colisão(ões) encontrada(s) entre ${modelAId} e ${modelBId}.`;
+    renderCollisionResults(collisions);
+}
 function desativarMedicao() {
     const deactivateButton = document.getElementById("btnDeactivate");
     setMeasurementMode("none", deactivateButton);
@@ -1332,60 +1553,3 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
