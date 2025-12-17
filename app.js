@@ -918,20 +918,36 @@ function downloadCollisionsAsPdf() {
 
     let cursorY = 50;
 
+    const leftMargin = 14;
+    const topMargin = 20;
+    const maxWidth = 180;
+    const lineHeight = 5;
+    const spacingAfterItem = 6;
+    const pageHeightLimit = 280; // Aproximadamente o limite útil em uma página A4
+
     lastCollisionResults.forEach(({ objectId, collidingWith }, index) => {
-        if (cursorY > 270) {
+        const titleText = `${index + 1}. Objeto ${objectId}`;
+        const description = `Colide com: ${collidingWith.join(", ")}`;
+
+        // Divide a descrição em múltiplas linhas respeitando a largura máxima
+        const descriptionLines = doc.splitTextToSize(description, maxWidth);
+        const itemHeight = lineHeight + (descriptionLines.length * lineHeight) + spacingAfterItem;
+
+        // Quebra de página antes de desenhar o item, se necessário
+        if (cursorY + itemHeight > pageHeightLimit) {
             doc.addPage();
-            cursorY = 20;
+            cursorY = topMargin;
         }
 
         doc.setFontSize(12);
-        doc.text(`${index + 1}. Objeto ${objectId}`, 14, cursorY);
-        cursorY += 6;
+        doc.text(titleText, leftMargin, cursorY);
+        cursorY += lineHeight;
 
         doc.setFontSize(10);
-        const description = `Colide com: ${collidingWith.join(", ")}`;
-        doc.text(description, 14, cursorY, { maxWidth: 180 });
-        cursorY += 10;
+        doc.text(descriptionLines, leftMargin, cursorY, { maxWidth });
+        cursorY += descriptionLines.length * lineHeight;
+
+        cursorY += spacingAfterItem;
     });
 
     doc.save("colisoes.pdf");
@@ -1750,6 +1766,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
