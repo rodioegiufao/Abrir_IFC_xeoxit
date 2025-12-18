@@ -198,6 +198,44 @@
         </div>
 
         <p class="transform-hint">A translação muda a origem do modelo; a rotação é aplicada em torno dessa origem.</p>
+
+        <h4 class="transform-entity-title">Peça selecionada</h4>
+        <p id="selectedEntityInfo" class="transform-hint">Selecione uma peça com duplo clique para ajustar.</p>
+
+        <div class="transform-grid">
+            <label class="transform-field">
+                Peça X (m)
+                <input type="number" id="pieceOffsetX" step="0.1" value="0" />
+            </label>
+            <label class="transform-field">
+                Peça Y (m)
+                <input type="number" id="pieceOffsetY" step="0.1" value="0" />
+            </label>
+            <label class="transform-field">
+                Peça Z (m)
+                <input type="number" id="pieceOffsetZ" step="0.1" value="0" />
+            </label>
+        </div>
+
+        <div class="transform-grid">
+            <label class="transform-field">
+                Rotação X (°)
+                <input type="number" id="pieceRotationX" step="1" value="0" />
+            </label>
+            <label class="transform-field">
+                Rotação Y (°)
+                <input type="number" id="pieceRotationY" step="1" value="0" />
+            </label>
+            <label class="transform-field">
+                Rotação Z (°)
+                <input type="number" id="pieceRotationZ" step="1" value="0" />
+            </label>
+        </div>
+
+        <div class="transform-actions">
+            <button type="button" id="applyEntityTransformButton" disabled>Aplicar na peça</button>
+            <button type="button" id="resetEntityTransformButton" disabled>Restaurar peça</button>
+        </div>
     </div>
     <div id="modeSwitcher" aria-label="Alternar modo de visualização">
         <button type="button" class="mode-button active" data-mode="desktop">Versão Computador</button>
@@ -308,6 +346,7 @@
     </script>
 </body>
 </html>
+
 
 
 
