@@ -12,9 +12,7 @@ import {
     PointerLens,
     NavCubePlugin,
     TreeViewPlugin,
-    SectionPlanesPlugin,
-    LineSet,         // <--- NOVO: Importa LineSet
-    buildGridGeometry // <--- NOVO: Importa buildGridGeometry
+    SectionPlanesPlugin
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
 
 const { jsPDF } = window.jspdf;
@@ -293,10 +291,14 @@ const runCollisionCheckButton = document.getElementById("runCollisionCheck");
 const downloadCollisionPdfButton = document.getElementById("downloadCollisionPdf");
 const collisionSummary = document.getElementById("collisionSummary");
 const collisionResultsList = document.getElementById("collisionResults");
+const searchInput = document.getElementById("searchIdInput");
+const searchButton = document.getElementById("btnSearchId");
+const searchFeedback = document.getElementById("searchFeedback");
 
 setupSAOControls();
 setupTransformPanelControls();
 setupCollisionPanelControls();
+setupSearchControls();
 /**
  * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
  */
@@ -520,47 +522,98 @@ function setupCollisionPanelControls() {
 
     updateCollisionDownloadButton();
 }
-/**
- * Função NOVO: Cria uma grade no plano do solo (elevação mínima Y).
- */
-function createGroundGrid() {
-    // Pega o Bounding Box de toda a cena para centralizar e posicionar no solo
-    const aabb = viewer.scene.getAABB(); 
-    
-    // Determina a elevação do solo (o valor Y mínimo do AABB)
-    // O xeokit usa a convenção [minX, minY, minZ, maxX, maxY, maxZ]
-    const groundY = aabb[1]; 
 
-    // Cria a geometria da grade
-    const geometryArrays = buildGridGeometry({
-        size: 100, // Tamanho da grade (100x100 metros)
-        divisions: 50 // 50 divisões (linhas)
-    });
+function setSearchStatus(message, isError = false) {
+    if (!searchFeedback) {
+        return;
+    }
 
-    // Cria o LineSet para renderizar a grade
-    new LineSet(viewer.scene, {
-        positions: geometryArrays.positions,
-        indices: geometryArrays.indices,
-        color: [0.5, 0.5, 0.5], // Cor cinza suave
-        opacity: 0.8,
-        // Move a grade para o centro XZ do modelo e para a elevação correta.
-        position: [
-            (aabb[0] + aabb[3]) / 2, // Centro X
-            groundY,                 // Elevação Y
-            (aabb[2] + aabb[5]) / 2  // Centro Z
-        ]
+    searchFeedback.textContent = message;
+    searchFeedback.dataset.state = isError ? "error" : "success";
+}
+
+function focusObjectById(objectId, { animate = true } = {}) {
+    if (!modelIsolateController || !objectId) {
+        return false;
+    }
+
+    const targetId = String(objectId).trim();
+    const allIds = getAllObjectIds();
+
+    if (!allIds.includes(targetId)) {
+        return false;
+    }
+
+    modelIsolateController.setObjectsVisible(allIds, true);
+    modelIsolateController.setObjectsHighlighted(allIds, false);
+
+    if (allIds.length) {
+        modelIsolateController.setObjectsXRayed(allIds, true);
+    }
+
+    modelIsolateController.setObjectsXRayed([targetId], false);
+    modelIsolateController.setObjectsHighlighted([targetId], true);
+
+    const entity = viewer.scene.objects?.[targetId];
+    if (entity) {
+        lastSelectedEntity = entity;
+    }
+
+    const aabb = viewer.scene.getAABB(targetId);
+    if (aabb) {
+        if (animate) {
+            viewer.cameraFlight.flyTo({ aabb, duration: 0.6 });
+        } else {
+            viewer.cameraFlight.jumpTo({ aabb });
+        }
+    }
+
+    requestRenderFrame();
+    return true;
+}
+
+function setupSearchControls() {
+    if (!searchInput || !searchButton) {
+        return;
+    }
+
+    const runSearch = () => {
+        const rawId = searchInput.value.trim();
+
+        if (!rawId) {
+            setSearchStatus("Digite um ID de peça para buscar.", true);
+            return;
+        }
+
+        if (!modelIsolateController || !getAllObjectIds().length) {
+            setSearchStatus("Carregue um modelo antes de buscar uma peça.", true);
+            return;
+        }
+
+        const found = focusObjectById(rawId);
+
+        if (found) {
+            setSearchStatus(`Peça ${rawId} isolada com destaque.`);
+        } else {
+            setSearchStatus(`Peça ${rawId} não encontrada nos modelos carregados.`, true);
+        }
+    };
+
+    searchButton.addEventListener("click", runSearch);
+    searchInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            runSearch();
+        }
     });
-    
-    console.log("Grade do solo criada.");
 }
 
 function finalizeInitialSetup() {
     setTimeout(() => {
         viewer.cameraFlight.jumpTo(viewer.scene);
         console.log("Todos os modelos carregados e câmera ajustada para o zoom correto.");
-        setMeasurementMode('none', document.getElementById('btnDeactivate'));
+        setMeasurementMode('none');
         setupModelIsolateController();
-        createGroundGrid();
     }, 300);
 }
 
@@ -1282,12 +1335,6 @@ function findAndRenderCollisions(modelId) {
     renderCollisionResults(collisions);
 }
 
-function desativarMedicao() {
-    const deactivateButton = document.getElementById("btnDeactivate");
-    setMeasurementMode("none", deactivateButton);
-    closePropertyPanel();
-}
-
 document.addEventListener("keydown", (event) => {
     const key = event.key?.toLowerCase();
 
@@ -1298,7 +1345,8 @@ document.addEventListener("keydown", (event) => {
     }
 
     if (key === "escape") {
-        desativarMedicao();
+        setMeasurementMode("none");
+        closePropertyPanel();
         return;
     }
 
@@ -1325,7 +1373,6 @@ document.addEventListener("keydown", (event) => {
         hideEntity(lastSelectedEntity);
     }
 });
-window.desativar = desativarMedicao;
 
 // -----------------------------------------------------------------------------
 // 4. Menu de Contexto (Deletar Medição) (MANTIDO)
@@ -1524,47 +1571,6 @@ function toggleTreeView() {
 // EXPOR AO ESCOPO GLOBAL para ser chamado pelo 'onclick' do HTML
 window.toggleTreeView = toggleTreeView;
 window.resetModelVisibility = resetModelVisibility;
-
-// -----------------------------------------------------------------------------
-// 6.2 Função de Grade (Grid do Solo com Ligar/Desligar)
-// -----------------------------------------------------------------------------
-let gradeAtiva = null;
-
-/**
- * Cria uma grade se não existir, ou alterna sua visibilidade.
- */
-function toggleGrid() {
-    const aabb = viewer.scene.getAABB();
-
-    if (!gradeAtiva) {
-        const groundY = aabb[1];
-        const geometryArrays = buildGridGeometry({
-            size: 200,
-            divisions: 50
-        });
-
-        gradeAtiva = new LineSet(viewer.scene, {
-            positions: geometryArrays.positions,
-            indices: geometryArrays.indices,
-            color: [0.5, 0.5, 0.5],
-            opacity: 0.8,
-            position: [
-                (aabb[0] + aabb[3]) / 2,
-                groundY,
-                (aabb[2] + aabb[5]) / 2
-            ],
-            visible: true
-        });
-
-        console.log("🟩 Grade criada e ativada.");
-    } else {
-        gradeAtiva.visible = !gradeAtiva.visible;
-        console.log(gradeAtiva.visible ? "🟩 Grade ativada" : "⬜ Grade desativada");
-    }
-}
-
-// Exportar para escopo global (para o botão no HTML)
-window.toggleGrid = toggleGrid;
 
 // -----------------------------------------------------------------------------
 // 7. Plano de Corte (Section Plane) - VERSÃO ESTÁVEL (MANTIDO)
@@ -1994,6 +2000,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
