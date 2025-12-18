@@ -1660,10 +1660,14 @@ function toggleSectionPlane(button) {
                 horizontalSectionPlane.control.destroy();
                 horizontalSectionPlane.control = null;
             }
+
+            // Remove o plano para que o gizmo e a geometria desapareçam
+            horizontalSectionPlane.destroy();
+            horizontalSectionPlane = null;
         }
 
         scene.sectionPlanes.active = false;
-
+        
         // alguns builds deixam o gizmo em viewer.input._activeCanvasElements
         if (viewer.input && viewer.input._activeCanvasElements) {
             viewer.input._activeCanvasElements.clear?.();
@@ -2072,3 +2076,4 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
