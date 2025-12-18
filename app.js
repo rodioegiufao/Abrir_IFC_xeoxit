@@ -89,39 +89,43 @@ function setupHelpPanel() {
         }
     });
 }
+
+function toggleTransformPanel(forceState) {
+    if (!transformPanel || !transformPanelToggleButton) {
+        return;
+    }
+
+    const shouldOpen = typeof forceState === "boolean" ? forceState : transformPanel.hidden;
+    transformPanel.hidden = !shouldOpen;
+    transformPanelToggleButton.classList.toggle("active", shouldOpen);
+    transformPanelToggleButton.setAttribute("aria-pressed", shouldOpen ? "true" : "false");
+
+    if (shouldOpen && transformModelSelect) {
+        const currentModelId = transformModelSelect.value || transformModelSelect.options[0]?.value;
+        if (currentModelId) {
+            syncTransformInputs(currentModelId);
+        }
+    }
+}
+
 function setupTransformPanelControls() {
     if (!transformPanel || !transformPanelToggleButton || !closeTransformPanelButton) {
         return;
     }
 
-    const togglePanel = (forceState) => {
-        const shouldOpen = typeof forceState === "boolean" ? forceState : transformPanel.hidden;
-        transformPanel.hidden = !shouldOpen;
-        transformPanelToggleButton.classList.toggle("active", shouldOpen);
-        transformPanelToggleButton.setAttribute("aria-pressed", shouldOpen ? "true" : "false");
-
-        if (shouldOpen && transformModelSelect) {
-            const currentModelId = transformModelSelect.value || transformModelSelect.options[0]?.value;
-            if (currentModelId) {
-                syncTransformInputs(currentModelId);
-            }
-        }
-    };
-
-    transformPanelToggleButton.addEventListener("click", () => togglePanel());
-    closeTransformPanelButton.addEventListener("click", () => togglePanel(false));
+    transformPanelToggleButton.addEventListener("click", () => toggleTransformPanel());
+    closeTransformPanelButton.addEventListener("click", () => toggleTransformPanel(false));
 
     document.addEventListener("click", (event) => {
         const isClickInsidePanel = transformPanel.contains(event.target);
         const isToggle = transformPanelToggleButton.contains(event.target);
         if (!transformPanel.hidden && !isClickInsidePanel && !isToggle) {
-            togglePanel(false);
+            toggleTransformPanel(false);
         }
     });
 
-    togglePanel(false);
+    toggleTransformPanel(false);
 }
-
 
 function onWindowResize() {
     const canvas = viewer.scene.canvas;
@@ -2204,5 +2208,6 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
