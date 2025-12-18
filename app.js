@@ -142,6 +142,7 @@ let expectedModels = 0;
 let defaultModelChecksDone = 0;
 const loadedModels = new Map();
 const originalTransforms = new Map();
+const entityOriginalTransforms = new Map();
 const DEFAULT_MODEL_TRANSFORMS = {
     IFC_ILUX: { position: [-14.08, 0, 0] },
     IFC_EST: { position: [-62.3, 0.4, 35.2] },
@@ -174,8 +175,17 @@ const offsetXInput = document.getElementById("offsetX");
 const offsetYInput = document.getElementById("offsetY");
 const offsetZInput = document.getElementById("offsetZ");
 const rotationYInput = document.getElementById("rotationY");
+const selectedEntityInfo = document.getElementById("selectedEntityInfo");
+const pieceOffsetXInput = document.getElementById("pieceOffsetX");
+const pieceOffsetYInput = document.getElementById("pieceOffsetY");
+const pieceOffsetZInput = document.getElementById("pieceOffsetZ");
+const pieceRotationXInput = document.getElementById("pieceRotationX");
+const pieceRotationYInput = document.getElementById("pieceRotationY");
+const pieceRotationZInput = document.getElementById("pieceRotationZ");
 const applyTransformButton = document.getElementById("applyTransformButton");
 const resetTransformButton = document.getElementById("resetTransformButton");
+const applyEntityTransformButton = document.getElementById("applyEntityTransformButton");
+const resetEntityTransformButton = document.getElementById("resetEntityTransformButton");
 const collisionPanel = document.getElementById("collisionPanel");
 const collisionPanelToggleButton = document.getElementById("btnCollisionPanel");
 const closeCollisionPanelButton = document.getElementById("closeCollisionPanel");
@@ -194,6 +204,7 @@ setupHelpPanel();
 setupTransformPanelControls();
 setupCollisionPanelControls();
 setupSearchControls();
+updateSelectedEntityTransformUI(null);
 /**
  * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
  */
@@ -350,6 +361,112 @@ function resetTransformFromUI() {
     model.rotation = [...original.rotation];
 
     syncTransformInputs(modelId);
+    requestRenderFrame();
+}
+
+function getEntityTransformValues(entity) {
+    if (!entity) {
+        return { position: [0, 0, 0], rotation: [0, 0, 0] };
+    }
+
+    const position = Array.isArray(entity.position) ? [...entity.position] : [0, 0, 0];
+    const rotation = Array.isArray(entity.rotation) ? [...entity.rotation] : [0, 0, 0];
+
+    return { position, rotation };
+}
+
+function registerOriginalEntityTransform(entity) {
+    if (!entity?.id || entityOriginalTransforms.has(entity.id)) {
+        return;
+    }
+
+    const { position, rotation } = getEntityTransformValues(entity);
+    entityOriginalTransforms.set(entity.id, { position, rotation });
+}
+
+function syncEntityTransformInputs(entity) {
+    const { position, rotation } = getEntityTransformValues(entity);
+
+    if (pieceOffsetXInput) pieceOffsetXInput.value = position[0];
+    if (pieceOffsetYInput) pieceOffsetYInput.value = position[1];
+    if (pieceOffsetZInput) pieceOffsetZInput.value = position[2];
+
+    if (pieceRotationXInput) pieceRotationXInput.value = rotation[0];
+    if (pieceRotationYInput) pieceRotationYInput.value = rotation[1];
+    if (pieceRotationZInput) pieceRotationZInput.value = rotation[2];
+}
+
+function updateSelectedEntityTransformUI(entity) {
+    const hasEntity = Boolean(entity);
+
+    if (selectedEntityInfo) {
+        selectedEntityInfo.textContent = hasEntity
+            ? `Peça selecionada: ${entity.id}`
+            : "Selecione uma peça com duplo clique para ajustar.";
+    }
+
+    [applyEntityTransformButton, resetEntityTransformButton].forEach((button) => {
+        if (button) {
+            button.disabled = !hasEntity;
+        }
+    });
+
+    if (!hasEntity) {
+        syncEntityTransformInputs(null);
+        return;
+    }
+
+    registerOriginalEntityTransform(entity);
+    syncEntityTransformInputs(entity);
+}
+
+function applyEntityTransformFromUI() {
+    const entity = lastSelectedEntity;
+
+    if (!entity) {
+        alert("Nenhuma peça selecionada para ajustar.");
+        return;
+    }
+
+    registerOriginalEntityTransform(entity);
+
+    const newPosition = [
+        parseNumber(pieceOffsetXInput?.value),
+        parseNumber(pieceOffsetYInput?.value),
+        parseNumber(pieceOffsetZInput?.value)
+    ];
+
+    const newRotation = [
+        parseNumber(pieceRotationXInput?.value),
+        parseNumber(pieceRotationYInput?.value),
+        parseNumber(pieceRotationZInput?.value)
+    ];
+
+    entity.position = newPosition;
+    entity.rotation = newRotation;
+
+    requestRenderFrame();
+}
+
+function resetEntityTransformFromUI() {
+    const entity = lastSelectedEntity;
+
+    if (!entity) {
+        alert("Nenhuma peça selecionada para restaurar.");
+        return;
+    }
+
+    const original = entityOriginalTransforms.get(entity.id);
+
+    if (!original) {
+        alert("Nenhuma transformação registrada para esta peça.");
+        return;
+    }
+
+    entity.position = [...original.position];
+    entity.rotation = [...original.rotation];
+
+    syncEntityTransformInputs(entity);
     requestRenderFrame();
 }
 
@@ -540,6 +657,7 @@ function focusObjectById(objectId, { animate = true } = {}) {
     const entity = viewer.scene.objects?.[targetId];
     if (entity) {
         lastSelectedEntity = entity;
+        updateSelectedEntityTransformUI(entity);
     }
 
     const aabb = viewer.scene.getAABB(targetId);
@@ -705,6 +823,14 @@ if (resetTransformButton) {
     resetTransformButton.addEventListener("click", resetTransformFromUI);
 }
 
+if (applyEntityTransformButton) {
+    applyEntityTransformButton.addEventListener("click", applyEntityTransformFromUI);
+}
+
+if (resetEntityTransformButton) {
+    resetEntityTransformButton.addEventListener("click", resetEntityTransformFromUI);
+}
+
 // -----------------------------------------------------------------------------
 // 3. Plugins de Medição e Função de Troca (MANTIDO)
 // -----------------------------------------------------------------------------
@@ -799,6 +925,7 @@ function clearSelection(removeButtonHighlight = true) {
 
         // Limpa a referência da última seleção
         lastSelectedEntity = null;
+        updateSelectedEntityTransformUI(null);
 
         // Remove destaque visual (highlight)
         if (viewer.scene && viewer.scene.highlightedObjectIds) {
@@ -823,6 +950,7 @@ function selectEntity(entity) {
     clearSelection(false);
     entity.selected = true;
     lastSelectedEntity = entity;
+    updateSelectedEntityTransformUI(entity);
 }
 function setMeasurementMode(mode, clickedButton) {
     angleMeasurementsMouseControl.deactivate();
@@ -2076,4 +2204,5 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
