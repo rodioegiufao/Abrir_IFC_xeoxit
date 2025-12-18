@@ -79,8 +79,17 @@
             <span style="font-size: 1.2em;">🧊</span>
             Colisões
         </button>
+        <button
+            id="btnSearchToggle"
+            class="tool-button"
+            title="Mostrar/Esconder busca por ID"
+            aria-pressed="false"
+        >
+            <span style="font-size: 1.2em;">🔍</span>
+            Buscar
+        </button>
     </div>
-    <div id="searchBar" class="search-bar" aria-label="Buscar peça por ID">
+    <div id="searchBar" class="search-bar" aria-label="Buscar peça por ID" hidden>
         <label class="sr-only" for="searchIdInput">ID da peça</label>
         <input id="searchIdInput" type="text" placeholder="Buscar peça pelo ID" aria-label="ID da peça" />
         <button id="btnSearchId" type="button">Buscar</button>
@@ -319,6 +328,7 @@
     </script>
 </body>
 </html>
+
 
 
 
