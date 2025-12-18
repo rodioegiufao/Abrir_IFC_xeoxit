@@ -291,8 +291,10 @@ const runCollisionCheckButton = document.getElementById("runCollisionCheck");
 const downloadCollisionPdfButton = document.getElementById("downloadCollisionPdf");
 const collisionSummary = document.getElementById("collisionSummary");
 const collisionResultsList = document.getElementById("collisionResults");
+const searchBar = document.getElementById("searchBar");
 const searchInput = document.getElementById("searchIdInput");
 const searchButton = document.getElementById("btnSearchId");
+const searchToggleButton = document.getElementById("btnSearchToggle");
 const searchFeedback = document.getElementById("searchFeedback");
 
 setupSAOControls();
@@ -532,6 +534,52 @@ function setSearchStatus(message, isError = false) {
     searchFeedback.dataset.state = isError ? "error" : "success";
 }
 
+function openSearchBar() {
+    if (!searchBar) {
+        return;
+    }
+
+    searchBar.hidden = false;
+
+    if (searchToggleButton) {
+        searchToggleButton.classList.add("active");
+        searchToggleButton.setAttribute("aria-pressed", "true");
+    }
+
+    if (searchInput) {
+        searchInput.focus();
+        searchInput.select?.();
+    }
+}
+
+function closeSearchBar() {
+    if (!searchBar) {
+        return;
+    }
+
+    searchBar.hidden = true;
+
+    if (searchToggleButton) {
+        searchToggleButton.classList.remove("active");
+        searchToggleButton.setAttribute("aria-pressed", "false");
+    }
+}
+
+function toggleSearchBar(forceOpen) {
+    if (!searchBar) {
+        return;
+    }
+
+    const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : searchBar.hidden;
+
+    if (shouldOpen) {
+        openSearchBar();
+        return;
+    }
+
+    closeSearchBar();
+}
+
 function focusObjectById(objectId, { animate = true } = {}) {
     if (!modelIsolateController || !objectId) {
         return false;
@@ -576,6 +624,16 @@ function setupSearchControls() {
     if (!searchInput || !searchButton) {
         return;
     }
+
+    if (searchToggleButton && searchBar) {
+        searchToggleButton.addEventListener("click", () => toggleSearchBar());
+    }
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && searchBar && !searchBar.hidden) {
+            toggleSearchBar(false);
+        }
+    });
 
     const runSearch = () => {
         const rawId = searchInput.value.trim();
@@ -2000,6 +2058,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
