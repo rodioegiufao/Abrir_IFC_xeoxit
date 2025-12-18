@@ -891,6 +891,66 @@ function waitForRender(ms = 180) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function toArraySafe(list) {
+    if (!list) {
+        return [];
+    }
+
+    if (Array.isArray(list)) {
+        return [...list];
+    }
+
+    if (typeof list[Symbol.iterator] === "function") {
+        return [...list];
+    }
+
+    return [];
+}
+
+function captureSceneRenderState() {
+    const scene = viewer?.scene;
+
+    if (!scene) {
+        return null;
+    }
+
+    return {
+        visible: toArraySafe(scene.visibleObjectIds),
+        xrayed: toArraySafe(scene.xrayedObjectIds),
+        highlighted: toArraySafe(scene.highlightedObjectIds)
+    };
+}
+
+function restoreSceneRenderState(state) {
+    const scene = viewer?.scene;
+
+    if (!scene || !state) {
+        return;
+    }
+
+    const applyState = (current, target, setter) => {
+        if (!setter) {
+            return;
+        }
+
+        const currentIds = toArraySafe(current);
+        const targetIds = toArraySafe(target);
+        const unionIds = [...new Set([...currentIds, ...targetIds])];
+
+        if (unionIds.length) {
+            setter(unionIds, false);
+        }
+
+        if (targetIds.length) {
+            setter(targetIds, true);
+        }
+    };
+
+    applyState(scene.visibleObjectIds, state.visible, scene.setObjectsVisible?.bind(scene));
+    applyState(scene.xrayedObjectIds, state.xrayed, scene.setObjectsXRayed?.bind(scene));
+    applyState(scene.highlightedObjectIds, state.highlighted, scene.setObjectsHighlighted?.bind(scene));
+}
+
 /**
  * Snapshot LEVE:
  * - Faz downscale para reduzir pixels
@@ -935,6 +995,7 @@ function getCanvasSnapshot({
 
 async function captureSnapshotsForCollisions(collisions) {
     const originalPose = getCameraPose();
+    const originalRenderState = captureSceneRenderState();
     const canvas = document.getElementById("meuCanvas");
     const canvasAspect =
         canvas?.width && canvas?.height ? canvas.width / canvas.height : 1.6;
@@ -942,15 +1003,12 @@ async function captureSnapshotsForCollisions(collisions) {
     const snapshots = [];
 
     for (const { objectId, collidingWith } of collisions) {
-        const idsToFocus = [objectId, ...collidingWith];
-        const combinedAABB = mergeAABBs(idsToFocus.map((id) => viewer.scene.getAABB(id)));
+        const isolationApplied = applyCollisionIsolation(objectId, collidingWith, { animate: false });
 
-        if (!combinedAABB) {
+        if (!isolationApplied) {
             snapshots.push({ dataUrl: null, aspect: canvasAspect });
             continue;
         }
-
-        viewer.cameraFlight.jumpTo({ aabb: combinedAABB });
 
         requestRenderFrame();
         await waitForRender(220); // um pouco maior pra garantir render antes do print
@@ -965,6 +1023,11 @@ async function captureSnapshotsForCollisions(collisions) {
         });
     }
 
+    if (originalRenderState) {
+        restoreSceneRenderState(originalRenderState);
+        requestRenderFrame();
+    }
+
     if (originalPose) {
         restoreCameraPose(originalPose);
         requestRenderFrame();
@@ -973,22 +1036,21 @@ async function captureSnapshotsForCollisions(collisions) {
     return snapshots;
 }
 
-function isolateCollisionGroup(objectAId, collidingIds) {
+function applyCollisionIsolation(objectAId, collidingIds, { animate = true } = {}) {
     if (!modelIsolateController) {
-        return;
+        return false;
     }
 
     const idsToFocus = [objectAId, ...collidingIds];
     const allIds = getAllObjectIds();
     const otherIds = allIds.filter((id) => !idsToFocus.includes(id));
-
     // Limpa estados anteriores e mostra tudo em X-ray para manter o contexto
     modelIsolateController.setObjectsVisible(allIds, true);
     modelIsolateController.setObjectsXRayed(allIds, true);
     modelIsolateController.setObjectsHighlighted(allIds, false);
 
     // Realça a colisão e remove o X-ray apenas dos elementos em conflito
-    modelIsolateController.setObjectsVisible(idsToFocus, true);
+modelIsolateController.setObjectsVisible(idsToFocus, true);
     modelIsolateController.setObjectsXRayed(idsToFocus, false);
     viewer.scene.setObjectsHighlighted(idsToFocus, true);
 
@@ -999,10 +1061,20 @@ function isolateCollisionGroup(objectAId, collidingIds) {
     const combinedAABB = mergeAABBs(idsToFocus.map((id) => viewer.scene.getAABB(id)));
 
     if (combinedAABB) {
-        viewer.cameraFlight.flyTo({ aabb: combinedAABB, duration: 0.6 });
+        if (animate) {
+            viewer.cameraFlight.flyTo({ aabb: combinedAABB, duration: 0.6 });
+        } else {
+            viewer.cameraFlight.jumpTo({ aabb: combinedAABB });
+        }
     }
 
     requestRenderFrame();
+
+    return Boolean(combinedAABB);
+}
+
+function isolateCollisionGroup(objectAId, collidingIds) {
+    applyCollisionIsolation(objectAId, collidingIds, { animate: true });
 }
 
 function updateCollisionDownloadButton() {
@@ -1922,6 +1994,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
