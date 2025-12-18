@@ -1205,6 +1205,56 @@ function setCollisionState(collisions, modelId) {
     lastCollisionModelId = collisions.length ? modelId : null;
     updateCollisionDownloadButton();
 }
+
+function formatIfcPropertyValue(value) {
+    if (value === null || value === undefined) {
+        return "(vazio)";
+    }
+
+    if (typeof value === "object") {
+        try {
+            return JSON.stringify(value);
+        } catch (e) {
+            return String(value);
+        }
+    }
+
+    return String(value);
+}
+
+function buildIfcPropertiesLines(doc, objectId, maxWidth) {
+    const metaObject = viewer.metaScene?.metaObjects?.[objectId];
+    if (!metaObject) {
+        return ["Propriedades IFC: metadados não encontrados para este objeto."];
+    }
+
+    const { propertySets } = metaObject;
+    if (!propertySets?.length) {
+        return ["Propriedades IFC: nenhum conjunto de propriedades disponível."];
+    }
+
+    const lines = ["Propriedades IFC:"];
+
+    propertySets.forEach((pset) => {
+        const setName = pset.name || pset.id || "Conjunto sem nome";
+        lines.push(`- ${setName}`);
+
+        if (pset.properties?.length) {
+            pset.properties.forEach((prop) => {
+                const key = prop.name || prop.id || "Propriedade";
+                const value = formatIfcPropertyValue(prop.value);
+                const propertyText = `  • ${key}: ${value}`;
+                const wrappedLines = doc.splitTextToSize(propertyText, maxWidth);
+                lines.push(...wrappedLines);
+            });
+        } else {
+            lines.push("  • Nenhuma propriedade listada.");
+        }
+    });
+
+    return lines;
+}
+
 async function downloadCollisionsAsPdf() {
     
     if (!lastCollisionResults.length) {
@@ -1246,12 +1296,15 @@ async function downloadCollisionsAsPdf() {
         const imageHeight = snapshot?.dataUrl ? defaultImageWidth / imageAspect : 0;
 
         const descriptionLines = doc.splitTextToSize(description, maxWidth);
+        const propertyLines = buildIfcPropertiesLines(doc, objectId, maxWidth);
 
         const itemHeight =
             lineHeight +
             descriptionLines.length * lineHeight +
-            spacingAfterItem +
-            (snapshot?.dataUrl ? imageHeight + spacingAfterItem : 0);
+            propertyLines.length * lineHeight +
+            (snapshot?.dataUrl && propertyLines.length ? spacingAfterItem : 0) +
+            (snapshot?.dataUrl ? imageHeight : 0) +
+            spacingAfterItem;
 
         // Quebra de página
         if (cursorY + itemHeight > pageHeightLimit) {
@@ -1262,7 +1315,6 @@ async function downloadCollisionsAsPdf() {
             // doc.setFontSize(10);
             // doc.text(`Relatório de colisões - Modelo: ${lastCollisionModelId ?? "-"}`, leftMargin, 12);
         }
-
         doc.setFontSize(12);
         doc.text(titleText, leftMargin, cursorY);
         cursorY += lineHeight;
@@ -1270,6 +1322,15 @@ async function downloadCollisionsAsPdf() {
         doc.setFontSize(10);
         doc.text(descriptionLines, leftMargin, cursorY, { maxWidth });
         cursorY += descriptionLines.length * lineHeight;
+
+        if (propertyLines.length) {
+            doc.text(propertyLines, leftMargin, cursorY, { maxWidth });
+            cursorY += propertyLines.length * lineHeight;
+
+            if (snapshot?.dataUrl) {
+                cursorY += spacingAfterItem;
+            }
+        }
 
         if (snapshot?.dataUrl) {
             // ✅ JPEG + FAST (mais leve e rápido)
@@ -1283,10 +1344,10 @@ async function downloadCollisionsAsPdf() {
                 undefined,
                 "FAST"
             );
-            cursorY += imageHeight + spacingAfterItem;
-        } else {
-            cursorY += spacingAfterItem;
+            cursorY += imageHeight;
         }
+
+        cursorY += spacingAfterItem;
     });
 
     doc.save("colisoes.pdf");
