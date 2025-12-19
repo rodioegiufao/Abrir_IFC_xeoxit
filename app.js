@@ -14,7 +14,8 @@ import {
     TreeViewPlugin,
     SectionPlanesPlugin,
     LineSet,
-    buildGridGeometry
+    buildGridGeometry,
+    AnnotationsPlugin
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
 
 const { jsPDF } = window.jspdf;
@@ -83,6 +84,25 @@ function createGroundGrid() {
 }
 
 createGroundGrid();
+
+// -----------------------------------------------------------------------------
+// 1.1 Anotações fixas
+// -----------------------------------------------------------------------------
+
+const annotationsPlugin = new AnnotationsPlugin(viewer, {
+    markerHTML: "<div class='annotation-marker'>●</div>",
+    labelHTML: "<div class='annotation-label'><div class='annotation-title'>{{title}}</div><div class='annotation-desc'>{{description}}</div></div>",
+});
+
+annotationsPlugin.createAnnotation({
+    id: "CLI-1",
+    title: "CLI-1",
+    description: "A curva do duto está batendo no pilar",
+    worldPos: [-5.241, 10.305, 0.38],
+    occludable: true,
+    markerShown: true,
+    labelShown: true
+});
 
 /**
  * Configura o painel de ajuda e atalhos de teclado.
@@ -2106,5 +2126,6 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
