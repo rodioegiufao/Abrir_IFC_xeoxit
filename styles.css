@@ -861,8 +861,8 @@ html, body {
 
 .annotation-marker {
     position: absolute;
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background: #0057ff;
     border: 2px solid #ffffff;
@@ -889,11 +889,11 @@ html, body {
 
 .annotation-title {
     font-weight: 700;
+    font-size: 16px;
     margin-bottom: 4px;
 }
 
 .annotation-desc {
-    font-size: 13px;
-    line-height: 1.4;
+    font-size: 14px;
+    line-height: 1.45;
 }
-
