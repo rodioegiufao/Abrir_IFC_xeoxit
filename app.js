@@ -1872,6 +1872,15 @@ function showMaterialProperties(entity) {
     propriedades += `<strong style='color:#4CAF50;'>Tipo:</strong> ${metaObject.type || "N/A"}<br>`;
     if (metaObject.name) propriedades += `<strong style='color:#4CAF50;'>Nome:</strong> ${metaObject.name}<br><br>`;
 
+    const aabb = viewer.scene.getAABB(entity.id);
+    if (aabb) {
+        const centerX = ((aabb[0] + aabb[3]) / 2).toFixed(3);
+        const centerY = ((aabb[1] + aabb[4]) / 2).toFixed(3);
+        const centerZ = ((aabb[2] + aabb[5]) / 2).toFixed(3);
+        propriedades += `<strong style='color:#4CAF50;'>Coordenadas (centro):</strong><br>`;
+        propriedades += `<span style='color:#fff;'>X: ${centerX} &nbsp; Y: ${centerY} &nbsp; Z: ${centerZ}</span><br><br>`;
+    }
+
     // --- Varre todos os conjuntos de propriedades IFC ---
     if (metaObject.propertySets && metaObject.propertySets.length > 0) {
         for (const pset of metaObject.propertySets) {
@@ -2097,4 +2106,5 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
