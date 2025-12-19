@@ -118,8 +118,40 @@ const cliAnnotation = annotationsPlugin.createAnnotation({
     }
 });
 
-cliAnnotation.markerShown = false;
-cliAnnotation.labelShown = false;
+function setAnnotationMarkerShown(annotation, shown) {
+    if (typeof annotation.setMarkerShown === "function") {
+        annotation.setMarkerShown(shown);
+    } else {
+        annotation.markerShown = shown;
+    }
+}
+
+function getAnnotationMarkerShown(annotation) {
+    if (typeof annotation.getMarkerShown === "function") {
+        return annotation.getMarkerShown();
+    }
+
+    return Boolean(annotation.markerShown);
+}
+
+function setAnnotationLabelShown(annotation, shown) {
+    if (typeof annotation.setLabelShown === "function") {
+        annotation.setLabelShown(shown);
+    } else {
+        annotation.labelShown = shown;
+    }
+}
+
+function getAnnotationLabelShown(annotation) {
+    if (typeof annotation.getLabelShown === "function") {
+        return annotation.getLabelShown();
+    }
+
+    return Boolean(annotation.labelShown);
+}
+
+setAnnotationMarkerShown(cliAnnotation, false);
+setAnnotationLabelShown(cliAnnotation, false);
 
 function setupCliAnnotationVisibilityControl(annotation) {
     const updateVisibility = () => {
@@ -136,14 +168,16 @@ function setupCliAnnotationVisibilityControl(annotation) {
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         const shouldShowMarker = distance <= CLI_MARKER_VISIBILITY_DISTANCE;
+        const isMarkerShown = getAnnotationMarkerShown(annotation);
+        const isLabelShown = getAnnotationLabelShown(annotation);
 
-        if (annotation.markerShown !== shouldShowMarker) {
-            annotation.markerShown = shouldShowMarker;
+        if (isMarkerShown !== shouldShowMarker) {
+            setAnnotationMarkerShown(annotation, shouldShowMarker);
             requestRenderFrame();
         }
 
-        if (!shouldShowMarker && annotation.labelShown) {
-            annotation.labelShown = false;
+        if (!shouldShowMarker && isLabelShown) {
+            setAnnotationLabelShown(annotation, false);
             requestRenderFrame();
         }
     };
@@ -173,13 +207,16 @@ function setupCliAnnotationLabelToggle(annotation) {
             clickedCliAnnotation = pickedId === CLI_ANNOTATION_ID;
         }
 
-        if (clickedCliAnnotation && annotation.markerShown) {
-            if (!annotation.labelShown) {
-                annotation.labelShown = true;
+        const isMarkerShown = getAnnotationMarkerShown(annotation);
+        const isLabelShown = getAnnotationLabelShown(annotation);
+
+        if (clickedCliAnnotation && isMarkerShown) {
+            if (!isLabelShown) {
+                setAnnotationLabelShown(annotation, true);
                 requestRenderFrame();
             }
-        } else if (annotation.labelShown) {
-            annotation.labelShown = false;
+        } else if (isLabelShown) {
+            setAnnotationLabelShown(annotation, false);
             requestRenderFrame();
         }
     };
@@ -2214,6 +2251,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
