@@ -860,6 +860,7 @@ html, body {
 /* -------------------------------------------------------------------------- */
 
 .annotation-marker {
+    position: absolute;
     width: 16px;
     height: 16px;
     border-radius: 50%;
@@ -871,9 +872,12 @@ html, body {
     color: #fff;
     font-size: 12px;
     font-weight: 700;
+    z-index: 150000;
 }
 
 .annotation-label {
+    position: absolute;
+    z-index: 150000;
     background: rgba(0, 0, 0, 0.8);
     color: #ffffff;
     padding: 8px 10px;
@@ -892,3 +896,4 @@ html, body {
     font-size: 13px;
     line-height: 1.4;
 }
+
