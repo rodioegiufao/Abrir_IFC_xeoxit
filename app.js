@@ -90,18 +90,28 @@ createGroundGrid();
 // -----------------------------------------------------------------------------
 
 const annotationsPlugin = new AnnotationsPlugin(viewer, {
-    markerHTML: "<div class='annotation-marker'>●</div>",
+    markerHTML: "<div class='annotation-marker' style='background-color: {{markerBGColor}}'>{{glyph}}</div>",
     labelHTML: "<div class='annotation-label'><div class='annotation-title'>{{title}}</div><div class='annotation-desc'>{{description}}</div></div>",
+    values: {
+        markerBGColor: "#0057ff",
+        glyph: "●",
+        title: "Anotação",
+        description: "Sem descrição"
+    }
 });
 
 annotationsPlugin.createAnnotation({
     id: "CLI-1",
-    title: "CLI-1",
-    description: "A curva do duto está batendo no pilar",
-    worldPos: [-5.241, 10.305, 0.38],
-    occludable: true,
+    worldPos: [-5.241, 10.305, 0.380],
+    occludable: false,
     markerShown: true,
-    labelShown: true
+    labelShown: true,
+    values: {
+        glyph: "CLI",
+        title: "CLI-1",
+        description: "A curva do duto está batendo no pilar",
+        markerBGColor: "#e53935"
+    }
 });
 
 /**
@@ -2126,6 +2136,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
