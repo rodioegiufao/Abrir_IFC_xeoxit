@@ -100,19 +100,7 @@ const annotationsPlugin = new AnnotationsPlugin(viewer, {
     }
 });
 
-annotationsPlugin.createAnnotation({
-    id: "CLI-1",
-    worldPos: [-5.241, 10.305, 0.380],
-    occludable: false,
-    markerShown: true,
-    labelShown: true,
-    values: {
-        glyph: "CLI",
-        title: "CLI-1",
-        description: "A curva do duto está batendo no pilar",
-        markerBGColor: "#e53935"
-    }
-});
+v
 
 /**
  * Configura o painel de ajuda e atalhos de teclado.
@@ -245,6 +233,7 @@ setupHelpPanel();
 setupTransformPanelControls();
 setupCollisionPanelControls();
 setupSearchControls();
+setupCliAnnotationInteractions();
 /**
  * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
  */
@@ -2136,6 +2125,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
