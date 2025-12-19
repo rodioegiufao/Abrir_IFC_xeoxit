@@ -215,7 +215,7 @@ function setupCliAnnotationClickFocus(annotation) {
     const focusCliObject = (annotationEvent) => {
         if (annotationEvent?.id === annotation.id || annotationEvent?.annotation?.id === annotation.id) {
             setAnnotationLabelShown(annotation, true);
-            focusObjectById(CLI_ASSOCIATED_OBJECT_ID, { animate: true });
+            focusObjectById(CLI_ASSOCIATED_OBJECT_ID, { animate: true, xrayOthers: false });
         }
     };
 
@@ -683,7 +683,7 @@ function toggleSearchBar(forceOpen) {
     closeSearchBar();
 }
 
-function focusObjectById(objectId, { animate = true } = {}) {
+function focusObjectById(objectId, { animate = true, xrayOthers = true } = {}) {
     if (!modelIsolateController || !objectId) {
         return false;
     }
@@ -698,8 +698,10 @@ function focusObjectById(objectId, { animate = true } = {}) {
     modelIsolateController.setObjectsVisible(allIds, true);
     modelIsolateController.setObjectsHighlighted(allIds, false);
 
-    if (allIds.length) {
+    if (xrayOthers && allIds.length) {
         modelIsolateController.setObjectsXRayed(allIds, true);
+    } else {
+        modelIsolateController.setObjectsXRayed(allIds, false);
     }
 
     modelIsolateController.setObjectsXRayed([targetId], false);
@@ -2253,6 +2255,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
