@@ -855,7 +855,40 @@ html, body {
     transform: translateY(-1px);
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Anotações                                                                */
+/* -------------------------------------------------------------------------- */
 
+.annotation-marker {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #0057ff;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 8px rgba(0, 87, 255, 0.45);
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
 
+.annotation-label {
+    background: rgba(0, 0, 0, 0.8);
+    color: #ffffff;
+    padding: 8px 10px;
+    border-radius: 6px;
+    max-width: 240px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(4px);
+}
 
+.annotation-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
 
+.annotation-desc {
+    font-size: 13px;
+    line-height: 1.4;
+}
