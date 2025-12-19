@@ -870,7 +870,7 @@ html, body {
     display: grid;
     place-items: center;
     color: #fff;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 700;
     z-index: 150000;
 }
@@ -889,7 +889,7 @@ html, body {
 
 .annotation-title {
     font-weight: 700;
-    font-size: 20px;
+    font-size: 16px;
     margin-bottom: 4px;
 }
 
@@ -897,5 +897,6 @@ html, body {
     font-size: 14px;
     line-height: 1.45;
 }
+
 
 
