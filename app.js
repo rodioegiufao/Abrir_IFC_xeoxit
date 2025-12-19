@@ -111,8 +111,8 @@ const cliAnnotation = annotationsPlugin.createAnnotation({
     markerShown: true,
     labelShown: true,
     values: {
-        glyph: "CLI",
-        title: "CLI-1",
+        glyph: "C1",
+        title: "C1",
         description: "A curva do duto está batendo no pilar",
         markerBGColor: "#e53935"
     }
@@ -190,38 +190,24 @@ function setupCliAnnotationVisibilityControl(annotation) {
 }
 
 function setupCliAnnotationLabelToggle(annotation) {
-    const canvas = viewer.scene?.canvas;
-
-    if (!canvas) {
-        return;
-    }
-
-    const handleCliAnnotationClick = (event) => {
-        let clickedCliAnnotation = false;
-
-        if (typeof annotationsPlugin.pickAnnotation === "function") {
-            const rect = canvas.getBoundingClientRect();
-            const canvasPos = [event.clientX - rect.left, event.clientY - rect.top];
-            const pickResult = annotationsPlugin.pickAnnotation({ canvasPos });
-            const pickedId = pickResult?.annotation?.id || pickResult?.id;
-            clickedCliAnnotation = pickedId === CLI_ANNOTATION_ID;
+    const showCliLabel = (annotationEvent) => {
+        if (annotationEvent?.id === annotation.id || annotationEvent?.annotation?.id === annotation.id) {
+            setAnnotationLabelShown(annotation, true);
+            requestRenderFrame();
         }
+    };
 
-        const isMarkerShown = getAnnotationMarkerShown(annotation);
-        const isLabelShown = getAnnotationLabelShown(annotation);
-
-        if (clickedCliAnnotation && isMarkerShown) {
-            if (!isLabelShown) {
-                setAnnotationLabelShown(annotation, true);
-                requestRenderFrame();
-            }
-        } else if (isLabelShown) {
+    const hideCliLabel = (annotationEvent) => {
+        if (annotationEvent?.id === annotation.id || annotationEvent?.annotation?.id === annotation.id) {
             setAnnotationLabelShown(annotation, false);
             requestRenderFrame();
         }
     };
 
-    document.addEventListener("click", handleCliAnnotationClick);
+    if (typeof annotationsPlugin.on === "function") {
+        annotationsPlugin.on("markerMouseEnter", showCliLabel);
+        annotationsPlugin.on("markerMouseLeave", hideCliLabel);
+    }
 }
 
 function setupCliAnnotationInteractions() {
@@ -2251,6 +2237,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
