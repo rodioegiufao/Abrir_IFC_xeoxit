@@ -100,8 +100,6 @@ const annotationsPlugin = new AnnotationsPlugin(viewer, {
     }
 });
 
-v
-
 /**
  * Configura o painel de ajuda e atalhos de teclado.
  */
@@ -2125,6 +2123,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
