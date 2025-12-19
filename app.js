@@ -103,6 +103,7 @@ const annotationsPlugin = new AnnotationsPlugin(viewer, {
 const CLI_ANNOTATION_ID = "CLI-1";
 const CLI_ANNOTATION_POSITION = [-5.241, 10.305, 0.380];
 const CLI_MARKER_VISIBILITY_DISTANCE = 5;
+const CLI_ASSOCIATED_OBJECT_ID = "0VJuYCFvPDsAZYaEc4uDrZ";
 
 const cliAnnotation = annotationsPlugin.createAnnotation({
     id: CLI_ANNOTATION_ID,
@@ -210,9 +211,24 @@ function setupCliAnnotationLabelToggle(annotation) {
     }
 }
 
+function setupCliAnnotationClickFocus(annotation) {
+    const focusCliObject = (annotationEvent) => {
+        if (annotationEvent?.id === annotation.id || annotationEvent?.annotation?.id === annotation.id) {
+            setAnnotationLabelShown(annotation, true);
+            focusObjectById(CLI_ASSOCIATED_OBJECT_ID, { animate: true });
+        }
+    };
+
+    if (typeof annotationsPlugin.on === "function") {
+        annotationsPlugin.on("markerClicked", focusCliObject);
+        annotationsPlugin.on("labelClicked", focusCliObject);
+    }
+}
+
 function setupCliAnnotationInteractions() {
     setupCliAnnotationVisibilityControl(cliAnnotation);
     setupCliAnnotationLabelToggle(cliAnnotation);
+    setupCliAnnotationClickFocus(cliAnnotation);
 }
 /**
  * Configura o painel de ajuda e atalhos de teclado.
@@ -2237,6 +2253,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
