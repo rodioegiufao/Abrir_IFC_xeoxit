@@ -123,15 +123,16 @@ cliAnnotation.labelShown = false;
 
 function setupCliAnnotationVisibilityControl(annotation) {
     const updateVisibility = () => {
-        const eye = viewer.camera.eye;
+        const eye = viewer.camera?.eye;
+        const target = annotation.worldPos || CLI_ANNOTATION_POSITION;
 
-        if (!eye) {
+        if (!eye || !target) {
             return;
         }
 
-        const dx = eye[0] - CLI_ANNOTATION_POSITION[0];
-        const dy = eye[1] - CLI_ANNOTATION_POSITION[1];
-        const dz = eye[2] - CLI_ANNOTATION_POSITION[2];
+        const dx = eye[0] - target[0];
+        const dy = eye[1] - target[1];
+        const dz = eye[2] - target[2];
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         const shouldShowMarker = distance <= CLI_MARKER_VISIBILITY_DISTANCE;
@@ -147,8 +148,8 @@ function setupCliAnnotationVisibilityControl(annotation) {
         }
     };
 
-    if (viewer.scene?.on) {
-        viewer.scene.on("tick", updateVisibility);
+    if (viewer.camera?.on) {
+        viewer.camera.on("matrix", updateVisibility);
     }
 
     updateVisibility();
@@ -2213,6 +2214,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
