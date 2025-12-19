@@ -12,7 +12,9 @@ import {
     PointerLens,
     NavCubePlugin,
     TreeViewPlugin,
-    SectionPlanesPlugin
+    SectionPlanesPlugin,
+    LineSet,
+    buildGridGeometry
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
 
 const { jsPDF } = window.jspdf;
@@ -62,6 +64,25 @@ const viewer = new Viewer({
 const { highlightMaterial } = viewer.scene;
 highlightMaterial.color = [0, 0, 0];
 highlightMaterial.edgeColor = [0, 0, 0];
+
+function createGroundGrid() {
+    const gridGeometry = buildGridGeometry({
+        size: 100,
+        divisions: 100
+    });
+
+    new LineSet(viewer.scene, {
+        id: "groundGrid",
+        positions: gridGeometry.positions,
+        indices: gridGeometry.indices,
+        color: [0.6, 0.6, 0.6],
+        opacity: 0.35,
+        clippable: false,
+        collidable: false
+    });
+}
+
+createGroundGrid();
 
 /**
  * Configura o painel de ajuda e atalhos de teclado.
@@ -2076,3 +2097,4 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
