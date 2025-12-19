@@ -102,7 +102,7 @@ const annotationsPlugin = new AnnotationsPlugin(viewer, {
 
 const CLI_ANNOTATION_ID = "CLI-1";
 const CLI_ANNOTATION_POSITION = [-5.241, 10.305, 0.380];
-const CLI_MARKER_VISIBILITY_DISTANCE = 20;
+const CLI_MARKER_VISIBILITY_DISTANCE = 5;
 
 const cliAnnotation = annotationsPlugin.createAnnotation({
     id: CLI_ANNOTATION_ID,
@@ -2213,6 +2213,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
