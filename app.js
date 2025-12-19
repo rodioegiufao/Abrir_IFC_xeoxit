@@ -100,6 +100,96 @@ const annotationsPlugin = new AnnotationsPlugin(viewer, {
     }
 });
 
+const CLI_ANNOTATION_ID = "CLI-1";
+const CLI_ANNOTATION_POSITION = [-5.241, 10.305, 0.380];
+const CLI_MARKER_VISIBILITY_DISTANCE = 20;
+
+const cliAnnotation = annotationsPlugin.createAnnotation({
+    id: CLI_ANNOTATION_ID,
+    worldPos: CLI_ANNOTATION_POSITION,
+    occludable: false,
+    markerShown: true,
+    labelShown: true,
+    values: {
+        glyph: "CLI",
+        title: "CLI-1",
+        description: "A curva do duto está batendo no pilar",
+        markerBGColor: "#e53935"
+    }
+});
+
+cliAnnotation.markerShown = false;
+cliAnnotation.labelShown = false;
+
+function setupCliAnnotationVisibilityControl(annotation) {
+    const updateVisibility = () => {
+        const eye = viewer.camera.eye;
+
+        if (!eye) {
+            return;
+        }
+
+        const dx = eye[0] - CLI_ANNOTATION_POSITION[0];
+        const dy = eye[1] - CLI_ANNOTATION_POSITION[1];
+        const dz = eye[2] - CLI_ANNOTATION_POSITION[2];
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        const shouldShowMarker = distance <= CLI_MARKER_VISIBILITY_DISTANCE;
+
+        if (annotation.markerShown !== shouldShowMarker) {
+            annotation.markerShown = shouldShowMarker;
+            requestRenderFrame();
+        }
+
+        if (!shouldShowMarker && annotation.labelShown) {
+            annotation.labelShown = false;
+            requestRenderFrame();
+        }
+    };
+
+    if (viewer.scene?.on) {
+        viewer.scene.on("tick", updateVisibility);
+    }
+
+    updateVisibility();
+}
+
+function setupCliAnnotationLabelToggle(annotation) {
+    const canvas = viewer.scene?.canvas;
+
+    if (!canvas) {
+        return;
+    }
+
+    const handleCliAnnotationClick = (event) => {
+        let clickedCliAnnotation = false;
+
+        if (typeof annotationsPlugin.pickAnnotation === "function") {
+            const rect = canvas.getBoundingClientRect();
+            const canvasPos = [event.clientX - rect.left, event.clientY - rect.top];
+            const pickResult = annotationsPlugin.pickAnnotation({ canvasPos });
+            const pickedId = pickResult?.annotation?.id || pickResult?.id;
+            clickedCliAnnotation = pickedId === CLI_ANNOTATION_ID;
+        }
+
+        if (clickedCliAnnotation && annotation.markerShown) {
+            if (!annotation.labelShown) {
+                annotation.labelShown = true;
+                requestRenderFrame();
+            }
+        } else if (annotation.labelShown) {
+            annotation.labelShown = false;
+            requestRenderFrame();
+        }
+    };
+
+    document.addEventListener("click", handleCliAnnotationClick);
+}
+
+function setupCliAnnotationInteractions() {
+    setupCliAnnotationVisibilityControl(cliAnnotation);
+    setupCliAnnotationLabelToggle(cliAnnotation);
+}
 /**
  * Configura o painel de ajuda e atalhos de teclado.
  */
@@ -2123,6 +2213,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
