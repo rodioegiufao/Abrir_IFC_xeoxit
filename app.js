@@ -14,6 +14,7 @@ import {
     TreeViewPlugin,
     SectionPlanesPlugin,
     LineSet,
+    AnnotationsPlugin,
     buildGridGeometry
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
 
@@ -143,7 +144,7 @@ const searchButton = document.getElementById("btnSearchId");
 const searchToggleButton = document.getElementById("btnSearchToggle");
 const searchFeedback = document.getElementById("searchFeedback");
 
-//setupHelpPanel();
+setupHelpPanel();
 setupTransformPanelControls();
 setupCollisionPanelControls();
 setupSearchControls();
@@ -2070,6 +2071,7 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
 
