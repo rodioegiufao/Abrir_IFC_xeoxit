@@ -14,9 +14,10 @@ import {
     TreeViewPlugin,
     SectionPlanesPlugin,
     LineSet,
-    buildGridGeometry,
-    AnnotationsPlugin
+    buildGridGeometry
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
+
+import { setupAnnotations } from "./annotations.js";
 
 const { jsPDF } = window.jspdf;
 
@@ -89,147 +90,8 @@ createGroundGrid();
 // 1.1 Anotações fixas
 // -----------------------------------------------------------------------------
 
-const annotationsPlugin = new AnnotationsPlugin(viewer, {
-    markerHTML: "<div class='annotation-marker' style='background-color: {{markerBGColor}}'>{{glyph}}</div>",
-    labelHTML: "<div class='annotation-label'><div class='annotation-title'>{{title}}</div><div class='annotation-desc'>{{description}}</div></div>",
-    values: {
-        markerBGColor: "#0057ff",
-        glyph: "●",
-        title: "Anotação",
-        description: "Sem descrição"
-    }
-});
+setupAnnotations(viewer, { requestRenderFrame, focusObjectById });
 
-const CLI_ANNOTATION_ID = "CLI-1";
-const CLI_ANNOTATION_POSITION = [-5.241, 10.305, 0.380];
-const CLI_MARKER_VISIBILITY_DISTANCE = 5;
-const CLI_ASSOCIATED_OBJECT_ID = "0VJuYCFvPDsAZYaEc4uDrZ";
-
-const cliAnnotation = annotationsPlugin.createAnnotation({
-    id: CLI_ANNOTATION_ID,
-    worldPos: CLI_ANNOTATION_POSITION,
-    occludable: false,
-    markerShown: true,
-    labelShown: true,
-    values: {
-        glyph: "C1",
-        title: "C1",
-        description: "A curva do duto está batendo no pilar",
-        markerBGColor: "#e53935"
-    }
-});
-
-function setAnnotationMarkerShown(annotation, shown) {
-    if (typeof annotation.setMarkerShown === "function") {
-        annotation.setMarkerShown(shown);
-    } else {
-        annotation.markerShown = shown;
-    }
-}
-
-function getAnnotationMarkerShown(annotation) {
-    if (typeof annotation.getMarkerShown === "function") {
-        return annotation.getMarkerShown();
-    }
-
-    return Boolean(annotation.markerShown);
-}
-
-function setAnnotationLabelShown(annotation, shown) {
-    if (typeof annotation.setLabelShown === "function") {
-        annotation.setLabelShown(shown);
-    } else {
-        annotation.labelShown = shown;
-    }
-}
-
-function getAnnotationLabelShown(annotation) {
-    if (typeof annotation.getLabelShown === "function") {
-        return annotation.getLabelShown();
-    }
-
-    return Boolean(annotation.labelShown);
-}
-
-setAnnotationMarkerShown(cliAnnotation, false);
-setAnnotationLabelShown(cliAnnotation, false);
-
-function setupCliAnnotationVisibilityControl(annotation) {
-    const updateVisibility = () => {
-        const eye = viewer.camera?.eye;
-        const target = annotation.worldPos || CLI_ANNOTATION_POSITION;
-
-        if (!eye || !target) {
-            return;
-        }
-
-        const dx = eye[0] - target[0];
-        const dy = eye[1] - target[1];
-        const dz = eye[2] - target[2];
-        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-        const shouldShowMarker = distance <= CLI_MARKER_VISIBILITY_DISTANCE;
-        const isMarkerShown = getAnnotationMarkerShown(annotation);
-        const isLabelShown = getAnnotationLabelShown(annotation);
-
-        if (isMarkerShown !== shouldShowMarker) {
-            setAnnotationMarkerShown(annotation, shouldShowMarker);
-            requestRenderFrame();
-        }
-
-        if (!shouldShowMarker && isLabelShown) {
-            setAnnotationLabelShown(annotation, false);
-            requestRenderFrame();
-        }
-    };
-
-    if (viewer.camera?.on) {
-        viewer.camera.on("matrix", updateVisibility);
-    }
-
-    updateVisibility();
-}
-
-function setupCliAnnotationLabelToggle(annotation) {
-    const showCliLabel = (annotationEvent) => {
-        if (annotationEvent?.id === annotation.id || annotationEvent?.annotation?.id === annotation.id) {
-            setAnnotationLabelShown(annotation, true);
-            requestRenderFrame();
-        }
-    };
-
-    const hideCliLabel = (annotationEvent) => {
-        if (annotationEvent?.id === annotation.id || annotationEvent?.annotation?.id === annotation.id) {
-            setAnnotationLabelShown(annotation, false);
-            requestRenderFrame();
-        }
-    };
-
-    if (typeof annotationsPlugin.on === "function") {
-        annotationsPlugin.on("markerMouseEnter", showCliLabel);
-        annotationsPlugin.on("markerMouseLeave", hideCliLabel);
-    }
-}
-
-function setupCliAnnotationClickFocus(annotation) {
-    const focusCliObject = (annotationEvent) => {
-        if (annotationEvent?.id === annotation.id || annotationEvent?.annotation?.id === annotation.id) {
-            setAnnotationLabelShown(annotation, true);
-            focusObjectById(CLI_ASSOCIATED_OBJECT_ID, { animate: true, xrayOthers: false });
-        }
-    };
-
-    if (typeof annotationsPlugin.on === "function") {
-        annotationsPlugin.on("markerClicked", focusCliObject);
-        annotationsPlugin.on("labelClicked", focusCliObject);
-    }
-}
-
-function setupCliAnnotationInteractions() {
-    setupCliAnnotationVisibilityControl(cliAnnotation);
-    setupCliAnnotationLabelToggle(cliAnnotation);
-    setupCliAnnotationClickFocus(cliAnnotation);
-}
 /**
  * Configura o painel de ajuda e atalhos de teclado.
  */
@@ -361,7 +223,6 @@ setupHelpPanel();
 setupTransformPanelControls();
 setupCollisionPanelControls();
 setupSearchControls();
-setupCliAnnotationInteractions();
 /**
  * Reseta a visibilidade de todos os objetos e remove qualquer destaque ou raio-x.
  */
@@ -860,7 +721,6 @@ const defaultModels = [
     { id: "IFC_ALI_220", src: "assets/modelo-18.xkt" },
     { id: "IFC_ALI_380", src: "assets/modelo-19.xkt" },
 ];
-
 defaultModels.forEach(loadDefaultModel);
 
 if (transformModelSelect) {
@@ -1360,8 +1220,24 @@ function buildIfcPropertiesLines(doc, objectId, maxWidth) {
     return lines;
 }
 
+function getCollisionPosition(objectId) {
+    const aabb = viewer.scene.getAABB(objectId);
+
+    if (!aabb) {
+        return null;
+    }
+
+    const center = [
+        (aabb[0] + aabb[3]) / 2,
+        (aabb[1] + aabb[4]) / 2,
+        (aabb[2] + aabb[5]) / 2
+    ];
+
+    return center.map((value) => Number.isFinite(value) ? Number(value.toFixed(3)) : 0);
+}
+
 async function downloadCollisionsAsPdf() {
-    
+
     if (!lastCollisionResults.length) {
         return;
     }
@@ -1454,6 +1330,21 @@ async function downloadCollisionsAsPdf() {
 
         cursorY += spacingAfterItem;
     });
+
+    // Bloco final com resumo estruturado das colisões
+    const structuredSummary = lastCollisionResults.map(({ objectId, collidingWith }, index) => {
+        const position = getCollisionPosition(objectId);
+        const positionText = position ? `[${position.join(", ")}]` : "[]";
+        const collisionsText = collidingWith.join(", ");
+
+        return `{ id: "P${index + 1}", position: ${positionText}, code: "${objectId}", collision: "${collisionsText}" },`;
+    });
+
+    doc.addPage();
+    doc.setFontSize(12);
+    doc.text("Resumo de colisões (formato estruturado)", leftMargin, topMargin);
+    doc.setFontSize(10);
+    doc.text(structuredSummary, leftMargin, topMargin + lineHeight, { maxWidth });
 
     doc.save("colisoes.pdf");
 }
@@ -2255,16 +2146,3 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
-
-
-
-
-
-
-
-
-
-
-
-
-
