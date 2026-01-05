@@ -88,6 +88,13 @@ html, body {
     display: flex;
 }
 
+[data-mode="mobile"] #toolbar:not(.open) {
+    padding: 0;
+    width: auto;
+    background: transparent;
+    box-shadow: none;
+}
+
 [data-mode="mobile"] #toolbar:not(.open) .tool-button {
     display: none;
 }
