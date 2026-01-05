@@ -143,7 +143,7 @@ const searchButton = document.getElementById("btnSearchId");
 const searchToggleButton = document.getElementById("btnSearchToggle");
 const searchFeedback = document.getElementById("searchFeedback");
 
-setupHelpPanel();
+//setupHelpPanel();
 setupTransformPanelControls();
 setupCollisionPanelControls();
 setupSearchControls();
@@ -2070,5 +2070,6 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
+
 
 
