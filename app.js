@@ -14,10 +14,10 @@ import {
     TreeViewPlugin,
     SectionPlanesPlugin,
     LineSet,
-    AnnotationsPlugin,
     buildGridGeometry
 } from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk@latest/dist/xeokit-sdk.min.es.js";
 
+import { setupAnnotations } from "./annotations.js";
 
 const { jsPDF } = window.jspdf;
 
@@ -85,6 +85,81 @@ function createGroundGrid() {
 }
 
 createGroundGrid();
+
+// -----------------------------------------------------------------------------
+// 1.1 Anotações fixas
+// -----------------------------------------------------------------------------
+
+setupAnnotations(viewer, { requestRenderFrame, focusObjectById });
+
+/**
+ * Configura o painel de ajuda e atalhos de teclado.
+ */
+function setupHelpPanel() {
+    if (!helpPanel || !helpPanelToggleButton || !closeHelpPanelButton) {
+        return;
+    }
+
+    const togglePanel = (forceState) => {
+        const shouldOpen = typeof forceState === "boolean" ? forceState : helpPanel.hidden;
+        helpPanel.hidden = !shouldOpen;
+        helpPanelToggleButton.classList.toggle("active", shouldOpen);
+        helpPanelToggleButton.setAttribute("aria-pressed", shouldOpen ? "true" : "false");
+    };
+
+    helpPanelToggleButton.addEventListener("click", () => togglePanel());
+    closeHelpPanelButton.addEventListener("click", () => togglePanel(false));
+
+    document.addEventListener("click", (event) => {
+        const isClickInsidePanel = helpPanel.contains(event.target);
+        const isToggle = helpPanelToggleButton.contains(event.target);
+        if (!helpPanel.hidden && !isClickInsidePanel && !isToggle) {
+            togglePanel(false);
+        }
+    });
+}
+function setupTransformPanelControls() {
+    if (!transformPanel || !transformPanelToggleButton || !closeTransformPanelButton) {
+        return;
+    }
+
+    const togglePanel = (forceState) => {
+        const shouldOpen = typeof forceState === "boolean" ? forceState : transformPanel.hidden;
+        transformPanel.hidden = !shouldOpen;
+        transformPanelToggleButton.classList.toggle("active", shouldOpen);
+        transformPanelToggleButton.setAttribute("aria-pressed", shouldOpen ? "true" : "false");
+
+        if (shouldOpen && transformModelSelect) {
+            const currentModelId = transformModelSelect.value || transformModelSelect.options[0]?.value;
+            if (currentModelId) {
+                syncTransformInputs(currentModelId);
+            }
+        }
+    };
+
+    transformPanelToggleButton.addEventListener("click", () => togglePanel());
+    closeTransformPanelButton.addEventListener("click", () => togglePanel(false));
+
+    document.addEventListener("click", (event) => {
+        const isClickInsidePanel = transformPanel.contains(event.target);
+        const isToggle = transformPanelToggleButton.contains(event.target);
+        if (!transformPanel.hidden && !isClickInsidePanel && !isToggle) {
+            togglePanel(false);
+        }
+    });
+
+    togglePanel(false);
+}
+
+
+function onWindowResize() {
+    const canvas = viewer.scene.canvas;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+window.addEventListener('resize', onWindowResize);
+onWindowResize();
 
 // -----------------------------------------------------------------------------
 // 2. Carregamento dos Modelos e Ajuste da Câmera
@@ -2071,7 +2146,3 @@ viewer.scene.canvas.canvas.addEventListener('contextmenu', (event) => {
     canvasElement.addEventListener('touchend', endTouch, { passive: false });
     canvasElement.addEventListener('touchcancel', clearTouch, { passive: true });
 })();
-
-
-
-
