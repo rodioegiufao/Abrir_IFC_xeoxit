@@ -82,6 +82,7 @@ html, body {
 
 [data-mode="mobile"] #toolbar.open {
     cursor: auto;
+    top: 72px;
 }
 
 [data-mode="mobile"] #toolbar {
